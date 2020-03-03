@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
 
-from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp
+from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
@@ -205,5 +205,21 @@ class OrbitGroup(Group):
             rho=100.,
             lower_flag=True,
         )
-        comp.add_constraint('ks_altitude_km', lower=350.)
+        comp.add_constraint('ks_altitude_km', lower=450.)
         self.add_subsystem('ks_altitude_km_comp', comp, promotes=['*'])
+
+        comp = PowerCombinationComp(
+            shape=(6, num_times,),
+            out_name='relative_orbit_state_sq',
+            powers_dict={
+                'relative_orbit_state': 2.,
+            }
+        )
+        self.add_subsystem('relative_orbit_state_sq_comp', comp, promotes=['*'])
+
+        comp = ScalarContractionComp(
+            shape=(6, num_times,),
+            out_name='relative_orbit_state_sq_sum',
+            in_name='relative_orbit_state_sq',
+        )
+        self.add_subsystem('relative_orbit_state_sq_sum_comp', comp, promotes=['*'])

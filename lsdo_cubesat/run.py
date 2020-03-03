@@ -6,7 +6,7 @@ from lsdo_viz.api import Problem
 
 from lsdo_cubesat.api import Swarm, Cubesat, SwarmGroup
 
-num_times = 1500
+num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
@@ -23,7 +23,9 @@ swarm = Swarm(
     cross_threshold=0.995,
 )
 
-initial_orbit_state_magnitude = 1.e-3
+initial_orbit_state_magnitude = np.array(
+    [0.001] * 3 + [0.001] * 3
+)
 swarm.add(Cubesat(
     name='sunshade',
     dry_mass=1.3,
@@ -53,6 +55,7 @@ swarm.add(Cubesat(
 ))
 
 prob = Problem()
+prob.swarm = swarm
 
 swarm_group = SwarmGroup(swarm=swarm,)
 prob.model.add_subsystem('swarm_group', swarm_group, promotes=['*'])
@@ -63,10 +66,18 @@ obj_comp = ExecComp(
     '+ masked_normal_distance_optics_detector_mm_sq_sum'
     '+ masked_distance_sunshade_optics_mm_sq_sum'
     '+ masked_distance_optics_detector_mm_sq_sum'
+    '+ sunshade_cubesat_group_relative_orbit_state_sq_sum'
+    '+ optics_cubesat_group_relative_orbit_state_sq_sum'
+    '+ detector_cubesat_group_relative_orbit_state_sq_sum'
     ') / {}'.format(num_times)
 )
 obj_comp.add_objective('obj', scaler=1.e-3)
 prob.model.add_subsystem('obj_comp', obj_comp, promotes=['*'])
+for cubesat_name in ['sunshade', 'optics', 'detector']:
+    prob.model.connect(
+        '{}_cubesat_group.relative_orbit_state_sq_sum'.format(cubesat_name),
+        '{}_cubesat_group_relative_orbit_state_sq_sum'.format(cubesat_name),
+    )
 
 prob.driver = pyOptSparseDriver()
 prob.driver.options['optimizer'] = 'SNOPT'
@@ -80,8 +91,9 @@ prob.setup(check=True)
 # om.n2(prob)
 
 prob.run()
+
 # prob.model.list_outputs()
-if 1:
+if 0:
     prob.model.list_outputs(prom_name=True)
     print(prob['optics_cubesat_group.times'])
     print(prob['optics_cubesat_group.propellant_mass'])
@@ -101,15 +113,15 @@ if 1:
     print(prob['normal_distance_optics_detector_km'])
     print(prob['observation_cross_norm'])
 
-    print(prob['ks_masked_distance_sunshade_optics_km'])
-    print(np.max(prob['masked_distance_sunshade_optics_km']))
-    print(prob['ks_masked_distance_optics_detector_km'])
-    print(np.max(prob['masked_distance_optics_detector_km']))
+    # print(prob['ks_masked_distance_sunshade_optics_km'])
+    print(np.max(prob['masked_distance_sunshade_optics_mm']))
+    # print(prob['ks_masked_distance_optics_detector_km'])
+    print(np.max(prob['masked_distance_optics_detector_mm']))
 
-    print(prob['ks_masked_normal_distance_sunshade_detector_km'])
-    print(np.max(prob['masked_normal_distance_sunshade_detector_km']))
-    print(prob['ks_masked_normal_distance_optics_detector_km'])
-    print(np.max(prob['masked_normal_distance_optics_detector_km']))
+    # print(prob['ks_masked_normal_distance_sunshade_detector_km'])
+    print(np.max(prob['masked_normal_distance_sunshade_detector_mm']))
+    # print(prob['ks_masked_normal_distance_optics_detector_km'])
+    print(np.max(prob['masked_normal_distance_optics_detector_mm']))
 
     print(prob['sunshade_cubesat_group.ks_altitude_km'])
     print(np.min(prob['sunshade_cubesat_group.altitude_km']))

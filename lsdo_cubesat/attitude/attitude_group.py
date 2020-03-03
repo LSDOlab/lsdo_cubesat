@@ -23,8 +23,10 @@ class AttitudeGroup(Group):
         mtx = self.options['mtx']
 
         comp = IndepVarComp()
-        comp.add_output('roll_cp', shape=num_cp)
-        comp.add_output('pitch_cp', shape=num_cp)
+        # comp.add_output('roll_cp', val=2. * np.pi * np.random.rand(num_cp))
+        # comp.add_output('pitch_cp', val=2. * np.pi * np.random.rand(num_cp))
+        comp.add_output('roll_cp', val=np.ones(num_cp))
+        comp.add_output('pitch_cp', val=np.ones(num_cp))
         comp.add_design_var('roll_cp')
         comp.add_design_var('pitch_cp')
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
