@@ -15,7 +15,8 @@ class AntRotationComp(ExplicitComponent):
         num_times = self.options['num_times']
 
         # Inputs
-        self.add_input('antAngle', 0.0, units='rad')
+        self.add_input('antAngle', 0.0, units='rad',
+                       desc='Fiexed antenna angle')
 
         # Outputs
         self.add_output('q_A', np.zeros((4, num_times)), units=None,
@@ -24,7 +25,7 @@ class AntRotationComp(ExplicitComponent):
         self.dq_dt = np.zeros(4)
 
     def compute(self, inputs, outputs):
-        num_times = self.options['num_times']
+
         antAngle = inputs['antAngle']
         q_A = outputs['q_A']
 
@@ -34,8 +35,16 @@ class AntRotationComp(ExplicitComponent):
         q_A[2, :] = - np.sin(antAngle/2.) / rt2
         q_A[3, :] = 0.0
 
+        # q_A[0, :] = antAngle
+        # q_A[1, :] = antAngle
+        # q_A[2, :] = antAngle
+        # q_A[3, :] = 0.0
+        print("********")
+        print(q_A)
+
+
     def compute_partials(self, inputs, partials):
-        num_times = self.options['num_times']
+
 
         antAngle = inputs['antAngle']
 
@@ -44,6 +53,11 @@ class AntRotationComp(ExplicitComponent):
         self.dq_dt[1] = np.cos(antAngle / 2.) / rt2 / 2.
         self.dq_dt[2] = - np.cos(antAngle / 2.) / rt2 / 2.
         self.dq_dt[3] = 0.0
+
+        # self.dq_dt[0] = 1
+        # self.dq_dt[1] = 1
+        # self.dq_dt[2] = 1
+        # self.dq_dt[3] = 0.0
 
 
 if __name__ == '__main__':
@@ -55,7 +69,7 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     num_times = 3
 
-    comp.add_output('antAngle_name', val= 2.2)
+    comp.add_output('antAngle', val= 1.0,units='rad')
 
     group.add_subsystem('Inputcomp', comp, promotes=['*'])
     group.add_subsystem('antenna_angle',
