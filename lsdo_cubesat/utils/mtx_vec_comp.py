@@ -55,11 +55,12 @@ class MtxVecComp(ExplicitComponent):
 if __name__ == '__main__':
     from openmdao.api import Problem, IndepVarComp
 
-    num_times = 2
+    num_times = 4
 
     prob = Problem()
     comp = IndepVarComp()
     comp.add_output('mtx', np.random.rand(3, 3, num_times))
+    
     comp.add_output('vec', np.random.rand(3, num_times))
     prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
 
@@ -74,5 +75,6 @@ if __name__ == '__main__':
     prob.setup()
     prob.run_model()
     prob.check_partials(compact_print=True)
-
+    print(prob['mtx'])
+    print(prob['vec'])
     print(prob['out'])

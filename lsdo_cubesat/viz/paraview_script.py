@@ -46,37 +46,37 @@ SetActiveView(renderView1)
 # ----------------------------------------------------------------
 
 # create a new 'STL Reader'
-sTLReader2 = STLReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/earth_triangulation.stl'])
+sTLReader2 = STLReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/earth_triangulation.stl'])
 
 # create a new 'STL Reader'
-sTLReader5 = STLReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/detector_thrust.stl'])
+sTLReader5 = STLReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/detector_thrust.stl'])
 
 # create a new 'Tecplot Reader'
-tecplotReader2 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/detector_position.dat'])
+tecplotReader2 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/detector_position.dat'])
 
 # create a new 'Tecplot Reader'
-tecplotReader6 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/sunshade_position_ends.dat'])
+tecplotReader6 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/sunshade_position_ends.dat'])
 
 # create a new 'Tecplot Reader'
-tecplotReader1 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/sunshade_position.dat'])
+tecplotReader1 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/sunshade_position.dat'])
 
 # create a new 'STL Reader'
-sTLReader3 = STLReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/optics_thrust.stl'])
+sTLReader3 = STLReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/optics_thrust.stl'])
 
 # create a new 'Tecplot Reader'
-tecplotReader3 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/optics_position.dat'])
+tecplotReader3 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/optics_position.dat'])
 
 # create a new 'Tecplot Reader'
-tecplotReader4 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/detector_position_ends.dat'])
+tecplotReader4 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/detector_position_ends.dat'])
 
 # create a new 'STL Reader'
-sTLReader1 = STLReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/earth_sphere.stl'])
+sTLReader1 = STLReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/earth_sphere.stl'])
 
 # create a new 'STL Reader'
-sTLReader4 = STLReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/sunshade_thrust.stl'])
+sTLReader4 = STLReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/sunshade_thrust.stl'])
 
 # create a new 'Tecplot Reader'
-tecplotReader5 = TecplotReader(FileNames=['/Users/jhwang/OneDrive - UC San Diego/Packages/lsdo_cubesat/lsdo_cubesat/viz/optics_position_ends.dat'])
+tecplotReader5 = TecplotReader(FileNames=['/Users/aobo/Documents/VISORS_new/lsdo_cubesat/lsdo_cubesat/viz/optics_position_ends.dat'])
 
 # ----------------------------------------------------------------
 # setup the visualization in view 'renderView1'

@@ -1,3 +1,8 @@
+"""
+    Coordinate transformation from the body frame to the inertial frame.
+"""
+
+
 import numpy as np
 
 from openmdao.api import ExplicitComponent
@@ -40,6 +45,7 @@ class RotMtxBIComp(ExplicitComponent):
         outputs['rot_mtx_b_i_3x3xn'][1, 2, :] = cos_roll * sin_pitch
         outputs['rot_mtx_b_i_3x3xn'][2, 1, :] = -sin_pitch
         outputs['rot_mtx_b_i_3x3xn'][2, 2, :] = cos_pitch
+        print(outputs['rot_mtx_b_i_3x3xn'].shape)
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
