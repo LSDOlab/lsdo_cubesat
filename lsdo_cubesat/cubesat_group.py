@@ -6,6 +6,7 @@ from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+from lsdo_cubesat.communication.communication_group import CommGroup
 
 
 class CubesatGroup(Group):
@@ -23,7 +24,6 @@ class CubesatGroup(Group):
         step_size = self.options['step_size']
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
-
         times = np.linspace(0., step_size * (num_times - 1), num_times)
         
         comp = IndepVarComp()
@@ -64,3 +64,13 @@ class CubesatGroup(Group):
             mtx=mtx,
         )
         self.add_subsystem('orbit_group', group, promotes=['*'])
+
+        group = CommGroup(
+            num_times=num_times,
+            num_cp=num_cp,
+            step_size=step_size,
+            cubesat=cubesat,
+            mtx=mtx,
+        )
+        self.add_subsystem('commnication_group', group, promotes=['*'])
+        # self.connect('rot_mtx_i_b_3x3xn_comp',[])
