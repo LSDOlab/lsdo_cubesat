@@ -83,9 +83,14 @@ prob.driver = pyOptSparseDriver()
 prob.driver.options['optimizer'] = 'SNOPT'
 prob.driver.opt_settings['Major feasibility tolerance'] = 1.e-5
 prob.driver.opt_settings['Major optimality tolerance'] = 1.e-5
-prob.driver.opt_settings['Iterations limit'] = 500000000
-prob.driver.opt_settings['Major iterations limit'] = 1000000
-prob.driver.opt_settings['Minor iterations limit'] = 500000
+# prob.driver.opt_settings['Iterations limit'] = 500000000
+# prob.driver.opt_settings['Major iterations limit'] = 1000000
+# prob.driver.opt_settings['Minor iterations limit'] = 500000
+
+prob.driver.opt_settings['Iterations limit'] = 100
+prob.driver.opt_settings['Major iterations limit'] = 200
+prob.driver.opt_settings['Minor iterations limit'] = 100
+
 
 prob.setup(check=True)
 #prob.run_driver()

@@ -1,57 +1,61 @@
 import numpy as np
 from openmdao.api import Problem, IndepVarComp, Group, ExecComp
 
-from ..attitude.rot_mtx_b_i_comp import RotMtxBIComp
-from .Antenna_rot_mtx import AntennaRotationMtx
-from .Antenna_rotation import AntRotationComp
-from .Comm_Bitrate import BitRateComp
-from .Comm_distance import StationSatelliteDistanceComp
-from .Comm_LOS import CommLOSComp
-from .Comm_VectorBody import VectorBodyComp
-from .GSposition_ECEF_comp import GS_ECEF_Comp
-from .GSposition_ECI_comp import GS_ECI_Comp
-from .rot_mtx_ECI_EF_comp import RotMtxECIEFComp
-from .Vec_satellite_GS_ECI import Comm_VectorECI
-from .Comm_vector_antenna import AntennaBodyComp
-from .Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
+from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
+from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
+from lsdo_cubesat.communication.Comm_Bitrate import BitRateComp
+from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
+from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
+from lsdo_cubesat.communication.Comm_VectorBody import VectorBodyComp
+from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
+from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
+# from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
+from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
+from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
+from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
+from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
+# from lsdo_cubesat.communication.Ground_comm import Groundcomm
 
 class CommGroup(Group):
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)
         self.options.declare('step_size', types=float)
-        # self.options.declare('ground_station')
         self.options.declare('cubesat')
         self.options.declare('mtx')
+        # self.options.declare('ground_station')
 
     def setup(self):
         num_times = self.options['num_times']
         num_cp = self.options['num_cp']
         step_size = self.options['step_size']
-        # ground_station = self.options['ground_station']
+        cubesat = self.options['cubesat']
         mtx = self.options['mtx']
+        # ground_station = self.options['ground_station']
 
         comp = IndepVarComp()
 
-        # comp.add_output('lon', val=ground_station['lon'], shape=)
-        comp.add_output('lon', val=0.0)
-        comp.add_output('lat', val=0.0)
-        comp.add_output('alt', val=0.0)
-        comp.add_output('t', val=np.zeros(num_times))
-        comp.add_output('rot_mtx_i_b_3x3xn', val=np.zeros((3, 3, num_times)))
-        comp.add_output('r_e2b_I', val=np.zeros((6, num_times)))
+        comp.add_output('lon', val=32.8563)
+        comp.add_output('lat', val=-117.2500)
+        comp.add_output('alt', val=0.4849368)
+        # comp.add_output('t', val=np.zeros(num_times))
+        # comp.add_output('rot_mtx_i_b_3x3xn', val=np.zeros((3, 3, num_times)))
+        # comp.add_output('orbit_state_km', val=np.zeros((6, num_times)))
         comp.add_output('antAngle', val=0.0)
         comp.add_output('P_comm', val=np.zeros(num_times))
         comp.add_output('Gain', val=np.zeros(num_times))
         comp.add_output('Initial_Data', val=0.0)
 
-        # comp.add_design_var('antAngle')
+        comp.add_design_var('antAngle')
 
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
-
-
-        comp = RotMtxECIEFComp(num_times=num_times)
+        comp = EarthSpinComp(num_times=num_times)
+        self.add_subsystem('q_E', comp, promotes=['*'])
+        
+        comp = EarthspinRotationMtx(num_times=num_times)
         self.add_subsystem('Rot_ECI_EF', comp, promotes=['*'])
 
         comp = GS_ECEF_Comp(num_times=num_times)

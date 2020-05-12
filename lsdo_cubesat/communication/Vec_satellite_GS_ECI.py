@@ -18,7 +18,7 @@ class Comm_VectorECI(ExplicitComponent):
                        desc='Position vector from earth to ground station in '
                             'Earth-centered inertial frame over time')
 
-        self.add_input('r_e2b_I', np.zeros((6, num_times)), units=None,
+        self.add_input('orbit_state_km', np.zeros((6, num_times)), units=None,
                        desc='Position and velocity vector from earth to satellite '
                             'in Earth-centered inertial frame over time')
                             
@@ -28,4 +28,4 @@ class Comm_VectorECI(ExplicitComponent):
 
     def compute(self, inputs, outputs):
 
-        outputs['r_b2g_I'] = inputs['r_e2g_I'] - inputs['r_e2b_I'][:3, :]
+        outputs['r_b2g_I'] = inputs['r_e2g_I'] - inputs['orbit_state_km'][:3, :]

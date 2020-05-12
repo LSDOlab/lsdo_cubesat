@@ -59,7 +59,7 @@ class BitRateComp(ExplicitComponent):
         num_times = self.options['num_times']
 
         outputs['Download_rate'] = self.alpha * inputs['P_comm'] * inputs['Gain'] * inputs['CommLOS']\
-                                   /inputs['GSdist'] ** 2
+                                   /(inputs['GSdist'] ** 2)
 
 
     def compute_partials(self, inputs, partials):

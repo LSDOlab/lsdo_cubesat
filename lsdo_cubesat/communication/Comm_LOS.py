@@ -62,7 +62,7 @@ class CommLOSComp(ExplicitComponent):
         Rb = 100.0
         proj = np.sum(r_b2g_I * r_e2g_I, axis=0)/self.Re
         outputs['CommLOS'] = sigmoid(proj+Rb)
-        print(outputs['CommLOS'])
+        # print(outputs['CommLOS'])
 
     def compute_partials(self, inputs, partials):
 
