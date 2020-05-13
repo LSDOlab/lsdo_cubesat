@@ -7,6 +7,7 @@ from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.communication.communication_group import CommGroup
+from lsdo_cubesat.mean_motion_group import MeanMotionGroup
 
 
 class CubesatGroup(Group):
@@ -65,6 +66,10 @@ class CubesatGroup(Group):
             mtx=mtx,
         )
         self.add_subsystem('orbit_group', group, promotes=['*'])
+
+        self.add_subsystem('mean_motion_group',
+                           MeanMotionGroup(num_times=num_times, ),
+                           promotes=['*'])
 
         group = CommGroup(
             num_times=num_times,

@@ -9,9 +9,8 @@ class InertiaRatiosComp(ExplicitComponent):
         self.add_input('mass_moment_inertia_b_frame_km_m2', shape=(3))
         self.add_output('moment_inertia_ratios', shape=(3))
 
-        self.declare_partials(
-            'moment_inertia_ratios',
-            'mass_moment_inertia_b_frame_km_m2')
+        self.declare_partials('moment_inertia_ratios',
+                              'mass_moment_inertia_b_frame_km_m2')
 
     def compute(self, inputs, outputs):
         I = inputs['mass_moment_inertia_b_frame_km_m2']
@@ -44,14 +43,16 @@ if __name__ == '__main__':
 
     class TestGroup(Group):
         def setup(self):
-            val = np.random.rand(3) / 100
+            val = np.random.rand(3)
             print(val)
             inputs = IndepVarComp()
-            inputs.add_output(
-                'mass_moment_inertia_b_frame_km_m2', val=val, shape=(3))
+            inputs.add_output('mass_moment_inertia_b_frame_km_m2',
+                              val=val,
+                              shape=(3))
             self.add_subsystem('inputs', inputs, promotes=['*'])
-            self.add_subsystem(
-                'inertia_ratios', InertiaRatiosComp(), promotes=['*'])
+            self.add_subsystem('inertia_ratios',
+                               InertiaRatiosComp(),
+                               promotes=['*'])
 
     prob = Problem()
     prob.model = TestGroup()

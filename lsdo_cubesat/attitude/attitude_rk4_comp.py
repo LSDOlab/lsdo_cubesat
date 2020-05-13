@@ -110,9 +110,9 @@ class AttitudeRK4Comp(RK4Comp):
         R21 = 2 * (q[1] * q[2] - q[3] * q[0])
         R31 = 2 * (q[3] * q[1] + q[2] * q[0])
 
-        # state_dot[0] += -3 * mean_motion**2 * K[0] * R21 * R31
-        # state_dot[1] += -3 * mean_motion**2 * K[1] * R31 * R11
-        # state_dot[2] += -3 * mean_motion**2 * K[2] * R11 * R21
+        state_dot[0] += -3 * mean_motion**2 * K[0] * R21 * R31
+        state_dot[1] += -3 * mean_motion**2 * K[1] * R31 * R11
+        state_dot[2] += -3 * mean_motion**2 * K[2] * R11 * R21
 
         # TODO: external variable such as drag will depend on
         # orientation, which is computed by this component; control
@@ -127,6 +127,7 @@ class AttitudeRK4Comp(RK4Comp):
         omega = state[:3]
         q = state[3:]
         K = external[3:6]
+        mean_motion = external[-1]
         dfdy = np.zeros((7, 7))
 
         E = np.array(
@@ -165,18 +166,55 @@ class AttitudeRK4Comp(RK4Comp):
         d_wdot_dw[2, 1] = K[2] * omega[0]
         d_wdot_dw[2, 2] = 0
 
-        # TODO: gravity partials
-
         dfdy[:3, :3] = d_wdot_dw
+
+        # Derivatives wrt quaternions (due to gravity torque)
+        R11 = 1 - 2 * (q[2]**2 + q[3]**2)
+        R21 = 2 * (q[1] * q[2] - q[3] * q[0])
+        R31 = 2 * (q[3] * q[1] + q[2] * q[0])
+
+        dR11_dq = np.zeros(4)
+        dR11_dq[2] = -4 * q[3]
+        dR11_dq[3] = -4 * q[2]
+
+        dR21_dq = np.zeros(4)
+        dR21_dq[0] = -2 * q[0]
+        dR21_dq[1] = 2 * q[1]
+        dR21_dq[2] = 2 * q[2]
+        dR21_dq[3] = -2 * q[3]
+
+        dR31_dq = np.zeros(4)
+        dR31_dq[0] = 2 * q[0]
+        dR31_dq[1] = 2 * q[1]
+        dR31_dq[2] = 2 * q[2]
+        dR31_dq[3] = 2 * q[3]
+
+        d_wdot_dq = np.zeros((3, 4))
+        d_wdot_dq[0, 0] = -3 * mean_motion**2 * K[0] * (dR21_dq[0] * R31 +
+                                                        R21 * dR31_dq[0])
+        d_wdot_dq[0, 1] = -3 * mean_motion**2 * K[0] * (dR21_dq[1] * R31 +
+                                                        R21 * dR31_dq[1])
+        d_wdot_dq[0, 2] = -3 * mean_motion**2 * K[0] * (dR21_dq[2] * R31 +
+                                                        R21 * dR31_dq[2])
+        d_wdot_dq[0, 3] = -3 * mean_motion**2 * K[0] * (dR21_dq[3] * R31 +
+                                                        R21 * dR31_dq[3])
+        d_wdot_dq[1, 0] = -3 * mean_motion**2 * K[1] * dR31_dq[0] * R11
+        d_wdot_dq[1, 1] = -3 * mean_motion**2 * K[1] * dR31_dq[1] * R11
+        d_wdot_dq[1, 2] = -3 * mean_motion**2 * K[1] * (dR31_dq[2] * R11 +
+                                                        R31 * dR11_dq[2])
+        d_wdot_dq[1, 3] = -3 * mean_motion**2 * K[1] * (dR31_dq[3] * R11 +
+                                                        R31 * dR11_dq[3])
+        d_wdot_dq[2, 0] = -3 * mean_motion**2 * K[2] * R11 * dR21_dq[0]
+        d_wdot_dq[2, 1] = -3 * mean_motion**2 * K[2] * R11 * dR21_dq[1]
+        d_wdot_dq[2, 2] = -3 * mean_motion**2 * K[2] * (dR11_dq[2] * R21 +
+                                                        R11 * dR21_dq[2])
+        d_wdot_dq[2, 3] = -3 * mean_motion**2 * K[2] * (dR11_dq[3] * R21 +
+                                                        R11 * dR21_dq[3])
+        dfdy[:3, 3:] = d_wdot_dq
 
         return dfdy
 
     def df_dx(self, external, state):
-        # self.options['external_vars'] = [
-        #     'external_torques',
-        #     'moment_inertia_ratios_3xn',
-        #     'mean_motion',
-        # ]
         omega = state[:3]
         q = state[3:]
         K = external[3:6]
@@ -184,9 +222,9 @@ class AttitudeRK4Comp(RK4Comp):
         dfdx = np.zeros((7, 7))
 
         # angular acceleration wrt external torques
-        dfdx[0, 0] = 1
-        dfdx[1, 1] = 1
-        dfdx[2, 2] = 1
+        dfdx[0, 0] = 1.0
+        dfdx[1, 1] = 1.0
+        dfdx[2, 2] = 1.0
 
         # angular acceleration wrt inertia ratios
         dfdx[0, 4] = omega[1] * omega[2]
@@ -194,12 +232,12 @@ class AttitudeRK4Comp(RK4Comp):
         dfdx[2, 6] = omega[0] * omega[1]
 
         # angular acceleration wrt mean motion
-        # R11 = 1 - 2 * (q[2]**2 + q[3]**2)
-        # R21 = 2 * (q[1] * q[2] - q[3] * q[0])
-        # R31 = 2 * (q[3] * q[1] + q[2] * q[0])
-        # dfdx[0, -1] += -6 * mean_motion * K[0] * R21 * R31
-        # dfdx[1, -1] += -6 * mean_motion * K[1] * R31 * R11
-        # dfdx[2, -1] += -6 * mean_motion * K[2] * R11 * R21
+        R11 = 1 - 2 * (q[2]**2 + q[3]**2)
+        R21 = 2 * (q[1] * q[2] - q[3] * q[0])
+        R31 = 2 * (q[3] * q[1] + q[2] * q[0])
+        dfdx[0, -1] += -6 * mean_motion * K[0] * R21 * R31
+        dfdx[1, -1] += -6 * mean_motion * K[1] * R31 * R11
+        dfdx[2, -1] += -6 * mean_motion * K[2] * R11 * R21
 
         return dfdx
 
@@ -239,9 +277,12 @@ if __name__ == '__main__':
             comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
             comp.add_output('initial_angular_velocity_orientation', val=wq0)
             comp.add_output('mean_motion', val=np.ones(num_times))
-            comp.add_output('external_torques_x', val=np.ones(num_times))
-            comp.add_output('external_torques_y', val=np.ones(num_times))
-            comp.add_output('external_torques_z', val=np.ones(num_times))
+            comp.add_output('external_torques_x',
+                            val=np.random.rand(num_times))
+            comp.add_output('external_torques_y',
+                            val=np.random.rand(num_times))
+            comp.add_output('external_torques_z',
+                            val=np.random.rand(num_times))
             self.add_subsystem('inputs_comp', comp, promotes=['*'])
             self.add_subsystem('inertia_ratios_comp',
                                InertiaRatiosComp(),
