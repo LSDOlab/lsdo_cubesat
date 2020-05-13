@@ -10,7 +10,6 @@ from lsdo_cubesat.communication.communication_group import CommGroup
 
 
 class CubesatGroup(Group):
-
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)
@@ -24,14 +23,16 @@ class CubesatGroup(Group):
         step_size = self.options['step_size']
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
+
         times = np.linspace(0., step_size * (num_times - 1), num_times)
-        
+
         comp = IndepVarComp()
         comp.add_output('times', val=times)
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         group = AttitudeGroup(
             num_times=num_times,
+            step_size=step_size,
             num_cp=num_cp,
             cubesat=cubesat,
             mtx=mtx,

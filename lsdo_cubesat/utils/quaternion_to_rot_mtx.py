@@ -12,7 +12,7 @@ class QuaternionToRotMtx(ExplicitComponent):
         num_times = self.options['num_times']
 
         self.add_input('quaternions', shape=(4, num_times))
-        self.add_output('rot_mtx_b_i_3x3xn', shape=(3, 3, num_times))
+        self.add_output('rot_mtx_i_b_3x3xn', shape=(3, 3, num_times))
 
         mtx_indices = get_array_indices(*(3, 3, num_times))
         A = mtx_indices.flatten()
@@ -24,31 +24,33 @@ class QuaternionToRotMtx(ExplicitComponent):
         E = np.tile(D, 9)
         cols = E.flatten()
 
-        self.declare_partials(
-            'rot_mtx_b_i_3x3xn', 'quaternions', rows=rows, cols=cols)
+        self.declare_partials('rot_mtx_i_b_3x3xn',
+                              'quaternions',
+                              rows=rows,
+                              cols=cols)
 
     def compute(self, inputs, outputs):
         q = inputs['quaternions']
-        outputs['rot_mtx_b_i_3x3xn'][
-            0, 0, :] = 1 - 2 * (q[2, :]**2 + q[3, :]**2)
-        outputs['rot_mtx_b_i_3x3xn'][
-            0, 1, :] = 2 * (q[1, :] * q[2, :] + q[0, :] * q[3, :])
-        outputs['rot_mtx_b_i_3x3xn'][
-            0, 2, :] = 2 * (q[1, :] * q[3, :] - q[0, :] * q[2, :])
+        outputs['rot_mtx_i_b_3x3xn'][0,
+                                     0, :] = 1 - 2 * (q[2, :]**2 + q[3, :]**2)
+        outputs['rot_mtx_i_b_3x3xn'][0, 1, :] = 2 * (q[1, :] * q[2, :] +
+                                                     q[0, :] * q[3, :])
+        outputs['rot_mtx_i_b_3x3xn'][0, 2, :] = 2 * (q[1, :] * q[3, :] -
+                                                     q[0, :] * q[2, :])
 
-        outputs['rot_mtx_b_i_3x3xn'][
-            1, 0, :] = 2 * (q[1, :] * q[2, :] - q[0, :] * q[3, :])
-        outputs['rot_mtx_b_i_3x3xn'][
-            1, 1, :] = 1 - 2 * (q[1, :]**2 + q[3, :]**2)
-        outputs['rot_mtx_b_i_3x3xn'][
-            1, 2, :] = 2 * (q[2, :] * q[3, :] + q[0, :] * q[1, :])
+        outputs['rot_mtx_i_b_3x3xn'][1, 0, :] = 2 * (q[1, :] * q[2, :] -
+                                                     q[0, :] * q[3, :])
+        outputs['rot_mtx_i_b_3x3xn'][1,
+                                     1, :] = 1 - 2 * (q[1, :]**2 + q[3, :]**2)
+        outputs['rot_mtx_i_b_3x3xn'][1, 2, :] = 2 * (q[2, :] * q[3, :] +
+                                                     q[0, :] * q[1, :])
 
-        outputs['rot_mtx_b_i_3x3xn'][
-            2, 0, :] = 2 * (q[1, :] * q[3, :] + q[0, :] * q[2, :])
-        outputs['rot_mtx_b_i_3x3xn'][
-            2, 1, :] = 2 * (q[2, :] * q[3, :] - q[0, :] * q[1, :])
-        outputs['rot_mtx_b_i_3x3xn'][
-            2, 2, :] = 1 - 2 * (q[1, :]**2 + q[2, :]**2)
+        outputs['rot_mtx_i_b_3x3xn'][2, 0, :] = 2 * (q[1, :] * q[3, :] +
+                                                     q[0, :] * q[2, :])
+        outputs['rot_mtx_i_b_3x3xn'][2, 1, :] = 2 * (q[2, :] * q[3, :] -
+                                                     q[0, :] * q[1, :])
+        outputs['rot_mtx_i_b_3x3xn'][2,
+                                     2, :] = 1 - 2 * (q[1, :]**2 + q[2, :]**2)
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
@@ -102,7 +104,7 @@ class QuaternionToRotMtx(ExplicitComponent):
         dRdq[8, :, 1] = -4 * q[1, :]
         dRdq[8, :, 2] = -4 * q[2, :]
 
-        partials['rot_mtx_b_i_3x3xn', 'quaternions'] = dRdq.flatten()
+        partials['rot_mtx_i_b_3x3xn', 'quaternions'] = dRdq.flatten()
 
 
 if __name__ == '__main__':
@@ -117,13 +119,11 @@ if __name__ == '__main__':
             # q /= np.einsum(
             #     'i,j->ij', np.ones(4), np.linalg.norm(q, axis=0, ord=2))
             inputs = IndepVarComp()
-            inputs.add_output(
-                'quaternions', val=q, shape=(4, num_times))
+            inputs.add_output('quaternions', val=q, shape=(4, num_times))
             self.add_subsystem('inputs', inputs, promotes=['*'])
-            self.add_subsystem(
-                'q2RotMtx',
-                QuaternionToRotMtx(num_times=num_times),
-                promotes=['*'])
+            self.add_subsystem('q2RotMtx',
+                               QuaternionToRotMtx(num_times=num_times),
+                               promotes=['*'])
 
     prob = Problem()
     prob.model = TestGroup()
