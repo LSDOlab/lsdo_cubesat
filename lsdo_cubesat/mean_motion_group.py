@@ -1,9 +1,57 @@
 import numpy as np
 
 from openmdao.api import Group
-from lsdo_utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp
-from lsdo_cubesat.utils.cross_product_comp import CrossProductComp
+from lsdo_utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
 from lsdo_cubesat.utils.norm_comp import NormComp
+
+
+class NormGroup(Group):
+    def initialize(self):
+        self.options.declare('shape')
+        self.options.declare('in_name')
+        self.options.declare('out_name')
+        self.options.declare('axis')
+
+    def setup(self):
+        shape = self.options['shape']
+        in_name = self.options['in_name']
+        out_name = self.options['out_name']
+        axis = self.options['axis']
+
+        self.add_subsystem(
+            'compute_square',
+            PowerCombinationComp(
+                shape=shape,
+                out_name='{}_squared'.format(in_name),
+                powers_dict={
+                    in_name: 2.,
+                },
+            ),
+            promotes=['*'],
+        )
+
+        self.add_subsystem(
+            'compute_sum',
+            ArrayContractionComp(
+                shape=shape,
+                contract_indices=[0],
+                in_name='{}_squared'.format(in_name),
+                out_name='sum_{}_squared'.format(in_name),
+            ),
+            promotes=['*'],
+        )
+
+        self.add_subsystem(
+            'compute_square_root',
+            PowerCombinationComp(
+                shape=(num_times, ),
+                out_name=out_name,
+                powers_dict={
+                    'sum_{}_squared'.format(in_name): 0.5,
+                },
+            ),
+            promotes=['*'],
+        )
 
 
 class MeanMotionGroup(Group):
@@ -15,9 +63,12 @@ class MeanMotionGroup(Group):
         self.add_subsystem(
             'compute_sp_ang_momentum',
             CrossProductComp(
-                n=num_times,
-                first='position_km',
-                second='velocity_km_s',
+                shape_no_3=(num_times, ),
+                in1_index=0,
+                in2_index=0,
+                out_index=0,
+                in1_name='position_km',
+                in2_name='velocity_km_s',
                 out_name='sp_ang_momentum_vec',
             ),
             promotes=['*'],
@@ -25,7 +76,7 @@ class MeanMotionGroup(Group):
 
         self.add_subsystem(
             'compute_sp_ang_momentum_mag',
-            NormComp(
+            NormGroup(
                 shape=(
                     3,
                     num_times,
@@ -52,7 +103,7 @@ class MeanMotionGroup(Group):
 
         self.add_subsystem(
             'compute_position_mag',
-            NormComp(
+            NormGroup(
                 shape=(
                     3,
                     num_times,
@@ -92,9 +143,12 @@ class MeanMotionGroup(Group):
         self.add_subsystem(
             'compute_v_cross_h',
             CrossProductComp(
-                n=num_times,
-                first='velocity_km_s',
-                second='sp_ang_momentum_vec',
+                shape_no_3=(num_times, ),
+                in1_index=0,
+                in2_index=0,
+                out_index=0,
+                in1_name='velocity_km_s',
+                in2_name='sp_ang_momentum_vec',
                 out_name='vel_cross_sp_ang_momentum',
             ),
             promotes=['*'],
@@ -141,7 +195,7 @@ class MeanMotionGroup(Group):
 
         self.add_subsystem(
             'compute_eccentricity',
-            NormComp(
+            NormGroup(
                 shape=(
                     3,
                     num_times,
@@ -170,41 +224,41 @@ class MeanMotionGroup(Group):
             promotes=['*'],
         )
 
-        # self.add_subsystem(
-        #     'compute_semimajor_axis',
-        #     PowerCombinationComp(
-        #         shape=(num_times, ),
-        #         out_name='semimajor_axis',
-        #         powers_dict=dict(
-        #             semi_latus_rectum=1.,
-        #             semimajor_axis_denominator=-1.,
-        #         ),
-        #     ),
-        #     promotes=['*'],
-        # )
+        self.add_subsystem(
+            'compute_semimajor_axis',
+            PowerCombinationComp(
+                shape=(num_times, ),
+                out_name='semimajor_axis',
+                powers_dict=dict(
+                    semi_latus_rectum=1.,
+                    semimajor_axis_denominator=-1.,
+                ),
+            ),
+            promotes=['*'],
+        )
 
-        # self.add_subsystem(
-        #     'compute_mean_motion_squared',
-        #     PowerCombinationComp(
-        #         shape=(num_times, ),
-        #         out_name='mean_motion_squared',
-        #         powers_dict=dict(
-        #             mu=1.,
-        #             semimajor_axis=-3.,
-        #         ),
-        #     ),
-        #     promotes=['*'],
-        # )
+        self.add_subsystem(
+            'compute_mean_motion_squared',
+            PowerCombinationComp(
+                shape=(num_times, ),
+                out_name='mean_motion_squared',
+                powers_dict=dict(
+                    mu=1.,
+                    semimajor_axis=-3.,
+                ),
+            ),
+            promotes=['*'],
+        )
 
-        # self.add_subsystem(
-        #     'compute_mean_motion',
-        #     PowerCombinationComp(
-        #         shape=(num_times, ),
-        #         out_name='mean_motion',
-        #         powers_dict=dict(mean_motion_squared=0.5, ),
-        #     ),
-        #     promotes=['*'],
-        # )
+        self.add_subsystem(
+            'compute_osculating_mean_motion',
+            PowerCombinationComp(
+                shape=(num_times, ),
+                out_name='osculating_mean_motion',
+                powers_dict=dict(mean_motion_squared=0.5, ),
+            ),
+            promotes=['*'],
+        )
 
 
 if __name__ == '__main__':
