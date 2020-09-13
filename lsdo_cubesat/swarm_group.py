@@ -1,4 +1,4 @@
-from openmdao.api import Group, ExecComp
+from openmdao.api import Group, ExecComp, NonlinearBlockGS, LinearBlockGS
 
 from lsdo_utils.api import get_bspline_mtx
 from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
@@ -7,6 +7,8 @@ from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
+import numpy as np
+from lsdo_cubesat.solar.smt_exposure import smt_exposure
 
 
 class SwarmGroup(Group):
@@ -29,6 +31,15 @@ class SwarmGroup(Group):
         )
         self.add_subsystem('reference_orbit_group', group, promotes=['*'])
 
+        # load training data
+        az = np.genfromtxt('data/arrow_xData.csv', delimiter=',')
+        el = np.genfromtxt('data/arrow_yData.csv', delimiter=',')
+        yt = np.genfromtxt('data/arrow_zData.csv', delimiter=',')
+
+        # generate surrogate model with 20 training points
+        # must be the same as the number of points used to create model
+        sm = smt_exposure(20, az, el, yt)
+
         for cubesat in swarm.children:
             name = cubesat['name']
             for Ground_station in cubesat.children:
@@ -39,7 +50,10 @@ class SwarmGroup(Group):
                     cubesat=cubesat,
                     mtx=mtx,
                     Ground_station=Ground_station,
+                    sm=sm,
                 )
+                # group.nonlinear_solver = NonlinearBlockGS()
+                # group.linear_solver = LinearBlockGS()
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 
         group = AlignmentGroup(

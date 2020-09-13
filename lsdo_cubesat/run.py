@@ -12,7 +12,7 @@ num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 0:
+if 1:
     num_times = 30
     num_cp = 3
     # step_size = 50.
@@ -209,9 +209,9 @@ prob.setup(check=True)
 # prob.model.list_outputs()
 # prob.model.swarm_group.sunshade_cubesat_group.list_outputs(prom_name=True)
 
+print('setup complete')
 # prob.run_driver()
+prob.mode = 'run_driver'
 prob.run()
 # prob.run_model()
 # prob.check_partials(compact_print=True)
-
-
