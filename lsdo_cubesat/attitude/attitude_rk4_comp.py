@@ -181,33 +181,25 @@ class AttitudeRK4Comp(RK4Comp):
         dfdy[:3, :3] = d_wdot_dw
 
         # angular acceleration wrt quaternions (due to gravity torque)
-        R11 = 1 - 2 * (q[2]**2 + q[3]**2)
-        R21 = 2 * (q[1] * q[2] - q[3] * q[0])
-        R31 = 2 * (q[3] * q[1] + q[2] * q[0])
+        R11 = 1 - 2.0 * (q[2]**2 + q[3]**2)
+        R21 = 2.0 * (q[1] * q[2] - q[3] * q[0])
+        R31 = 2.0 * (q[3] * q[1] + q[2] * q[0])
 
         dR11_dq = np.zeros(4)
-        dR11_dq[2] = -4 * q[2]
-        dR11_dq[3] = -4 * q[3]
+        dR11_dq[2] = -4.0 * q[3]
+        dR11_dq[3] = -4.0 * q[2]
 
         dR21_dq = np.zeros(4)
-        # dR21_dq[0] = -2 * q[3]
-        # dR21_dq[1] = 2 * q[2]
-        # dR21_dq[2] = 2 * q[1]
-        # dR21_dq[3] = -2 * q[0]
-        dR21_dq[0] = -2 * q[0]
-        dR21_dq[1] = 2 * q[1]
-        dR21_dq[2] = 2 * q[2]
-        dR21_dq[3] = -2 * q[3]
+        dR21_dq[0] = -2.0 * q[3]
+        dR21_dq[1] = 2.0 * q[2]
+        dR21_dq[2] = 2.0 * q[1]
+        dR21_dq[3] = -2.0 * q[0]
 
         dR31_dq = np.zeros(4)
-        # dR31_dq[0] = 2 * q[2]
-        # dR31_dq[1] = 2 * q[3]
-        # dR31_dq[2] = 2 * q[0]
-        # dR31_dq[3] = 2 * q[1]
-        dR31_dq[0] = 2 * q[0]
-        dR31_dq[1] = 2 * q[1]
-        dR31_dq[2] = 2 * q[2]
-        dR31_dq[3] = 2 * q[3]
+        dR31_dq[0] = 2.0 * q[2]
+        dR31_dq[1] = 2.0 * q[3]
+        dR31_dq[2] = 2.0 * q[0]
+        dR31_dq[3] = 2.0 * q[1]
 
         # state_dot[0] += -3 * osculating_mean_motion**2 * K[0] * R21 * R31
         # state_dot[1] += -3 * osculating_mean_motion**2 * K[1] * R31 * R11
@@ -285,8 +277,6 @@ class AttitudeRK4Comp(RK4Comp):
         dfdx[1, 1] = 1.0
         dfdx[2, 2] = 1.0
 
-        # TODO: add drag force, which does depend on s/c orientation
-
         return dfdx
 
 
@@ -300,7 +290,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
     h = 1.5e-4
-    num_times = 200
+    num_times = 50
     # CADRE mass props (3U)
     # Region 6 (unstable under influence of gravity)
     # I = np.array([18, 18, 6]) * 1e-3
@@ -315,16 +305,17 @@ if __name__ == '__main__':
     # wq0 = np.array([-0.3, -1, 0.2, 0, 0, 0, 1])
     # wq0 = np.array([-0.3, -0.2, 1, 0, 0, 0, 1])
 
-    # wq0[3:] = np.random.rand(4)
-    # wq0 = np.random.rand(7)
+    wq0 = np.random.rand(7)
     wq0[3:] /= np.linalg.norm(wq0[3:])
 
     class TestGroup(Group):
         def setup(self):
             comp = IndepVarComp()
-            comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
+            comp.add_output('mass_moment_inertia_b_frame_km_m2',
+                            val=np.random.rand(3))
             comp.add_output('initial_angular_velocity_orientation', val=wq0)
-            comp.add_output('osculating_mean_motion', val=np.ones(num_times))
+            comp.add_output('osculating_mean_motion',
+                            val=np.random.rand(num_times))
             comp.add_output(
                 'external_torques_x',
                 val=np.random.rand(num_times),
