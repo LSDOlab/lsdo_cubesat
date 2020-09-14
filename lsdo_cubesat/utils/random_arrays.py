@@ -2,10 +2,9 @@ import numpy as np
 
 
 def make_random_bounded_array(n, bound):
-    rba = np.random.rand(n)
-    b1 = (rba > bound).astype(int)
-    b2 = (rba < -bound).astype(int)
-    rba *= b1 * b2
+    rba = np.random.rand(n) - 0.5
+    m = np.amax(np.absolute(rba))
+    rba *= (bound - 0.000001) / m
     return rba
 
 
