@@ -2,8 +2,8 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, ExecComp
 
-# from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
-from lsdo_cubesat.attitude.old.attitude_group import AttitudeGroup
+from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
+# from lsdo_cubesat.attitude.old.attitude_group import AttitudeGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup

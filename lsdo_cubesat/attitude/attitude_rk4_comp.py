@@ -291,7 +291,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
     h = 1.5e-2
-    num_times = 1000
+    num_times = 50
     # CADRE mass props (3U)
     # Region 6 (unstable under influence of gravity)
     # I = np.array([18, 18, 6]) * 1e-3
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     # wq0 = np.array([-0.3, -1, 0.2, 0, 0, 0, 1])
     # wq0 = np.array([-0.3, -0.2, 1, 0, 0, 0, 1])
 
-    wq0 = np.random.rand(7)
+    wq0 = np.random.rand(7) - 0.5
     wq0[3:] /= np.linalg.norm(wq0[3:])
 
     class TestGroup(Group):
@@ -315,19 +315,28 @@ if __name__ == '__main__':
             comp.add_output('mass_moment_inertia_b_frame_km_m2',
                             val=np.random.rand(3))
             comp.add_output('initial_angular_velocity_orientation', val=wq0)
-            comp.add_output('osculating_mean_motion',
-                            val=np.random.rand(num_times))
+            comp.add_output(
+                'osculating_mean_motion',
+                val=1,
+                shape=(1, num_times),
+            )
             comp.add_output(
                 'external_torques_x',
                 val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
+                shape=(1, num_times),
             )
             comp.add_output(
                 'external_torques_y',
                 val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
+                shape=(1, num_times),
             )
             comp.add_output(
                 'external_torques_z',
                 val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
+                shape=(1, num_times),
             )
             self.add_subsystem('inputs_comp', comp, promotes=['*'])
             self.add_subsystem('inertia_ratios_comp',
