@@ -41,24 +41,24 @@ class SolarExposure(ExplicitComponent):
         r = inputs['roll']
         p = inputs['pitch']
 
-        r = np.sign(r) * np.mod(r, np.pi)
-        p = np.sign(p) * np.mod(p, np.pi / 2)
+        # r = np.sign(r) * np.mod(r, np.pi)
+        # p = np.sign(p) * np.mod(p, np.pi / 2)
 
-        quitfn = False
-        if np.any(r > np.pi) or np.any(np.any(r < -np.pi)):
-            print('ROLL OUT OF BOUNDS')
-            print(np.amin(r))
-            print(np.amax(r))
-            print(r)
-            quitfn = True
-        if np.any(p > np.pi / 2) or np.any(np.any(p < -np.pi / 2)):
-            print('PITCH OUT OF BOUNDS')
-            print(np.amin(p))
-            print(np.amax(p))
-            print(p)
-            quitfn = True
-        if quitfn:
-            exit()
+        # quitfn = False
+        # if np.any(r > np.pi) or np.any(np.any(r < -np.pi)):
+        #     print('ROLL OUT OF BOUNDS')
+        #     print(np.amin(r))
+        #     print(np.amax(r))
+        #     print(r)
+        #     quitfn = True
+        # if np.any(p > np.pi / 2) or np.any(np.any(p < -np.pi / 2)):
+        #     print('PITCH OUT OF BOUNDS')
+        #     print(np.amin(p))
+        #     print(np.amax(p))
+        #     print(p)
+        #     quitfn = True
+        # if quitfn:
+        #     exit()
         rp = np.concatenate(
             (
                 r.reshape(num_times, 1),
@@ -69,11 +69,11 @@ class SolarExposure(ExplicitComponent):
         self.a = np.maximum(self.sm.predict_values(rp), 0)
         outputs['sunlit_area'] = self.a
         # outputs['sunlit_area'] = self.sm.predict_values(rp)
-        if np.any(outputs['sunlit_area'] >= 1) or np.any(
-                outputs['sunlit_area'] < 0):
-            print('SUNLIT AREA OUT OF BOUNDS')
-            print(outputs['sunlit_area'])
-            # exit()
+        # if np.any(outputs['sunlit_area'] >= 1) or np.any(
+        #         outputs['sunlit_area'] < 0):
+        #     print('SUNLIT AREA OUT OF BOUNDS')
+        #     print(outputs['sunlit_area'])
+        # exit()
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
@@ -91,14 +91,18 @@ class SolarExposure(ExplicitComponent):
             rp,
             0,
         )
-        ar[np.where(self.a < 0)] = 0
+        ind = np.where(self.a < 0)
+        if len(ind) > 0:
+            ar[ind] = 0
         partials['sunlit_area', 'roll'] = ar.flatten()
 
         ap = self.sm.predict_derivatives(
             rp,
             1,
         )
-        ap[np.where(self.a < 0)] = 0
+        ind = np.where(self.a < 0)
+        if len(ind) > 0:
+            ap[ind] = 0
         partials['sunlit_area', 'pitch'] = ap.flatten()
 
 

@@ -291,7 +291,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
     h = 1.5e-2
-    num_times = 50
+    num_times = 1001
     # CADRE mass props (3U)
     # Region 6 (unstable under influence of gravity)
     # I = np.array([18, 18, 6]) * 1e-3
@@ -322,19 +322,22 @@ if __name__ == '__main__':
             )
             comp.add_output(
                 'external_torques_x',
-                val=make_random_bounded_array(num_times, bound=1),
+                val=make_random_bounded_array(num_times, bound=1).reshape(
+                    (1, num_times)),
                 # val=0,
                 shape=(1, num_times),
             )
             comp.add_output(
                 'external_torques_y',
-                val=make_random_bounded_array(num_times, bound=1),
+                val=make_random_bounded_array(num_times, bound=1).reshape(
+                    (1, num_times)),
                 # val=0,
                 shape=(1, num_times),
             )
             comp.add_output(
                 'external_torques_z',
-                val=make_random_bounded_array(num_times, bound=1),
+                val=make_random_bounded_array(num_times, bound=1).reshape(
+                    (1, num_times)),
                 # val=0,
                 shape=(1, num_times),
             )

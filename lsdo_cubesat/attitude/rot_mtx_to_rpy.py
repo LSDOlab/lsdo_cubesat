@@ -61,9 +61,9 @@ class RotMtxToRollPitchYaw(ExplicitComponent):
         # (67)
         outputs['roll'] = np.arctan2(R[1, 2, :], R[2, 2, :])
 
-        if np.any(R[0, 2, :] > 1) or np.any(R[0, 2, :] < -1):
-            print('R[0, 2, :]')
-            print(R[0, 2, :])
+        # if np.any(R[0, 2, :] > 1) or np.any(R[0, 2, :] < -1):
+        #     print('R[0, 2, :]')
+        #     print(R[0, 2, :])
         outputs['pitch'] = -np.arcsin(R[0, 2, :])
         outputs['yaw'] = np.arctan2(R[0, 1, :], R[0, 0, :])
 

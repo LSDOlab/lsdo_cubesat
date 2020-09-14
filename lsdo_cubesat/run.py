@@ -12,7 +12,7 @@ num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 1:
+if 0:
     num_times = 30
     num_cp = 3
     # step_size = 50.
@@ -208,47 +208,81 @@ prob.setup(check=True)
 # prob.model.list_inputs()
 # prob.model.list_outputs()
 # prob.model.swarm_group.sunshade_cubesat_group.list_outputs(prom_name=True)
-
+prob.list_problem_vars()
 print('setup complete')
-prob.run_driver()
-# prob.mode = 'run_driver'
-# prob.run()
+# prob.run_driver()
+prob.mode = 'run_driver'
+prob.run()
 # prob.run_model()
 # prob.check_partials(compact_print=True)
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-for sc in ['sunshade', 'optics', 'detector']:
+# for sc in ['sunshade', 'optics', 'detector']:
 
-    ux = prob[sc + '_cubesat_group.external_torques_x']
-    uy = prob[sc + '_cubesat_group.external_torques_y']
-    uz = prob[sc + '_cubesat_group.external_torques_z']
-    plt.plot(ux)
-    plt.plot(uy)
-    plt.plot(uz)
-    plt.title(sc + ' external torques')
-    plt.show()
+#     print('ns')
+#     print(prob[sc + '_cubesat_group.num_series'])
+#     print('np')
+#     print(prob[sc + '_cubesat_group.num_parallel'])
+#     print('total_propellant_used')
+#     print(prob[sc + '_cubesat_group.total_propellant_used'])
 
-    roll = prob[sc + '_cubesat_group.roll']
-    pitch = prob[sc + '_cubesat_group.pitch']
-    yaw = prob[sc + '_cubesat_group.yaw']
-    plt.plot(roll)
-    plt.plot(pitch)
-    plt.plot(yaw)
-    # plt.title(sc + ' roll and pitch')
-    plt.title(sc + ' roll, pitch, and yaw')
-    plt.show()
+#     # print(prob['_cubesat_group.external_torques_x_cp'])
+#     # print(prob['_cubesat_group.external_torques_y_cp'])
+#     # print(prob['_cubesat_group.external_torques_z_cp'])
+#     # plt.plot(prob[sc + '_cubesat_group.thrust_scalar_mN_cp'])
+#     # plt.title(sc + ' thrust scalar')
+#     # plt.show()
 
-    orbit = prob[sc + '_cubesat_group.orbit_state_km'][:3, :]
-    plt.plot(orbit[0, :])
-    plt.plot(orbit[1, :])
-    plt.plot(orbit[2, :])
-    plt.title(sc + ' orbit x,y,z')
-    plt.show()
+#     # plt.plot(prob[sc + '_cubesat_group.UCSD_comm_group.P_comm_cp'])
+#     # plt.plot(prob[sc + '_cubesat_group.UIUC_comm_group.P_comm_cp'])
+#     # plt.plot(prob[sc + '_cubesat_group.Georgia_comm_group.P_comm_cp'])
+#     # plt.plot(prob[sc + '_cubesat_group.Montana_comm_group.P_comm_cp'])
+#     # plt.title(sc + ' P_comm_cp')
+#     # plt.show()
 
-    soc = prob[sc + '_cubesat_group.cell_model.soc']
-    plt.plot(soc.flatten())
-    plt.title(sc + ' soc')
-    plt.show()
-    print(soc.shape)
-    print(soc)
+#     # ux = prob[sc + '_cubesat_group.external_torques_x']
+#     # uy = prob[sc + '_cubesat_group.external_torques_y']
+#     # uz = prob[sc + '_cubesat_group.external_torques_z']
+#     # plt.plot(ux)
+#     # plt.plot(uy)
+#     # plt.plot(uz)
+#     # plt.title(sc + ' external torques')
+#     # plt.show()
+
+#     # ux = prob[sc + '_cubesat_group.external_torques_x_cp']
+#     # uy = prob[sc + '_cubesat_group.external_torques_y_cp']
+#     # uz = prob[sc + '_cubesat_group.external_torques_z_cp']
+#     # plt.plot(ux)
+#     # plt.plot(uy)
+#     # plt.plot(uz)
+#     # plt.title(sc + ' external torques (ctrl pts)')
+#     # plt.show()
+
+#     # roll = prob[sc + '_cubesat_group.roll']
+#     # pitch = prob[sc + '_cubesat_group.pitch']
+#     # yaw = prob[sc + '_cubesat_group.yaw']
+#     # plt.plot(roll)
+#     # plt.plot(pitch)
+#     # plt.plot(yaw)
+#     # # plt.title(sc + ' roll and pitch')
+#     # plt.title(sc + ' roll, pitch, and yaw')
+#     # plt.show()
+
+#     # orbit = prob[sc + '_cubesat_group.orbit_state_km'][:3, :]
+#     # plt.plot(orbit[0, :])
+#     # plt.plot(orbit[1, :])
+#     # plt.plot(orbit[2, :])
+#     # plt.title(sc + ' orbit x,y,z')
+#     # plt.show()
+
+#     # soc = prob[sc + '_cubesat_group.cell_model.soc']
+#     # plt.plot(soc.flatten())
+#     # plt.title(sc + ' soc')
+#     # plt.show()
+#     # print(soc.shape)
+#     # print(soc)
+
+#     print(prob['obj'])
+#     print('total_data_downloaded')
+#     print(prob['total_data_downloaded'])

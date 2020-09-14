@@ -33,9 +33,9 @@ class QuaternionToRotMtx(ExplicitComponent):
         q = inputs['normalized_quaternions']
 
         qnorm = np.linalg.norm(q, axis=0)
-        if np.any(np.absolute(qnorm - 1) > 0.000000001):
-            print('qnorm')
-            print(qnorm)
+        # if np.any(np.absolute(qnorm - 1) > 0.000000001):
+        #     print('qnorm')
+        #     print(qnorm)
 
         outputs['rot_mtx_b_i_3x3xn'][0,
                                      0, :] = 1 - 2 * (q[2, :]**2 + q[3, :]**2)
@@ -117,9 +117,10 @@ class QuaternionToRotMtx(ExplicitComponent):
 if __name__ == '__main__':
 
     from openmdao.api import Problem, Group, IndepVarComp
+    import matplotlib.pyplot as plt
     np.random.seed(0)
 
-    num_times = 100
+    num_times = 31
 
     q = np.random.rand(4, num_times)
     qnorm = np.linalg.norm(q, axis=0)
@@ -154,4 +155,21 @@ if __name__ == '__main__':
     #     np.sum(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=1)) -
     #     3 * num_times)
 
-    prob.check_partials(compact_print=True)
+    prob.setup(check=True, force_alloc_complex=True)
+    if num_times < 30:
+        prob.check_partials(compact_print=True)
+    else:
+        prob.run_model()
+        R = prob['rot_mtx_b_i_3x3xn']
+
+        fig = plt.figure()
+        plt.plot(R[0, 0, :])
+        plt.plot(R[0, 1, :])
+        plt.plot(R[0, 2, :])
+        plt.plot(R[1, 0, :])
+        plt.plot(R[1, 1, :])
+        plt.plot(R[1, 2, :])
+        plt.plot(R[2, 0, :])
+        plt.plot(R[2, 1, :])
+        plt.plot(R[2, 2, :])
+        plt.show()
