@@ -52,8 +52,8 @@ class SwarmGroup(Group):
                     Ground_station=Ground_station,
                     sm=sm,
                 )
-                # group.nonlinear_solver = NonlinearBlockGS()
-                # group.linear_solver = LinearBlockGS()
+                group.nonlinear_solver = NonlinearBlockGS()
+                group.linear_solver = LinearBlockGS()
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 
         group = AlignmentGroup(
