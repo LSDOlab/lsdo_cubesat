@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
 
-from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
+from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp, ArrayExpansionComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
@@ -45,13 +45,25 @@ class OrbitGroup(Group):
             comp.add_output(var_name, val=cubesat[var_name])
         self.add_subsystem('input_comp', comp, promotes=['*'])
 
-        # comp = InitialOrbitComp()
-        # self.add_subsystem('initial_orbit_comp', comp, promotes=['*'])
+        self.add_subsystem(
+            'expand_battery_mass',
+            ArrayExpansionComp(
+                shape=(1, num_times),
+                expand_indices=[1],
+                in_name='battery_mass',
+                out_name='battery_mass_exp',
+            ),
+            promotes=['*'],
+        )
 
         comp = LinearCombinationComp(
             shape=(num_times, ),
             out_name='mass',
-            coeffs_dict=dict(dry_mass=1., propellant_mass=1.),
+            coeffs_dict=dict(
+                dry_mass=1.,
+                propellant_mass=1.,
+                battery_mass_exp=1.,
+            ),
         )
         self.add_subsystem('mass_comp', comp, promotes=['*'])
 
@@ -131,11 +143,11 @@ class OrbitGroup(Group):
             coupled_group.add_subsystem('drag_3xn_comp', comp, promotes=['*'])
 
             coupled_group.nonlinear_solver = NonlinearBlockGS(iprint=0,
-                                                              maxiter=40,
+                                                              maxiter=100,
                                                               atol=1e-14,
                                                               rtol=1e-12)
             coupled_group.linear_solver = LinearBlockGS(iprint=0,
-                                                        maxiter=40,
+                                                        maxiter=100,
                                                         atol=1e-14,
                                                         rtol=1e-12)
 
