@@ -45,10 +45,6 @@ class CubesatGroup(Group):
 
         comp.add_output('times', units='s', val=times)
         comp.add_output('Initial_Data', val=np.zeros((1, )))
-        comp.add_output('num_series', val=1, shape=(1, ))
-        comp.add_output('num_parallel', val=1, shape=(1, ))
-        comp.add_design_var('num_series')
-        comp.add_design_var('num_parallel')
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         group = AttitudeGroup(
