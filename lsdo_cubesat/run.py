@@ -16,7 +16,7 @@ if 1:
     num_times = 30
     num_cp = 3
     # step_size = 50.
-    step_size = 95 * 60 / (num_times - 1)
+    step_size = 1e-5
 
 swarm = Swarm(
     num_times=num_times,
@@ -210,8 +210,45 @@ prob.setup(check=True)
 # prob.model.swarm_group.sunshade_cubesat_group.list_outputs(prom_name=True)
 
 print('setup complete')
-# prob.run_driver()
-prob.mode = 'run_driver'
-prob.run()
+prob.run_driver()
+# prob.mode = 'run_driver'
+# prob.run()
 # prob.run_model()
 # prob.check_partials(compact_print=True)
+
+import matplotlib.pyplot as plt
+
+for sc in ['sunshade', 'optics', 'detector']:
+
+    ux = prob[sc + '_cubesat_group.external_torques_x']
+    uy = prob[sc + '_cubesat_group.external_torques_y']
+    uz = prob[sc + '_cubesat_group.external_torques_z']
+    plt.plot(ux)
+    plt.plot(uy)
+    plt.plot(uz)
+    plt.title(sc + ' external torques')
+    plt.show()
+
+    roll = prob[sc + '_cubesat_group.roll']
+    pitch = prob[sc + '_cubesat_group.pitch']
+    yaw = prob[sc + '_cubesat_group.yaw']
+    plt.plot(roll)
+    plt.plot(pitch)
+    plt.plot(yaw)
+    # plt.title(sc + ' roll and pitch')
+    plt.title(sc + ' roll, pitch, and yaw')
+    plt.show()
+
+    orbit = prob[sc + '_cubesat_group.orbit_state_km'][:3, :]
+    plt.plot(orbit[0, :])
+    plt.plot(orbit[1, :])
+    plt.plot(orbit[2, :])
+    plt.title(sc + ' orbit x,y,z')
+    plt.show()
+
+    soc = prob[sc + '_cubesat_group.cell_model.soc']
+    plt.plot(soc.flatten())
+    plt.title(sc + ' soc')
+    plt.show()
+    print(soc.shape)
+    print(soc)
