@@ -145,7 +145,19 @@ class CubesatGroup(Group):
                                   rho=rho)
         self.add_subsystem('KS_Download_rate_comp', comp, promotes=['*'])
 
-        in_names = []
+        comp = ElementwiseMaxComp(
+            shape=shape,
+            in_names=[
+                'UCSD_comm_group_P_comm',
+                'UIUC_comm_group_P_comm',
+                'Georgia_comm_group_P_comm',
+                'Montana_comm_group_P_comm',
+            ],
+            out_name='KS_P_comm',
+            rho=rho,
+        )
+        self.add_subsystem('KS_P_comm_comp', comp, promotes=['*'])
+
         for Ground_station in cubesat.children:
             Ground_station_name = Ground_station['name']
 
@@ -154,31 +166,10 @@ class CubesatGroup(Group):
                 '{}_comm_group_Download_rate'.format(Ground_station_name),
             )
 
-            in_names.append('{}_comm_group_P_comm'.format(Ground_station_name))
-
-        self.add_subsystem(
-            'sum_P_Comm',
-            LinearCombinationComp(
-                shape=(num_times, ),
-                in_names=in_names,
-                out_name='sum_P_comm',
-                # coeffs=[cell_density, cell_density],
-                constant=0,
-            ),
-            promotes=['*'],
-        )
-
-        for Ground_station in cubesat.children:
-            Ground_station_name = Ground_station['name']
             self.connect(
                 '{}_comm_group.P_comm'.format(Ground_station_name),
                 '{}_comm_group_P_comm'.format(Ground_station_name),
             )
-
-            # self.connect(
-            #     '{}_comm_group.Download_rate'.format(Ground_station_name),
-            #     '{}_comm_group_Download_rate'.format(Ground_station_name),
-            # )
 
         baseline_power = 6.3
         self.add_subsystem(
@@ -187,7 +178,7 @@ class CubesatGroup(Group):
                 shape=(num_times, ),
                 in_names=[
                     'solar_power',
-                    'sum_P_comm',
+                    'KS_P_comm',
                 ],
                 out_name='battery_output_power',
                 coeffs=[-1, 1],
