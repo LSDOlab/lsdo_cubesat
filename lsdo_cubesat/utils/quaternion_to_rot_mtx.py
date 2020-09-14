@@ -11,7 +11,7 @@ class QuaternionToRotMtx(ExplicitComponent):
     def setup(self):
         num_times = self.options['num_times']
 
-        self.add_input('quaternions', shape=(4, num_times))
+        self.add_input('normalized_quaternions', shape=(4, num_times))
         self.add_output('rot_mtx_b_i_3x3xn', shape=(3, 3, num_times))
 
         mtx_indices = get_array_indices(*(3, 3, num_times))
@@ -25,12 +25,17 @@ class QuaternionToRotMtx(ExplicitComponent):
         cols = E.flatten()
 
         self.declare_partials('rot_mtx_b_i_3x3xn',
-                              'quaternions',
+                              'normalized_quaternions',
                               rows=rows,
                               cols=cols)
 
     def compute(self, inputs, outputs):
-        q = inputs['quaternions']
+        q = inputs['normalized_quaternions']
+
+        qnorm = np.linalg.norm(q, axis=0)
+        if np.any(np.absolute(qnorm - 1) > 0.000000001):
+            print('qnorm')
+            print(qnorm)
 
         outputs['rot_mtx_b_i_3x3xn'][0,
                                      0, :] = 1 - 2 * (q[2, :]**2 + q[3, :]**2)
@@ -55,7 +60,7 @@ class QuaternionToRotMtx(ExplicitComponent):
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
-        q = inputs['quaternions']
+        q = inputs['normalized_quaternions']
         dRdq = np.zeros(4 * 9 * num_times).reshape((9, num_times, 4))
         # R[0,0]
         dRdq[0, :, 2] = -4 * q[2, :]
@@ -105,7 +110,8 @@ class QuaternionToRotMtx(ExplicitComponent):
         dRdq[8, :, 1] = -4 * q[1, :]
         dRdq[8, :, 2] = -4 * q[2, :]
 
-        partials['rot_mtx_b_i_3x3xn', 'quaternions'] = dRdq.flatten()
+        partials['rot_mtx_b_i_3x3xn',
+                 'normalized_quaternions'] = dRdq.flatten()
 
 
 if __name__ == '__main__':
@@ -113,7 +119,7 @@ if __name__ == '__main__':
     from openmdao.api import Problem, Group, IndepVarComp
     np.random.seed(0)
 
-    num_times = 1
+    num_times = 100
 
     q = np.random.rand(4, num_times)
     qnorm = np.linalg.norm(q, axis=0)
@@ -123,7 +129,7 @@ if __name__ == '__main__':
     prob = Problem()
     inputs = IndepVarComp()
     inputs.add_output(
-        'quaternions',
+        'normalized_quaternions',
         val=q,
     )
     prob.model.add_subsystem(
@@ -137,13 +143,15 @@ if __name__ == '__main__':
         promotes=['*'],
     )
     prob.setup()
-    prob.run_model()
 
-    print(
-        np.sum(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=0)) -
-        3 * num_times)
-    print(
-        np.sum(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=1)) -
-        3 * num_times)
+    # prob.run_model()
+    # print(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=0))
+    # print(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=1))
+    # print(
+    #     np.sum(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=0)) -
+    #     3 * num_times)
+    # print(
+    #     np.sum(np.linalg.norm(prob['rot_mtx_b_i_3x3xn'], axis=1)) -
+    #     3 * num_times)
 
-    # prob.check_partials(compact_print=True)
+    prob.check_partials(compact_print=True)

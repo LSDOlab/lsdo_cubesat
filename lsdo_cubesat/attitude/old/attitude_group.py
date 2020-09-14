@@ -14,6 +14,7 @@ class AttitudeGroup(Group):
         self.options.declare('num_cp', types=int)
         self.options.declare('cubesat')
         self.options.declare('mtx')
+        self.options.declare('step_size', default=0.1, types=float)
 
     def setup(self):
         num_times = self.options['num_times']

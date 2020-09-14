@@ -59,11 +59,13 @@ class RotMtxToRollPitchYaw(ExplicitComponent):
 
         # https://www.astro.rug.nl/software/kapteyn-beta/_downloads/attitude.pdf
         # (67)
-        outputs['roll'] = np.arctan2(np.array(R[1, 2, :], dtype=float),
-                                     np.array(R[2, 2, :], dtype=float))
-        outputs['pitch'] = -np.arcsin(np.array(R[0, 2, :], dtype=float))
-        outputs['yaw'] = np.arctan2(np.array(R[0, 1, :], dtype=float),
-                                    np.array(R[0, 0, :], dtype=float))
+        outputs['roll'] = np.arctan2(R[1, 2, :], R[2, 2, :])
+
+        if np.any(R[0, 2, :] > 1) or np.any(R[0, 2, :] < -1):
+            print('R[0, 2, :]')
+            print(R[0, 2, :])
+        outputs['pitch'] = -np.arcsin(R[0, 2, :])
+        outputs['yaw'] = np.arctan2(R[0, 1, :], R[0, 0, :])
 
     def compute_partials(self, inputs, partials):
         mtx_name = self.options['mtx_name']
@@ -89,7 +91,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     # np.random.seed(0)
 
-    num_times = 1001
+    num_times = 500
 
     q = np.random.rand(4, num_times)
     qnorm = np.linalg.norm(q, axis=0)
