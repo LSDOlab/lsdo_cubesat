@@ -28,8 +28,8 @@ def smt_exposure(nt, az, el, yt):
         xlimits=xlimits,
         order=4,
         num_ctrl_pts=20,
-        energy_weight=1e-15,
-        regularization_weight=0.0,
+        energy_weight=1e-7,
+        regularization_weight=1e-7,
         print_global=False,
     )
 
