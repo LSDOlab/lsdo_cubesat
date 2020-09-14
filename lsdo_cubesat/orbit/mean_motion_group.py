@@ -3,6 +3,7 @@ import numpy as np
 from openmdao.api import Group, IndepVarComp
 from lsdo_utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
 from lsdo_cubesat.utils.norm import NormGroup
+from lsdo_cubesat.utils.random_arrays import make_random_signed_array, make_random_bounded_array
 
 
 class MeanMotionGroup(Group):
@@ -176,10 +177,7 @@ class MeanMotionGroup(Group):
                 shape=(num_times, ),
                 out_name='semimajor_axis_denominator',
                 terms_list=[
-                    (
-                        -1.0,
-                        dict(eccentricity=2., ),
-                    ),
+                    (-1.0, dict(eccentricity=2., )),
                 ],
                 constant=1,
             ),
@@ -228,12 +226,15 @@ if __name__ == '__main__':
     from openmdao.api import Problem, IndepVarComp
 
     np.random.seed(0)
+    num_times = 100
 
-    num_times = 10
+    leo = np.abs(np.random.rand(3, num_times)) * 10 + 6371 + 150
+
     comp = IndepVarComp()
-    comp.add_output('position_km', val=np.abs(np.random.rand(3, num_times)))
+    comp.add_output('position_km', val=leo)
     comp.add_output('velocity_km_s', val=np.random.rand(3, num_times))
-    # comp.add_output('eccentricity', val=np.ones(num_times))
+    # comp.add_output('eccentricity',
+    #                 val=make_random_signed_array(num_times, sgn=1, bound=1))
 
     prob = Problem()
     prob.model.add_subsystem(
