@@ -286,11 +286,12 @@ if __name__ == '__main__':
     from openmdao.api import IndepVarComp
     from lsdo_utils.api import ArrayExpansionComp
     from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
+    from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
     import matplotlib.pyplot as plt
 
     np.random.seed(0)
-    h = 1.5e-4
-    num_times = 50
+    h = 1.5e-2
+    num_times = 1000
     # CADRE mass props (3U)
     # Region 6 (unstable under influence of gravity)
     # I = np.array([18, 18, 6]) * 1e-3
@@ -318,15 +319,15 @@ if __name__ == '__main__':
                             val=np.random.rand(num_times))
             comp.add_output(
                 'external_torques_x',
-                val=np.random.rand(num_times),
+                val=make_random_bounded_array(num_times, bound=1),
             )
             comp.add_output(
                 'external_torques_y',
-                val=np.random.rand(num_times),
+                val=make_random_bounded_array(num_times, bound=1),
             )
             comp.add_output(
                 'external_torques_z',
-                val=np.random.rand(num_times),
+                val=make_random_bounded_array(num_times, bound=1),
             )
             self.add_subsystem('inputs_comp', comp, promotes=['*'])
             self.add_subsystem('inertia_ratios_comp',
@@ -348,20 +349,26 @@ if __name__ == '__main__':
     prob = Problem()
     prob.model = TestGroup()
     prob.setup(check=True, force_alloc_complex=True)
-    prob.check_partials(compact_print=True)
+    if num_times < 1000:
+        prob.check_partials(compact_print=True)
+    else:
+        prob.run_model()
+        w = prob['angular_velocity_orientation'][:3, :]
+        q = prob['angular_velocity_orientation'][3:, :]
 
-    # omega = prob['angular_velocity_orientation'][:3]
-    # q = prob['angular_velocity_orientation'][3:]
-    # t = np.arange(num_times) * h
-    # plt.plot(t, omega[0, :])
-    # plt.plot(t, omega[1, :])
-    # plt.plot(t, omega[2, :])
-    # plt.show()
-    # plt.plot(t, q[0, :])
-    # plt.plot(t, q[1, :])
-    # plt.plot(t, q[2, :])
-    # plt.plot(t, q[3, :])
-    # plt.show()
+        fig = plt.figure()
+        t = np.arange(num_times) * h
+
+        plt.plot(t, w[0, :])
+        plt.plot(t, w[1, :])
+        plt.plot(t, w[2, :])
+        plt.show()
+
+        plt.plot(t, q[0, :])
+        plt.plot(t, q[1, :])
+        plt.plot(t, q[2, :])
+        plt.plot(t, q[3, :])
+        plt.show()
 
     # # Polhode plot
     # from mpl_toolkits.mplot3d import Axes3D

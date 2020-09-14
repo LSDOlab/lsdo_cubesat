@@ -7,6 +7,7 @@ from lsdo_utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp, 
 # from lsdo_cubesat.utils.rot_mtx_to_quaternion import RotMtxToQuaternion
 from lsdo_cubesat.utils.quaternion_to_rot_mtx import QuaternionToRotMtx
 from lsdo_cubesat.utils.finite_difference_comp import FiniteDifferenceComp
+from lsdo_cubesat.utils.normalize_last_quaternion import NormalizeLastQuaternion
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
 from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
@@ -92,7 +93,14 @@ class AttitudeGroup(Group):
                 angular_velocity_orientation='angular_velocity_orientation',
                 angular_velocity_name='angular_velocity',
                 quaternion_name='quaternions'),
-            promotes=['*'])
+            promotes=['*'],
+        )
+
+        self.add_subsystem(
+            'normalize_last_quaternion',
+            NormalizeLastQuaternion(num_times=num_times, ),
+            promotes=['*'],
+        )
 
         # Compute rotation matrix
         self.add_subsystem('rot_mtx_b_i_3x3xn_comp',
