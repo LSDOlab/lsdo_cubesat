@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import openmdao.api as om
 
@@ -8,11 +9,17 @@ from lsdo_viz.api import Problem
 from lsdo_cubesat.api import Swarm, Cubesat, SwarmGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
 
+add_battery = False
+new_attitude = False
+optimize_plant = False
+if optimize_plant:
+    add_battery = True
+
 num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 0:
+if 1:
     num_times = 30
     num_cp = 3
     # step_size = 50.
@@ -210,8 +217,95 @@ prob.setup(check=True)
 # prob.model.swarm_group.sunshade_cubesat_group.list_outputs(prom_name=True)
 
 # prob.run_driver()
+prob.mode = 'run_driver'
 prob.run()
 # prob.run_model()
 # prob.check_partials(compact_print=True)
 
+orbit = {}
+for sc in ['sunshade', 'optics', 'detector']:
+    if add_battery:
+        print(sc + '_cubesat_group.num_series')
+        print(prob[sc + '_cubesat_group.num_series'])
+        print(sc + '_cubesat_group.num_parallel')
+        print(prob[sc + '_cubesat_group.num_parallel'])
+        print(sc + '_cubesat_group.cell_model.min_soc')
+        print(prob[sc + '_cubesat_group.cell_model.min_soc'])
+        print(sc + '_cubesat_group.cell_model.max_soc')
+        print(prob[sc + '_cubesat_group.cell_model.max_soc'])
+        print(sc + '_soc')
+        print(prob[sc + '_cubesat_group.cell_model.soc'])
+        plt.plot(prob[sc + '_cubesat_group.cell_model.soc'])
+        plt.title(sc + ' soc')
+        plt.show()
 
+    print(sc + '_cubesat_group.total_propellant_used')
+    print(prob[sc + '_cubesat_group.total_propellant_used'])
+
+    plt.plot(prob[sc + '_cubesat_group.thrust_scalar_mN_cp'])
+    plt.title(sc + ' thrust scalar (ctrl pts)')
+    plt.show()
+
+    plt.plot(prob[sc + '_cubesat_group.UCSD_comm_group.P_comm_cp'])
+    plt.plot(prob[sc + '_cubesat_group.UIUC_comm_group.P_comm_cp'])
+    plt.plot(prob[sc + '_cubesat_group.Georgia_comm_group.P_comm_cp'])
+    plt.plot(prob[sc + '_cubesat_group.Montana_comm_group.P_comm_cp'])
+    plt.title(sc + ' P_comm_cp')
+    plt.show()
+
+    if new_attitude:
+        ux = prob[sc + '_cubesat_group.external_torques_x']
+        uy = prob[sc + '_cubesat_group.external_torques_y']
+        uz = prob[sc + '_cubesat_group.external_torques_z']
+        plt.plot(ux)
+        plt.plot(uy)
+        plt.plot(uz)
+        plt.title(sc + ' external torques')
+        plt.show()
+
+        ux = prob[sc + '_cubesat_group.external_torques_x_cp']
+        uy = prob[sc + '_cubesat_group.external_torques_y_cp']
+        uz = prob[sc + '_cubesat_group.external_torques_z_cp']
+        plt.plot(ux)
+        plt.plot(uy)
+        plt.plot(uz)
+        plt.title(sc + ' external torques (ctrl pts)')
+        plt.show()
+
+    roll = prob[sc + '_cubesat_group.roll']
+    pitch = prob[sc + '_cubesat_group.pitch']
+    plt.plot(roll)
+    plt.plot(pitch)
+
+    if new_attitude:
+        yaw = prob[sc + '_cubesat_group.yaw']
+        plt.plot(yaw)
+        plt.title(sc + ' roll, pitch, and yaw')
+    else:
+        plt.title(sc + ' roll and pitch')
+    plt.show()
+
+    orbit[sc] = prob[sc + '_cubesat_group.orbit_state_km'][:3, :]
+
+plt.plot(np.absolute(orbit['sunshade'][0, :] - orbit['detector'][0, :]))
+plt.plot(np.absolute(orbit['sunshade'][0, :] - orbit['optics'][0, :]))
+plt.plot(np.absolute(orbit['detector'][0, :] - orbit['optics'][0, :]))
+plt.title(sc + ' orbit x')
+plt.show()
+
+plt.plot(np.absolute(orbit['sunshade'][1, :] - orbit['detector'][1, :]))
+plt.plot(np.absolute(orbit['sunshade'][1, :] - orbit['optics'][1, :]))
+plt.plot(np.absolute(orbit['detector'][1, :] - orbit['optics'][1, :]))
+plt.title(sc + ' orbit y')
+plt.show()
+
+plt.plot(np.absolute(orbit['sunshade'][2, :] - orbit['detector'][2, :]))
+plt.plot(np.absolute(orbit['sunshade'][2, :] - orbit['optics'][2, :]))
+plt.plot(np.absolute(orbit['detector'][2, :] - orbit['optics'][2, :]))
+plt.title(sc + ' orbit z')
+plt.show()
+
+print('obj')
+print(prob['obj'])
+print('total_data_downloaded')
+print(prob['total_data_downloaded'])
