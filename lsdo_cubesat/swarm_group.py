@@ -1,3 +1,4 @@
+import numpy as np
 from openmdao.api import Group, ExecComp
 
 from lsdo_utils.api import get_bspline_mtx
@@ -7,11 +8,13 @@ from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.solar.smt_exposure import smt_exposure
 
 
 class SwarmGroup(Group):
     def initialize(self):
         self.options.declare('swarm')
+        self.options.declare('add_battery', types=bool)
 
     def setup(self):
         swarm = self.options['swarm']
@@ -19,6 +22,7 @@ class SwarmGroup(Group):
         num_times = swarm['num_times']
         num_cp = swarm['num_cp']
         step_size = swarm['step_size']
+        add_battery = self.options['add_battery']
         mtx = get_bspline_mtx(num_cp, num_times, order=4)
 
         group = ReferenceOrbitGroup(
@@ -28,6 +32,23 @@ class SwarmGroup(Group):
             cubesat=swarm.children[0],
         )
         self.add_subsystem('reference_orbit_group', group, promotes=['*'])
+
+        sm = None
+        if add_battery:
+            # load training data
+            az = np.genfromtxt(
+                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_xData.csv',
+                delimiter=',')
+            el = np.genfromtxt(
+                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_yData.csv',
+                delimiter=',')
+            yt = np.genfromtxt(
+                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_zData.csv',
+                delimiter=',')
+
+            # generate surrogate model with 20 training points
+            # must be the same as the number of points used to create model
+            sm = smt_exposure(20, az, el, yt)
 
         for cubesat in swarm.children:
             name = cubesat['name']
@@ -39,6 +60,8 @@ class SwarmGroup(Group):
                     cubesat=cubesat,
                     mtx=mtx,
                     Ground_station=Ground_station,
+                    add_battery=add_battery,
+                    sm=sm,
                 )
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 
