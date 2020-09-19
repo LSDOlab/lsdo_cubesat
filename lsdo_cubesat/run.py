@@ -13,7 +13,7 @@ add_battery = False
 new_attitude = False
 optimize_plant = False
 if optimize_plant:
-    add_battery = True
+    add_battery = False
 
 num_times = 1501
 num_cp = 300
@@ -24,6 +24,9 @@ if 1:
     num_cp = 3
     # step_size = 50.
     step_size = 95 * 60 / (num_times - 1)
+
+# fast_time_scale = min(step_size, 1e-4)
+fast_time_scale = step_size
 
 swarm = Swarm(
     num_times=num_times,
@@ -169,6 +172,8 @@ swarm_group = SwarmGroup(
     swarm=swarm,
     add_battery=add_battery,
     optimize_plant=optimize_plant,
+    new_attitude=new_attitude,
+    fast_time_scale=fast_time_scale,
 )
 prob.model.add_subsystem('swarm_group', swarm_group, promotes=['*'])
 

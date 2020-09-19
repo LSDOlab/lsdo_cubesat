@@ -1,9 +1,10 @@
 import numpy as np
 
 from openmdao.api import Group, IndepVarComp, ExecComp, NonlinearBlockGS, LinearBlockGS
-
+from math import ceil
 from lsdo_utils.api import LinearCombinationComp, PowerCombinationComp
 from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
+from lsdo_cubesat.attitude.new.attitude_group import AttitudeGroup as NewAttitudeGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.solar.solar_exposure import SolarExposure
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
@@ -11,6 +12,7 @@ from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.utils.slice_comp import SliceComp
 
 from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
 from lsdo_battery.battery_model import BatteryModel
@@ -26,7 +28,9 @@ class CubesatGroup(Group):
         self.options.declare('Ground_station')
         self.options.declare('add_battery', types=bool)
         self.options.declare('sm')
-        self.options.declare('optimize_plant')
+        self.options.declare('optimize_plant', types=bool)
+        self.options.declare('new_attitude', types=bool)
+        self.options.declare('fast_time_scale', types=float)
 
     def setup(self):
         num_times = self.options['num_times']
@@ -38,6 +42,8 @@ class CubesatGroup(Group):
         add_battery = self.options['add_battery']
         sm = self.options['sm']
         optimize_plant = self.options['optimize_plant']
+        new_attitude = self.options['new_attitude']
+        fast_time_scale = self.options['fast_time_scale']
 
         times = np.linspace(0., step_size * (num_times - 1), num_times)
 
@@ -47,13 +53,32 @@ class CubesatGroup(Group):
         comp.add_output('Initial_Data', val=np.zeros((1, )))
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
-        group = AttitudeGroup(
-            num_times=num_times,
-            num_cp=num_cp,
-            cubesat=cubesat,
-            mtx=mtx,
-        )
-        self.add_subsystem('attitude_group', group, promotes=['*'])
+        if new_attitude:
+            step = max(1, ceil(step_size / fast_time_scale))
+            group = NewAttitudeGroup(
+                num_times=num_times * step,
+                num_cp=num_cp,
+                cubesat=cubesat,
+                mtx=mtx,
+                step_size=fast_time_scale,
+            )
+            self.add_subsystem('attitude_group', group, promotes=['*'])
+            group = SliceComp(
+                shape=(3, 3, num_times * step),
+                step=step,
+                slice_axis=2,
+                in_name='rot_mtx_i_b_3x3xn_fast',
+                out_name='rot_mtx_i_b_3x3xn',
+            )
+            self.add_subsystem('rot_mtx_slow_ts_comp', group, promotes=['*'])
+        else:
+            group = AttitudeGroup(
+                num_times=num_times,
+                num_cp=num_cp,
+                cubesat=cubesat,
+                mtx=mtx,
+            )
+            self.add_subsystem('attitude_group', group, promotes=['*'])
 
         if add_battery:
             comp = SolarExposure(num_times=num_times, sm=sm)
