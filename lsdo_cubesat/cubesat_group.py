@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, ExecComp
+from openmdao.api import Group, IndepVarComp, ExecComp, NonlinearBlockGS, LinearBlockGS
 
 from lsdo_utils.api import LinearCombinationComp, PowerCombinationComp
 from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
@@ -26,6 +26,7 @@ class CubesatGroup(Group):
         self.options.declare('Ground_station')
         self.options.declare('add_battery', types=bool)
         self.options.declare('sm')
+        self.options.declare('optimize_plant')
 
     def setup(self):
         num_times = self.options['num_times']
@@ -36,6 +37,7 @@ class CubesatGroup(Group):
         Ground_station = self.options['Ground_station']
         add_battery = self.options['add_battery']
         sm = self.options['sm']
+        optimize_plant = self.options['optimize_plant']
 
         times = np.linspace(0., step_size * (num_times - 1), num_times)
 
@@ -139,6 +141,20 @@ class CubesatGroup(Group):
                                   rho=rho)
         self.add_subsystem('KS_Download_rate_comp', comp, promotes=['*'])
 
+        if add_battery:
+            comp = ElementwiseMaxComp(
+                shape=shape,
+                in_names=[
+                    'UCSD_comm_group_P_comm',
+                    'UIUC_comm_group_P_comm',
+                    'Georgia_comm_group_P_comm',
+                    'Montana_comm_group_P_comm',
+                ],
+                out_name='KS_P_comm',
+                rho=rho,
+            )
+            self.add_subsystem('KS_P_comm_comp', comp, promotes=['*'])
+
         for Ground_station in cubesat.children:
             Ground_station_name = Ground_station['name']
 
@@ -147,10 +163,57 @@ class CubesatGroup(Group):
                 '{}_comm_group_Download_rate'.format(Ground_station_name),
             )
 
-            # self.connect(
-            #     '{}_comm_group.Download_rate'.format(Ground_station_name),
-            #     '{}_comm_group_Download_rate'.format(Ground_station_name),
-            # )
+            if add_battery:
+
+                self.connect(
+                    '{}_comm_group.P_comm'.format(Ground_station_name),
+                    '{}_comm_group_P_comm'.format(Ground_station_name),
+                )
+
+        if add_battery:
+
+            baseline_power = 6.3
+            self.add_subsystem(
+                'sum_power',
+                LinearCombinationComp(
+                    shape=(num_times, ),
+                    in_names=[
+                        'solar_power',
+                        'KS_P_comm',
+                    ],
+                    out_name='battery_output_power',
+                    coeffs=[-1, 1],
+                    constant=baseline_power,
+                ),
+                promotes=['*'],
+            )
+            if optimize_plant:
+                self.add_constraint('battery_output_power',
+                                    lower=baseline_power)
+            self.add_subsystem(
+                'battery',
+                BatteryModel(
+                    num_times=num_times,
+                    min_soc=0.05,
+                    max_soc=0.95,
+                    # periodic_soc=True,
+                    optimize_plant=optimize_plant,
+                    step_size=step_size,
+                ),
+                promotes=['*'],
+            )
+            self.nonlinear_solver = NonlinearBlockGS(
+                iprint=0,
+                maxiter=40,
+                atol=1e-14,
+                rtol=1e-12,
+            )
+            self.linear_solver = LinearBlockGS(
+                iprint=0,
+                maxiter=40,
+                atol=1e-14,
+                rtol=1e-12,
+            )
 
         comp = DataDownloadComp(
             num_times=num_times,

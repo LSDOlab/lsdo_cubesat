@@ -15,6 +15,7 @@ class SwarmGroup(Group):
     def initialize(self):
         self.options.declare('swarm')
         self.options.declare('add_battery', types=bool)
+        self.options.declare('optimize_plant')
 
     def setup(self):
         swarm = self.options['swarm']
@@ -24,6 +25,7 @@ class SwarmGroup(Group):
         step_size = swarm['step_size']
         add_battery = self.options['add_battery']
         mtx = get_bspline_mtx(num_cp, num_times, order=4)
+        optimize_plant = self.options['optimize_plant']
 
         group = ReferenceOrbitGroup(
             num_times=num_times,
@@ -62,6 +64,7 @@ class SwarmGroup(Group):
                     Ground_station=Ground_station,
                     add_battery=add_battery,
                     sm=sm,
+                    optimize_plant=optimize_plant,
                 )
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 

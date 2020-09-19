@@ -9,7 +9,7 @@ from lsdo_viz.api import Problem
 from lsdo_cubesat.api import Swarm, Cubesat, SwarmGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
 
-add_battery = True
+add_battery = False
 new_attitude = False
 optimize_plant = False
 if optimize_plant:
@@ -168,6 +168,7 @@ prob.swarm = swarm
 swarm_group = SwarmGroup(
     swarm=swarm,
     add_battery=add_battery,
+    optimize_plant=optimize_plant,
 )
 prob.model.add_subsystem('swarm_group', swarm_group, promotes=['*'])
 
