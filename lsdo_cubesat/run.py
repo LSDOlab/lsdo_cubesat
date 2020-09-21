@@ -10,23 +10,27 @@ from lsdo_cubesat.api import Swarm, Cubesat, SwarmGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
 
 add_battery = False
-new_attitude = False
+new_attitude = True
 optimize_plant = False
 if optimize_plant:
-    add_battery = False
+    add_battery = True
 
 num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 1:
+# step size for attitude group;
+# 0.218 results in numerically stable attitude integrator;
+# 0.12 results in a smooth (i.e. non oscillatory) evolution of
+# angular velocity over time;
+# anything larger than 1e-4 results in innaccurate partial
+# derivatives
+fast_time_scale = min(step_size, 0.218)
+
+if 0:
     num_times = 30
     num_cp = 3
-    # step_size = 50.
     step_size = 95 * 60 / (num_times - 1)
-
-# fast_time_scale = min(step_size, 1e-4)
-fast_time_scale = step_size
 
 swarm = Swarm(
     num_times=num_times,
@@ -35,14 +39,9 @@ swarm = Swarm(
     cross_threshold=0.882,
 )
 
-# initial_orbit_state_magnitude = np.array([0.001] * 3 + [0.001] * 3)
-
 initial_orbit_state_magnitude = np.array([1e-3] * 3 + [1e-3] * 3)
 
 np.random.seed(6)
-# A = np.random.rand(6)
-
-print(initial_orbit_state_magnitude * np.random.rand(6))
 
 Cubesat_sunshade = Cubesat(
     name='sunshade',
@@ -281,6 +280,17 @@ for sc in ['sunshade', 'optics', 'detector']:
         plt.title(sc + ' external torques (ctrl pts)')
         plt.show()
 
+    # osculating_orbit_angular_speed = prob[
+    #     sc + '_cubesat_group.osculating_orbit_angular_speed']
+    # plt.plot(osculating_orbit_angular_speed)
+    # plt.title(sc + ' osculating orbit angular speed')
+    # plt.show()
+
+    osculating_orbit_angular_speed = prob[sc + '_cubesat_group.OMEGA']
+    plt.plot(osculating_orbit_angular_speed)
+    plt.title(sc + ' osculating orbit angular speed')
+    plt.show()
+
     roll = prob[sc + '_cubesat_group.roll']
     pitch = prob[sc + '_cubesat_group.pitch']
     plt.plot(roll)
@@ -299,19 +309,19 @@ for sc in ['sunshade', 'optics', 'detector']:
 plt.plot(np.absolute(orbit['sunshade'][0, :] - orbit['detector'][0, :]))
 plt.plot(np.absolute(orbit['sunshade'][0, :] - orbit['optics'][0, :]))
 plt.plot(np.absolute(orbit['detector'][0, :] - orbit['optics'][0, :]))
-plt.title(sc + ' orbit x')
+plt.title('sc separations x')
 plt.show()
 
 plt.plot(np.absolute(orbit['sunshade'][1, :] - orbit['detector'][1, :]))
 plt.plot(np.absolute(orbit['sunshade'][1, :] - orbit['optics'][1, :]))
 plt.plot(np.absolute(orbit['detector'][1, :] - orbit['optics'][1, :]))
-plt.title(sc + ' orbit y')
+plt.title('sc separations y')
 plt.show()
 
 plt.plot(np.absolute(orbit['sunshade'][2, :] - orbit['detector'][2, :]))
 plt.plot(np.absolute(orbit['sunshade'][2, :] - orbit['optics'][2, :]))
 plt.plot(np.absolute(orbit['detector'][2, :] - orbit['optics'][2, :]))
-plt.title(sc + ' orbit z')
+plt.title('sc separations z')
 plt.show()
 
 print('obj')

@@ -9,13 +9,15 @@ from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.solar.solar_exposure import SolarExposure
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
-
+from lsdo_utils.api import ArrayExpansionComp, BsplineComp
 from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
 from lsdo_battery.battery_model import BatteryModel
+from lsdo_utils.api import get_bspline_mtx
 
 
 class CubesatGroup(Group):
@@ -45,11 +47,7 @@ class CubesatGroup(Group):
         new_attitude = self.options['new_attitude']
         fast_time_scale = self.options['fast_time_scale']
 
-        times = np.linspace(0., step_size * (num_times - 1), num_times)
-
         comp = IndepVarComp()
-
-        comp.add_output('times', units='s', val=times)
         comp.add_output('Initial_Data', val=np.zeros((1, )))
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
@@ -134,6 +132,15 @@ class CubesatGroup(Group):
         )
         self.add_subsystem('orbit_group', group, promotes=['*'])
 
+        # if new_attitude:
+        # compute osculating orbit angular speed to feed into
+        # attitude model
+        # self.add_subsystem(
+        #     'orbit_angular_speed_group',
+        #     OrbitAngularSpeedGroup(num_times=num_times, ),
+        #     promotes=['*'],
+        # )
+
         for Ground_station in cubesat.children:
             name = Ground_station['name']
 
@@ -206,24 +213,40 @@ class CubesatGroup(Group):
                         'solar_power',
                         'KS_P_comm',
                     ],
-                    out_name='battery_output_power',
+                    out_name='battery_output_power_slow',
                     coeffs=[-1, 1],
                     constant=baseline_power,
                 ),
                 promotes=['*'],
             )
             if optimize_plant:
-                self.add_constraint('battery_output_power',
+                self.add_constraint('battery_output_power_slow',
                                     lower=baseline_power)
+
+            step = max(1, ceil(step_size / fast_time_scale))
+
+            comp = BsplineComp(
+                num_pt=num_times * step,
+                num_cp=num_times,
+                jac=get_bspline_mtx(num_times, num_times * step),
+                in_name='battery_output_power_slow',
+                out_name='battery_output_power',
+            )
+            self.add_subsystem(
+                'power_spline',
+                comp,
+                promotes=['*'],
+            )
+
             self.add_subsystem(
                 'battery',
                 BatteryModel(
-                    num_times=num_times,
+                    num_times=num_times * step,
                     min_soc=0.05,
                     max_soc=0.95,
                     # periodic_soc=True,
                     optimize_plant=optimize_plant,
-                    step_size=step_size,
+                    step_size=fast_time_scale,
                 ),
                 promotes=['*'],
             )

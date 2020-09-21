@@ -22,16 +22,12 @@ class SliceComp(ExplicitComponent):
         self.add_input(in_name, shape=shape)
 
         out_shape = list(shape)
-        print(out_shape)
         out_shape[slice_axis] = ceil(shape[slice_axis] / step)
-        print(out_shape)
         out_shape = tuple(out_shape)
-        print(out_shape)
         self.add_output(out_name, shape=out_shape)
 
         self.slices = []
         axis = 0
-        print('for loop begin')
         for dim in shape:
             if axis == slice_axis:
                 self.slices.append(slice(0, dim, step))
@@ -44,9 +40,6 @@ class SliceComp(ExplicitComponent):
         cols = cols[self.slices].flatten()
 
         rows = np.arange(np.prod(out_shape))
-
-        print(rows)
-        print(cols)
 
         self.declare_partials(
             out_name,
