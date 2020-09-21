@@ -19,6 +19,11 @@ num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
+if 0:
+    num_times = 30
+    num_cp = 3
+    step_size = 95 * 60 / (num_times - 1)
+
 # step size for attitude group;
 # 0.218 results in numerically stable attitude integrator;
 # 0.12 results in a smooth (i.e. non oscillatory) evolution of
@@ -26,11 +31,6 @@ step_size = 95 * 60 / (num_times - 1)
 # anything larger than 1e-4 results in innaccurate partial
 # derivatives
 fast_time_scale = min(step_size, 0.218)
-
-if 0:
-    num_times = 30
-    num_cp = 3
-    step_size = 95 * 60 / (num_times - 1)
 
 swarm = Swarm(
     num_times=num_times,
