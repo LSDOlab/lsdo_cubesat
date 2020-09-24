@@ -1,23 +1,28 @@
-import numpy as np
-
-from openmdao.api import Group, IndepVarComp, ExecComp, NonlinearBlockGS, LinearBlockGS
 from math import ceil
-from lsdo_utils.api import LinearCombinationComp, PowerCombinationComp
-from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
-from lsdo_cubesat.attitude.new.attitude_group import AttitudeGroup as NewAttitudeGroup
-from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
-from lsdo_cubesat.solar.solar_exposure import SolarExposure
+
+import numpy as np
+from openmdao.api import (ExecComp, Group, IndepVarComp, LinearBlockGS,
+                          NonlinearBlockGS)
+
+from lsdo_battery.battery_model import BatteryModel
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
-from lsdo_cubesat.orbit.orbit_group import OrbitGroup
-from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
+from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
+from lsdo_cubesat.attitude.new.attitude_group import \
+    AttitudeGroup as NewAttitudeGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
+from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
+from lsdo_cubesat.solar.solar_exposure import SolarExposure
+from lsdo_cubesat.utils.ks_comp import KSComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
-from lsdo_battery.battery_model import BatteryModel
-from lsdo_utils.api import get_bspline_mtx
+from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
+                            LinearCombinationComp, PowerCombinationComp,
+                            get_bspline_mtx)
+from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+    ElementwiseMaxComp
 
 
 class CubesatGroup(Group):
@@ -75,6 +80,7 @@ class CubesatGroup(Group):
                 num_cp=num_cp,
                 cubesat=cubesat,
                 mtx=mtx,
+                step_size=step_size,
             )
             self.add_subsystem('attitude_group', group, promotes=['*'])
 
@@ -214,14 +220,28 @@ class CubesatGroup(Group):
                         'KS_P_comm',
                     ],
                     out_name='battery_output_power_slow',
-                    coeffs=[-1, 1],
-                    constant=baseline_power,
+                    coeffs=[1, -1],
                 ),
                 promotes=['*'],
             )
-            if optimize_plant:
-                self.add_constraint('battery_output_power_slow',
-                                    lower=baseline_power)
+            comp = KSComp(
+                in_name='battery_output_power_slow',
+                out_name='min_battery_output_power_slow',
+                shape=(1, ),
+                constraint_size=num_times,
+                lower_flag=True,
+                rho=100.,
+            )
+            self.add_subsystem(
+                'compute_min_battery_output_power_slow',
+                comp,
+                promotes=['*'],
+            )
+            self.add_constraint('min_battery_output_power_slow',
+                                lower=baseline_power)
+
+            self.add_constraint('battery_output_power_slow',
+                                lower=baseline_power)
 
             step = max(1, ceil(step_size / fast_time_scale))
 
@@ -250,18 +270,18 @@ class CubesatGroup(Group):
                 ),
                 promotes=['*'],
             )
-            self.nonlinear_solver = NonlinearBlockGS(
-                iprint=0,
-                maxiter=40,
-                atol=1e-14,
-                rtol=1e-12,
-            )
-            self.linear_solver = LinearBlockGS(
-                iprint=0,
-                maxiter=40,
-                atol=1e-14,
-                rtol=1e-12,
-            )
+            # self.nonlinear_solver = NonlinearBlockGS(
+            #     iprint=0,
+            #     maxiter=40,
+            #     atol=1e-14,
+            #     rtol=1e-12,
+            # )
+            # self.linear_solver = LinearBlockGS(
+            #     iprint=0,
+            #     maxiter=40,
+            #     atol=1e-14,
+            #     rtol=1e-12,
+            # )
 
         comp = DataDownloadComp(
             num_times=num_times,

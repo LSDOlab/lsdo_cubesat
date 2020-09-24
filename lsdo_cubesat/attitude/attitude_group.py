@@ -14,14 +14,20 @@ class AttitudeGroup(Group):
         self.options.declare('num_cp', types=int)
         self.options.declare('cubesat')
         self.options.declare('mtx')
+        self.options.declare('step_size', types=float)
 
     def setup(self):
         num_times = self.options['num_times']
         num_cp = self.options['num_cp']
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
+        step_size = self.options['step_size']
 
         comp = IndepVarComp()
+        comp.add_output('times',
+                        units='s',
+                        val=np.linspace(0., step_size * (num_times - 1),
+                                        num_times))
         # comp.add_output('roll_cp', val=2. * np.pi * np.random.rand(num_cp))
         # comp.add_output('pitch_cp', val=2. * np.pi * np.random.rand(num_cp))
         comp.add_output('roll_cp', val=np.ones(num_cp))

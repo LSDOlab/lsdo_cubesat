@@ -1,17 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import openmdao.api as om
+from openmdao.api import ExecComp, pyOptSparseDriver
 
-from openmdao.api import pyOptSparseDriver, ExecComp
-import openmdao.api as om
+from lsdo_cubesat.api import Cubesat, Swarm, SwarmGroup
+from lsdo_cubesat.communication.ground_station import Ground_station
 from lsdo_viz.api import Problem
 
-from lsdo_cubesat.api import Swarm, Cubesat, SwarmGroup
-from lsdo_cubesat.communication.ground_station import Ground_station
-
-add_battery = False
-new_attitude = True
-optimize_plant = False
+add_battery = True
+new_attitude = False
+optimize_plant = True
 if optimize_plant:
     add_battery = True
 
@@ -19,9 +17,9 @@ num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 0:
-    num_times = 30
-    num_cp = 3
+if 1:
+    num_times = 300
+    num_cp = 30
     step_size = 95 * 60 / (num_times - 1)
 
 # step size for attitude group;
@@ -30,7 +28,8 @@ if 0:
 # angular velocity over time;
 # anything larger than 1e-4 results in innaccurate partial
 # derivatives
-fast_time_scale = min(step_size, 0.218)
+# fast_time_scale = min(step_size, 0.218)
+fast_time_scale = step_size
 
 swarm = Swarm(
     num_times=num_times,
@@ -286,10 +285,10 @@ for sc in ['sunshade', 'optics', 'detector']:
     # plt.title(sc + ' osculating orbit angular speed')
     # plt.show()
 
-    osculating_orbit_angular_speed = prob[sc + '_cubesat_group.OMEGA']
-    plt.plot(osculating_orbit_angular_speed)
-    plt.title(sc + ' osculating orbit angular speed')
-    plt.show()
+    # osculating_orbit_angular_speed = prob[sc + '_cubesat_group.OMEGA']
+    # plt.plot(osculating_orbit_angular_speed)
+    # plt.title(sc + ' osculating orbit angular speed')
+    # plt.show()
 
     roll = prob[sc + '_cubesat_group.roll']
     pitch = prob[sc + '_cubesat_group.pitch']
