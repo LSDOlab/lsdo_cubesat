@@ -18,8 +18,8 @@ num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
 if 1:
-    num_times = 300
-    num_cp = 30
+    num_times = 30
+    num_cp = 3
     step_size = 95 * 60 / (num_times - 1)
 
 # step size for attitude group;
