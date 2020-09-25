@@ -1,14 +1,14 @@
 import numpy as np
-from openmdao.api import Group, ExecComp
+from openmdao.api import ExecComp, Group
 
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
-
-from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
-from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.cubesat_group import CubesatGroup
+from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
+from lsdo_utils.api import get_bspline_mtx
+from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+    ElementwiseMaxComp
 
 
 class SwarmGroup(Group):
@@ -42,15 +42,9 @@ class SwarmGroup(Group):
         sm = None
         if add_battery:
             # load training data
-            az = np.genfromtxt(
-                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_xData.csv',
-                delimiter=',')
-            el = np.genfromtxt(
-                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_yData.csv',
-                delimiter=',')
-            yt = np.genfromtxt(
-                '/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/training_data/arrow_zData.csv',
-                delimiter=',')
+            az = np.genfromtxt('training_data/arrow_xData.csv', delimiter=',')
+            el = np.genfromtxt('training_data/arrow_yData.csv', delimiter=',')
+            yt = np.genfromtxt('training_data/arrow_zData.csv', delimiter=',')
 
             # generate surrogate model with 20 training points
             # must be the same as the number of points used to create model
