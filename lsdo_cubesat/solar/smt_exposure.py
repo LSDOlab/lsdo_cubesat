@@ -6,13 +6,8 @@ from smt.surrogate_models import RMTB
 
 
 def smt_exposure(nt, az, el, yt):
-    print(np.min(az))
-    print(np.max(az))
-    print(np.min(el))
-    print(np.max(el))
-
     az = np.sign(az) * np.mod(az, np.pi)
-    # el = np.sign(el) * np.mod(el, np.pi / 2)
+    el = np.sign(el) * np.mod(el, np.pi / 2)
     xt = np.concatenate(
         (
             az.reshape(len(az), 1),
@@ -21,7 +16,6 @@ def smt_exposure(nt, az, el, yt):
         axis=1,
     )
     xlimits = np.array([[-np.pi, np.pi], [-np.pi, np.pi]])
-    # xlimits = np.array([[-np.pi, np.pi], [-np.pi / 2, np.pi / 2]])
 
     # DO NOT USE
     # sm = RMTC(
@@ -34,7 +28,7 @@ def smt_exposure(nt, az, el, yt):
 
     sm = RMTB(
         xlimits=xlimits,
-        order=6,
+        order=4,
         num_ctrl_pts=20,
         energy_weight=1e-3,
         # energy_weight=1e-4,
