@@ -16,9 +16,9 @@ class SolarExposure(ExplicitComponent):
     def setup(self):
         n = self.options['num_times']
         self.sm = self.options['sm']
-        self.add_input('roll', shape=(n))
-        self.add_input('pitch', shape=(n))
-        self.add_output('sunlit_area', shape=(n))
+        self.add_input('roll', shape=(n, ))
+        self.add_input('pitch', shape=(n, ))
+        self.add_output('sunlit_area', shape=(n, ))
         self.declare_partials(
             'sunlit_area',
             'roll',
@@ -31,33 +31,19 @@ class SolarExposure(ExplicitComponent):
             rows=np.arange(n),
             cols=np.arange(n),
         )
+        self.max_sunlit_area =1
 
     def compute(self, inputs, outputs):
         num_times = self.options['num_times']
-        # atan2 -> (-pi, pi)
-        # asin -> (-pi/2, pi/2)
-        # acos -> (0, pi)
         r = inputs['roll']
         p = inputs['pitch']
 
-        # r = np.sign(r) * np.mod(r, np.pi)
-        # p = np.sign(p) * np.mod(p, np.pi / 2)
+        # wrap input angles
+        r = np.mod(r, np.pi)
+        p = np.mod(p, np.pi)
 
-        # quitfn = False
-        # if np.any(r > np.pi) or np.any(np.any(r < -np.pi)):
-        #     print('ROLL OUT OF BOUNDS')
-        #     print(np.amin(r))
-        #     print(np.amax(r))
-        #     print(r)
-        #     quitfn = True
-        # if np.any(p > np.pi / 2) or np.any(np.any(p < -np.pi / 2)):
-        #     print('PITCH OUT OF BOUNDS')
-        #     print(np.amin(p))
-        #     print(np.amax(p))
-        #     print(p)
-        #     quitfn = True
-        # if quitfn:
-        #     exit()
+
+        # predict sunlit area percent
         rp = np.concatenate(
             (
                 r.reshape(num_times, 1),
@@ -65,19 +51,30 @@ class SolarExposure(ExplicitComponent):
             ),
             axis=1,
         )
-        self.a = np.maximum(self.sm.predict_values(rp), 0)
-        outputs['sunlit_area'] = self.a
-        # outputs['sunlit_area'] = self.sm.predict_values(rp)
-        # if np.any(outputs['sunlit_area'] >= 1) or np.any(
-        #         outputs['sunlit_area'] < 0):
-        #     print('SUNLIT AREA OUT OF BOUNDS')
-        #     print(outputs['sunlit_area'])
-        # exit()
+        predicted_area = self.sm.predict_values(rp)
+
+        # ensure area percent between 0 and 1
+        lower = np.min(predicted_area)
+        upper = np.max(predicted_area)
+        if lower < 0:
+            shifted = predicted_area - lower
+        else:
+            shifted = predicted_area
+        self.scaler = min(1, upper)/max(shifted)
+        scaled = self.scaler * shifted
+        outputs['sunlit_area'] = scaled
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
         r = inputs['roll']
         p = inputs['pitch']
+
+        # wrap input angles
+        r = np.mod(r, np.pi)
+        p = np.mod(p, np.pi)
+
+
+        # predict sunlit area percent derivatives
         rp = np.concatenate(
             (
                 r.reshape(num_times, 1),
@@ -85,24 +82,18 @@ class SolarExposure(ExplicitComponent):
             ),
             axis=1,
         )
-
-        ar = self.sm.predict_derivatives(
+        partials['sunlit_area', 'roll'] =\
+            self.scaler * \
+            self.sm.predict_derivatives(
             rp,
             0,
-        )
-        ind = np.where(self.a < 0)
-        if len(ind) > 0:
-            ar[ind] = 0
-        partials['sunlit_area', 'roll'] = ar.flatten()
-
-        ap = self.sm.predict_derivatives(
+        ).flatten()
+        partials['sunlit_area', 'pitch'] = \
+            self.scaler * \
+            self.sm.predict_derivatives(
             rp,
             1,
-        )
-        ind = np.where(self.a < 0)
-        if len(ind) > 0:
-            ap[ind] = 0
-        partials['sunlit_area', 'pitch'] = ap.flatten()
+        ).flatten()
 
 
 if __name__ == "__main__":
@@ -111,25 +102,22 @@ if __name__ == "__main__":
     from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
     np.random.seed(0)
 
-    times = 200
+    times = 1500
 
     # load training data
-    az = np.genfromtxt('lsdo_cubesat/data/arrow_xData.csv', delimiter=',')
-    el = np.genfromtxt('lsdo_cubesat/data/arrow_yData.csv', delimiter=',')
-    yt = np.genfromtxt('lsdo_cubesat/data/arrow_zData.csv', delimiter=',')
+    az = np.genfromtxt('../training_data/arrow_xData.csv',
+                       delimiter=',')
+    el = np.genfromtxt('../training_data/arrow_yData.csv',
+                       delimiter=',')
+    yt = np.genfromtxt('../training_data/arrow_zData.csv',
+                       delimiter=',')
 
     # generate surrogate model with 20 training points
     # must be the same as the number of points used to create model
     sm = smt_exposure(20, az, el, yt)
 
-    roll = make_random_bounded_array(times, np.pi)
-    pitch = make_random_bounded_array(times, np.pi / 2)
-    print(roll)
-    print(pitch)
-    print(np.amin(roll))
-    print(np.amin(pitch))
-    print(np.amax(roll))
-    print(np.amax(pitch))
+    roll = make_random_bounded_array(times, 10)
+    pitch = make_random_bounded_array(times, 10)
 
     # check partials
     ivc = IndepVarComp()
