@@ -31,7 +31,6 @@ class SolarExposure(ExplicitComponent):
             rows=np.arange(n),
             cols=np.arange(n),
         )
-        self.max_sunlit_area =1
 
     def compute(self, inputs, outputs):
         num_times = self.options['num_times']
@@ -62,7 +61,7 @@ class SolarExposure(ExplicitComponent):
             shifted = predicted_area
         self.scaler = min(1, upper)/max(shifted)
         scaled = self.scaler * shifted
-        outputs['sunlit_area'] = scaled
+        outputs['sunlit_area'] = scaled.flatten()
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
