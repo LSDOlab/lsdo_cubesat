@@ -227,7 +227,7 @@ prob.setup(check=True)
 # prob.model.swarm_group.sunshade_cubesat_group.list_outputs(prom_name=True)
 
 # prob.run_driver()
-prob.mode = 'run_driver'
+# prob.mode = 'run_driver'
 prob.run()
 # prob.run_model()
 # prob.check_partials(compact_print=True)
