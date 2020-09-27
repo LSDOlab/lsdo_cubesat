@@ -17,7 +17,8 @@ class SwarmGroup(Group):
         self.options.declare('add_battery', types=bool)
         self.options.declare('optimize_plant', types=bool)
         self.options.declare('new_attitude', types=bool)
-        self.options.declare('fast_time_scale', types=float)
+        self.options.declare('battery_time_scale', types=float)
+        self.options.declare('attitude_time_scale', types=float)
 
     def setup(self):
         swarm = self.options['swarm']
@@ -29,7 +30,8 @@ class SwarmGroup(Group):
         mtx = get_bspline_mtx(num_cp, num_times, order=4)
         optimize_plant = self.options['optimize_plant']
         new_attitude = self.options['new_attitude']
-        fast_time_scale = self.options['fast_time_scale']
+        battery_time_scale = self.options['battery_time_scale']
+        attitude_time_scale = self.options['attitude_time_scale']
 
         group = ReferenceOrbitGroup(
             num_times=num_times,
@@ -64,7 +66,8 @@ class SwarmGroup(Group):
                     sm=sm,
                     optimize_plant=optimize_plant,
                     new_attitude=new_attitude,
-                    fast_time_scale=fast_time_scale,
+                    attitude_time_scale=attitude_time_scale,
+                    battery_time_scale=battery_time_scale,
                 )
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 

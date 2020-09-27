@@ -1,25 +1,25 @@
 import numpy as np
-from openmdao.api import Problem, IndepVarComp, Group, ExecComp
-
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
+from openmdao.api import ExecComp, Group, IndepVarComp, Problem
 
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
 from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
 from lsdo_cubesat.communication.Comm_Bitrate import BitRateComp
-from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
+from lsdo_cubesat.communication.Comm_distance import \
+    StationSatelliteDistanceComp
 from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
+from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
 from lsdo_cubesat.communication.Comm_VectorBody import VectorBodyComp
+from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
+from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
 from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
 from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
-from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
-from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
-from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
-from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
-
-from lsdo_utils.api import get_bspline_mtx
+from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
+                            LinearCombinationComp, PowerCombinationComp,
+                            get_bspline_mtx)
 
 # from lsdo_cubesat.cubesat_group import CubesatGroup
 
@@ -42,7 +42,8 @@ class GSGroup(Group):
         mtx = self.options['mtx']
 
         comp = IndepVarComp()
-        comp.add_output('P_comm_cp', val=0.25 * np.ones(num_cp), units='W')
+        # comp.add_output('P_comm_cp', val=0.25 * np.ones(num_cp), units='W')
+        comp.add_output('P_comm_cp', val=np.zeros(num_cp), units='W')
         comp.add_design_var('P_comm_cp', lower=0., upper=100.)
         comp.add_output('gain', val=16.0 * np.ones(num_times))
         comp.add_output('Initial_Data', val=0.0)

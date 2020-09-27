@@ -1,28 +1,31 @@
 import numpy as np
-from openmdao.api import Problem, IndepVarComp, Group, ExecComp
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp, ElementwiseMaxComp
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_cubesat.api import Swarm, Cubesat
+from openmdao.api import ExecComp, Group, IndepVarComp, Problem
 
-# from lsdo_cubesat.api import GS_net, Ground_station
-from lsdo_cubesat.swarm.ground_station import Ground_station
-from lsdo_cubesat.swarm.GS_net import GS_net
-from lsdo_cubesat.ground_station_group import GSGroup
+from lsdo_cubesat.api import Cubesat, Swarm
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
 from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
 from lsdo_cubesat.communication.Comm_Bitrate import BitRateComp
-from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
+from lsdo_cubesat.communication.Comm_distance import \
+    StationSatelliteDistanceComp
 from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
+from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
 from lsdo_cubesat.communication.Comm_VectorBody import VectorBodyComp
+from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
+from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
 from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
 from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
-from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
-from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
-from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
-from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
+from lsdo_cubesat.ground_station_group import GSGroup
+# from lsdo_cubesat.api import GS_net, Ground_station
+from lsdo_cubesat.swarm.ground_station import Ground_station
+from lsdo_cubesat.swarm.GS_net import GS_net
+from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
+                            ElementwiseMaxComp, LinearCombinationComp,
+                            PowerCombinationComp, get_bspline_mtx)
+
 # from lsdo_cubesat.communication.Ground_comm import Groundcomm
 
 

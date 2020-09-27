@@ -38,6 +38,8 @@ class CubesatGroup(Group):
         self.options.declare('optimize_plant', types=bool)
         self.options.declare('new_attitude', types=bool)
         self.options.declare('fast_time_scale', types=float)
+        self.options.declare('battery_time_scale', types=float)
+        self.options.declare('attitude_time_scale', types=float)
 
     def setup(self):
         num_times = self.options['num_times']
@@ -50,20 +52,21 @@ class CubesatGroup(Group):
         sm = self.options['sm']
         optimize_plant = self.options['optimize_plant']
         new_attitude = self.options['new_attitude']
-        fast_time_scale = self.options['fast_time_scale']
+        battery_time_scale = self.options['battery_time_scale']
+        attitude_time_scale = self.options['attitude_time_scale']
 
         comp = IndepVarComp()
         comp.add_output('Initial_Data', val=np.zeros((1, )))
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         if new_attitude:
-            step = max(1, ceil(step_size / fast_time_scale))
+            step = max(1, ceil(step_size / attitude_time_scale))
             group = NewAttitudeGroup(
                 num_times=num_times * step,
                 num_cp=num_cp,
                 cubesat=cubesat,
                 mtx=mtx,
-                step_size=fast_time_scale,
+                step_size=attitude_time_scale,
             )
             self.add_subsystem('attitude_group', group, promotes=['*'])
             group = SliceComp(
@@ -232,18 +235,8 @@ class CubesatGroup(Group):
                 lower_flag=True,
                 rho=100.,
             )
-            self.add_subsystem(
-                'compute_min_battery_output_power_slow',
-                comp,
-                promotes=['*'],
-            )
-            self.add_constraint('min_battery_output_power_slow',
-                                lower=baseline_power)
 
-            self.add_constraint('battery_output_power_slow',
-                                lower=baseline_power)
-
-            step = max(1, ceil(step_size / fast_time_scale))
+            step = max(1, ceil(step_size / battery_time_scale))
 
             comp = BsplineComp(
                 num_pt=num_times * step,
@@ -266,7 +259,7 @@ class CubesatGroup(Group):
                     max_soc=0.95,
                     # periodic_soc=True,
                     optimize_plant=optimize_plant,
-                    step_size=fast_time_scale,
+                    step_size=battery_time_scale,
                 ),
                 promotes=['*'],
             )

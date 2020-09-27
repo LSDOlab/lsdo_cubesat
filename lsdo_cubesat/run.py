@@ -17,7 +17,7 @@ num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
 
-if 1:
+if 0:
     num_times = 30
     num_cp = 3
     step_size = 95 * 60 / (num_times - 1)
@@ -28,8 +28,10 @@ if 1:
 # angular velocity over time;
 # anything larger than 1e-4 results in innaccurate partial
 # derivatives
-# fast_time_scale = min(step_size, 0.218)
-fast_time_scale = step_size
+# attitude_time_scale = min(step_size, 0.218)
+attitude_time_scale = step_size
+# battery_time_scale = min(step_size, 0.2)
+battery_time_scale = step_size
 
 swarm = Swarm(
     num_times=num_times,
@@ -171,7 +173,8 @@ swarm_group = SwarmGroup(
     add_battery=add_battery,
     optimize_plant=optimize_plant,
     new_attitude=new_attitude,
-    fast_time_scale=fast_time_scale,
+    attitude_time_scale=attitude_time_scale,
+    battery_time_scale=battery_time_scale,
 )
 prob.model.add_subsystem('swarm_group', swarm_group, promotes=['*'])
 
@@ -234,8 +237,8 @@ for sc in ['sunshade', 'optics', 'detector']:
     if add_battery:
         print(sc + '_cubesat_group.num_series')
         print(prob[sc + '_cubesat_group.num_series'])
-        print(sc + '_cubesat_group.num_parallel')
-        print(prob[sc + '_cubesat_group.num_parallel'])
+        # print(sc + '_cubesat_group.num_parallel')
+        # print(prob[sc + '_cubesat_group.num_parallel'])
         print(sc + '_cubesat_group.cell_model.min_soc')
         print(prob[sc + '_cubesat_group.cell_model.min_soc'])
         print(sc + '_cubesat_group.cell_model.max_soc')
