@@ -399,7 +399,7 @@ class Viz(BaseViz):
                                    reference_orbit[1, :],
                                    reference_orbit[2, :])
 
-            path = "/Users/victor/Desktop/lsdo_cubesat/lsdo_cubesat/map/world.jpg"
+            path = "/Users/victor/packages/lsdo_cubesat/lsdo_cubesat/map/world.jpg"
             earth = mpimg.imread(path)
             # img = Image.open(path)
             ax.imshow(earth, extent=[-180, 180, -100, 100], aspect='auto')
@@ -546,7 +546,7 @@ class Viz(BaseViz):
         with self.get_frame(1)[3, 4:7] as ax:
             num_times = np.arange(time)
             pitch = data_dict_current['detector_cubesat_group.pitch']
-            print(pitch.shape)
+            # print(pitch.shape)
             pitch.reshape((1, time))
             sns.lineplot(x=num_times, y=pitch, ax=ax)
             ax.set_ylim(
@@ -651,7 +651,7 @@ class Viz(BaseViz):
 
             Georgia_data_rate = data_dict_current[
                 'detector_cubesat_group.Georgia_comm_group.Download_rate']
-            print(Georgia_data_rate)
+            # print(Georgia_data_rate)
 
             num_times = np.arange(time)
             sns.lineplot(x=num_times, y=Georgia_data_rate, ax=ax)
