@@ -132,6 +132,8 @@ class CubesatGroup(Group):
         )
         self.add_subsystem('aerodynamics_group', group, promotes=['*'])
 
+        orbit_avionics = Group()
+
         group = OrbitGroup(
             num_times=num_times,
             num_cp=num_cp,
@@ -139,7 +141,7 @@ class CubesatGroup(Group):
             cubesat=cubesat,
             mtx=mtx,
         )
-        self.add_subsystem('orbit_group', group, promotes=['*'])
+        orbit_avionics.add_subsystem('orbit_group', group, promotes=['*'])
 
         # if new_attitude:
         # compute osculating orbit angular speed to feed into
@@ -163,7 +165,7 @@ class CubesatGroup(Group):
 
             # self.connect('times', '{}_comm_group.times'.format(name))
 
-            self.add_subsystem('{}_comm_group'.format(name), group)
+            orbit_avionics.add_subsystem('{}_comm_group'.format(name), group)
 
         # name = cubesat['name']
         shape = (1, num_times)
@@ -180,7 +182,9 @@ class CubesatGroup(Group):
                                   ],
                                   out_name='KS_Download_rate',
                                   rho=rho)
-        self.add_subsystem('KS_Download_rate_comp', comp, promotes=['*'])
+        orbit_avionics.add_subsystem('KS_Download_rate_comp',
+                                     comp,
+                                     promotes=['*'])
 
         if add_battery:
             comp = ElementwiseMaxComp(
@@ -194,19 +198,21 @@ class CubesatGroup(Group):
                 out_name='KS_P_comm',
                 rho=rho,
             )
-            self.add_subsystem('KS_P_comm_comp', comp, promotes=['*'])
+            orbit_avionics.add_subsystem('KS_P_comm_comp',
+                                         comp,
+                                         promotes=['*'])
 
         for Ground_station in cubesat.children:
             Ground_station_name = Ground_station['name']
 
-            self.connect(
+            orbit_avionics.connect(
                 '{}_comm_group.Download_rate'.format(Ground_station_name),
                 '{}_comm_group_Download_rate'.format(Ground_station_name),
             )
 
             if add_battery:
 
-                self.connect(
+                orbit_avionics.connect(
                     '{}_comm_group.P_comm'.format(Ground_station_name),
                     '{}_comm_group_P_comm'.format(Ground_station_name),
                 )
@@ -214,7 +220,7 @@ class CubesatGroup(Group):
         if add_battery:
 
             baseline_power = 6.3
-            self.add_subsystem(
+            orbit_avionics.add_subsystem(
                 'sum_power',
                 LinearCombinationComp(
                     shape=(num_times, ),
@@ -224,6 +230,7 @@ class CubesatGroup(Group):
                     ],
                     out_name='battery_output_power_slow',
                     coeffs=[1, -1],
+                    constant=-baseline_power,
                 ),
                 promotes=['*'],
             )
@@ -245,13 +252,13 @@ class CubesatGroup(Group):
                 in_name='battery_output_power_slow',
                 out_name='battery_output_power',
             )
-            self.add_subsystem(
+            orbit_avionics.add_subsystem(
                 'power_spline',
                 comp,
                 promotes=['*'],
             )
 
-            self.add_subsystem(
+            orbit_avionics.add_subsystem(
                 'battery',
                 BatteryModel(
                     num_times=num_times * step,
@@ -263,18 +270,68 @@ class CubesatGroup(Group):
                 ),
                 promotes=['*'],
             )
-            # self.nonlinear_solver = NonlinearBlockGS(
-            #     iprint=0,
-            #     maxiter=40,
-            #     atol=1e-14,
-            #     rtol=1e-12,
-            # )
-            # self.linear_solver = LinearBlockGS(
-            #     iprint=0,
-            #     maxiter=40,
-            #     atol=1e-14,
-            #     rtol=1e-12,
-            # )
+
+            orbit_avionics.nonlinear_solver = NonlinearBlockGS(
+                iprint=0,
+                maxiter=40,
+                atol=1e-14,
+                rtol=1e-12,
+            )
+            orbit_avionics.linear_solver = LinearBlockGS(
+                iprint=0,
+                maxiter=40,
+                atol=1e-14,
+                rtol=1e-12,
+            )
+
+        self.add_subsystem('orbit_avionics', orbit_avionics, promotes=['*'])
+
+        if add_battery:
+
+            self.add_subsystem(
+                'compute_battery_and_propellant_volume',
+                LinearCombinationComp(
+                    shape=(1, ),
+                    in_names=[
+                        'total_propellant_volume',
+                        'battery_volume',
+                    ],
+                    out_name='battery_and_propellant_volume',
+                    constant=0,
+                ),
+                promotes=['*'],
+            )
+
+            self.add_subsystem(
+                'compute_battery_and_propellant_mass',
+                LinearCombinationComp(
+                    shape=(1, ),
+                    in_names=[
+                        'total_propellant_used',
+                        'battery_mass',
+                    ],
+                    out_name='battery_and_propellant_mass',
+                    constant=0,
+                ),
+                promotes=['*'],
+            )
+
+        self.add_constraint(
+            'battery_and_propellant_mass',
+            lower=0,
+            # Don't bother with an upper limit because we are indirectly
+            # minimizing mass, and we don't want to make the problem
+            # infeasible
+            # upper=1.33,
+        )
+
+        # 1U (10cm)**3
+        u = 10**3 / 100**3
+        self.add_constraint(
+            'battery_and_propellant_volume',
+            lower=0,
+            upper=u,
+        )
 
         comp = DataDownloadComp(
             num_times=num_times,

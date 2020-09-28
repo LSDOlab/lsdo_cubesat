@@ -82,12 +82,9 @@ class PropulsionGroup(Group):
         comp = LinearCombinationComp(
             shape=(num_times, ),
             out_name='mass_flow_rate',
-            coeffs_dict=dict(
-                thrust_scalar=-1. / (
-                    cubesat['acceleration_due_to_gravity'] *
-                    cubesat['specific_impulse']
-                )
-            )
+            coeffs_dict=dict(thrust_scalar=-1. /
+                             (cubesat['acceleration_due_to_gravity'] *
+                              cubesat['specific_impulse']), ),
         )
         self.add_subsystem('mass_flow_rate_comp', comp, promotes=['*'])
 
@@ -102,3 +99,24 @@ class PropulsionGroup(Group):
             propellant_mass=np.empty(num_times),
         )
         self.add_subsystem('total_propellant_used_comp', comp, promotes=['*'])
+
+        # NOTE: Use Ideal Gas Law
+        # boltzmann = 1.380649e-23
+        # avogadro = 6.02214076e23
+        boltzmann_avogadro = 1.380649 * 6.02214076
+        # https://advancedspecialtygases.com/pdf/R-236FA_MSDS.pdf
+        r236fa_molecular_mass_kg = 152.05 / 1000
+        pressure = 100 * 6895
+        temperature = 273.15 + 56
+        # (273.15+25)*1.380649*6.02214076/(152.05/1000)/(100*6895)
+        self.add_subsystem(
+            'compute_propellant_volume',
+            PowerCombinationComp(
+                shape=(1, ),
+                out_name='total_propellant_volume',
+                coeff=temperature * boltzmann_avogadro /
+                r236fa_molecular_mass_kg / pressure,
+                powers_dict=dict(total_propellant_used=1.0, ),
+            ),
+            promotes=['*'],
+        )

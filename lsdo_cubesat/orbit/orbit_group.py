@@ -51,7 +51,11 @@ class OrbitGroup(Group):
         comp = LinearCombinationComp(
             shape=(num_times, ),
             out_name='mass',
-            coeffs_dict=dict(dry_mass=1., propellant_mass=1.),
+            coeffs_dict=dict(
+                dry_mass=1.,
+                propellant_mass=1.,
+                battery_mass=1.,
+            ),
         )
         self.add_subsystem('mass_comp', comp, promotes=['*'])
 
