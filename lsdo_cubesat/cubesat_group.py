@@ -20,7 +20,7 @@ from lsdo_cubesat.utils.ks_comp import KSComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
 from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
                             LinearCombinationComp, PowerCombinationComp,
-                            get_bspline_mtx, ScalarExpansionComp)
+                            ScalarExpansionComp, get_bspline_mtx)
 from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
 
@@ -340,7 +340,7 @@ class CubesatGroup(Group):
         self.add_constraint(
             'battery_and_propellant_volume',
             lower=0,
-            upper=u,
+            # upper=u,
         )
 
         comp = DataDownloadComp(
