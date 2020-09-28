@@ -54,7 +54,7 @@ class OrbitGroup(Group):
             coeffs_dict=dict(
                 dry_mass=1.,
                 propellant_mass=1.,
-                battery_mass=1.,
+                battery_mass_exp=1.,
             ),
         )
         self.add_subsystem('mass_comp', comp, promotes=['*'])
