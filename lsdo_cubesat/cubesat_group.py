@@ -20,7 +20,7 @@ from lsdo_cubesat.utils.ks_comp import KSComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
 from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
                             LinearCombinationComp, PowerCombinationComp,
-                            get_bspline_mtx)
+                            get_bspline_mtx, ScalarExpansionComp)
 from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
 
@@ -267,6 +267,16 @@ class CubesatGroup(Group):
                     # periodic_soc=True,
                     optimize_plant=optimize_plant,
                     step_size=battery_time_scale,
+                ),
+                promotes=['*'],
+            )
+
+            orbit_avionics.add_subsystem(
+                'expand_battery_mass',
+                ScalarExpansionComp(
+                    shape=(num_times, ),
+                    in_name='battery_mass',
+                    out_name='battery_mass_exp',
                 ),
                 promotes=['*'],
             )
