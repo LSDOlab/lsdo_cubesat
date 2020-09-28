@@ -119,11 +119,37 @@ class Viz(BaseViz):
             thrust_scalar = data_dict_current[
                 '{}_cubesat_group.thrust_scalar'.format(cubesat_name)]
 
-            # num_series = data_dict_current[
-            #     '{}_cubesat_group.num_series'.format(cubesat_name)]
-
+            # number of battery cells
+            num_series = data_dict_current[
+                '{}_cubesat_group.num_series'.format(cubesat_name)]
             num_series = data_dict_all['{}_cubesat_group.num_series'.format(
                 cubesat_name)]
+
+            # propellant mass
+            total_propellant_used = data_dict_current[
+                '{}_cubesat_group.total_propellant_used'.format(cubesat_name)]
+            total_propellant_used = data_dict_all[
+                '{}_cubesat_group.total_propellant_used'.format(cubesat_name)]
+
+            # propellant volume
+            total_propellant_volume = data_dict_current[
+                '{}_cubesat_group.total_propellant_volume'.format(
+                    cubesat_name)]
+            total_propellant_volume = data_dict_all[
+                '{}_cubesat_group.total_propellant_volume'.format(
+                    cubesat_name)]
+
+            # battery mass
+            battery_mass = data_dict_current[
+                '{}_cubesat_group.battery_mass'.format(cubesat_name)]
+            battery_mass = data_dict_all[
+                '{}_cubesat_group.battery_mass'.format(cubesat_name)]
+
+            # battery volume
+            battery_volume = data_dict_current[
+                '{}_cubesat_group.battery_volume'.format(cubesat_name)]
+            battery_volume = data_dict_all[
+                '{}_cubesat_group.battery_volume'.format(cubesat_name)]
 
             soc = data_dict_current['{}_cubesat_group.cell_model.soc'.format(
                 cubesat_name)]
@@ -212,6 +238,27 @@ class Viz(BaseViz):
         self.get_frame(1).clear_all_axes()
 
         with self.get_frame(1)[5, 0:3] as ax:
+            # battery_mass = np.array(
+            #     data_dict_all['{}_cubesat_group.battery_mass'.format(
+            #         cubesat_name)]).flatten()
+            # print('battery_mass')
+            # print(battery_mass)
+            # battery_volume = np.array(
+            #     data_dict_all['{}_cubesat_group.battery_volume'.format(
+            #         cubesat_name)]).flatten()
+            # print('battery_volume')
+            # print(battery_volume)
+            # total_propellant_used = np.array(
+            #     data_dict_all['{}_cubesat_group.total_propellant_used'.format(
+            #         cubesat_name)]).flatten()
+            # print('total_propellant_used')
+            # print(total_propellant_used)
+            # total_propellant_volume = np.array(
+            #     data_dict_all['{}_cubesat_group.total_propellant_volume'.
+            #                   format(cubesat_name)]).flatten()
+            # print('total_propellant_volume')
+            # print(total_propellant_volume)
+
             obj = np.array(data_dict_all['obj']).flatten()
             sns.lineplot(x=np.arange(ind), y=obj[:ind], ax=ax)
             ax.set_ylim(
@@ -228,6 +275,7 @@ class Viz(BaseViz):
             ax.set_ylabel('obj')
 
         with self.get_frame(1)[5, 4:7] as ax:
+            print(data_dict_all.keys())
             num_series = np.array(
                 data_dict_all['detector_cubesat_group.num_series']).flatten()
             sns.lineplot(x=np.arange(ind), y=num_series[:ind], ax=ax)
