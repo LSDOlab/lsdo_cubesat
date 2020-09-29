@@ -96,16 +96,16 @@ class CubesatGroup(Group):
             # Solar panel area (3U): 0.12 m2
             # Power: 28-42W, choose 35W
             # Efficiency: 29.5%
+            # 10.325
             # 100% efficiency: 291.67 W/m2
             # 29.5% efficiency: 86.04 W/m2
-            power_over_area = 86.04
-
+            power = 10.325
             self.add_subsystem(
                 'compute_solar_power',
                 PowerCombinationComp(
                     shape=(num_times, ),
                     out_name='solar_power',
-                    coeff=power_over_area,
+                    coeff=power,
                     powers_dict=dict(sunlit_area=1.0, ),
                 ),
                 promotes=['*'],
