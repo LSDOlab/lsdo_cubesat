@@ -15,3 +15,5 @@ Documentation
 .. toctree::
    :maxdepth: 2
    :titlesonly:
+
+   _src_docs/examples

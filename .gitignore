@@ -3,4 +3,13 @@ __pycache__/
 .DS_Store
 *.html
 *.out
-.DS_Store
+**/.DS_Store
+*.swp
+docs/_build
+/doctrees
+**/__pycache__/
+*.pyc
+**/.mypy_cache/
+**/.vscode
+lsdo_cubesat/_data/
+lsdo_cubesat/_frames/
