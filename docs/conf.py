@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath('./_exts'))
 sys.path.insert(0, os.path.abspath('./docs/_exts'))
 
 # -- General configuration ------------------------------------------------
-
+import sphinx_rtd_theme
 from openmdao.docutils import embed_code, embed_options, do_monkeypatch
 do_monkeypatch()
 
@@ -35,6 +35,7 @@ extensions = [
     'numpydoc',
     'embed_code',
     # 'embed_options',
+    'sphinx_rtd_theme',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
