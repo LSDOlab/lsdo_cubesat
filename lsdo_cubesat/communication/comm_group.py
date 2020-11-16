@@ -1,32 +1,58 @@
 import numpy as np
-from openmdao.api import Problem, IndepVarComp, Group, ExecComp
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp, ElementwiseMaxComp
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_cubesat.api import Swarm, Cubesat
+from openmdao.api import ExecComp, Group, IndepVarComp, Problem
 
-# from lsdo_cubesat.api import GS_net, Ground_station
-from lsdo_cubesat.swarm.ground_station import Ground_station
-from lsdo_cubesat.swarm.GS_net import GS_net
-from lsdo_cubesat.ground_station_group import GSGroup
+from lsdo_cubesat.api import Cubesat, Swarm
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
 from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
 from lsdo_cubesat.communication.Comm_Bitrate import BitRateComp
-from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
+from lsdo_cubesat.communication.Comm_distance import \
+    StationSatelliteDistanceComp
 from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
+from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
 from lsdo_cubesat.communication.Comm_VectorBody import VectorBodyComp
+from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
+from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
 from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
 from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
-from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
-from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
-from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
-from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
+from lsdo_cubesat.ground_station_group import GSGroup
+# from lsdo_cubesat.api import GS_net, Ground_station
+from lsdo_cubesat.swarm.ground_station import Ground_station
+from lsdo_cubesat.swarm.GS_net import GS_net
+from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
+                            ElementwiseMaxComp, LinearCombinationComp,
+                            PowerCombinationComp, get_bspline_mtx)
+
 # from lsdo_cubesat.communication.Ground_comm import Groundcomm
 
 
 class CommGroup(Group):
+    """
+    Communication Discipline
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    step_size : float
+        Constant time step size to use for integration
+    num_cp : int
+        Dimension of design variables/number of control points for
+        BSpline components.
+    Ground_station : Ground_station
+        Ground_station OptionsDictionary containing name, latitude,
+        longitude, and altitude coordinates.
+
+    Parameters
+    ----------
+    orbit_state_km : shape=7
+        Time history of orbit position (km) and velocity (km/s)
+    rot_mtx_i_b_3x3n : shape=(3,3,n)
+        Time history of rotation matrices from ECI to body frame
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)
@@ -120,3 +146,70 @@ class CommGroup(Group):
         #     Data=np.empty(num_times),
         # )
         # self.add_subsystem('total_data_downloaded_comp', comp, promotes=['*'])
+
+
+if __name__ == '__main__':
+    from openmdao.api import Problem, IndepVarComp
+    import matplotlib.pyplot as plt
+    from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+    from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
+    prob = Problem()
+    num_times = 20
+    step_size = 0.1
+    num_cp = 5
+    mtx = get_bspline_mtx(num_cp, num_times, order=4)
+    initial_orbit_state_magnitude = np.array([1e-3] * 3 + [1e-3] * 3)
+    cubesat = Cubesat(
+        name='optics',
+        dry_mass=1.3,
+        initial_orbit_state=initial_orbit_state_magnitude * np.random.rand(6),
+        approx_altitude_km=500.,
+        specific_impulse=47.,
+        perigee_altitude=500.,
+        apogee_altitude=500.,
+    )
+
+    # prob.model.add_subsystem(
+    #     'orbit',
+    #     OrbitGroup(
+    #         num_times=num_times,
+    #         num_cp=num_cp,
+    #         step_size=step_size,
+    #         mtx=mtx,
+    #         cubesat=cubesat,
+    #     ),
+    #     promotes=['*'],
+    # )
+    # prob.model.add_subsystem(
+    #     'att',
+    #     AttitudeGroup(
+    #         num_times=num_times,
+    #         num_cp=num_cp,
+    #         step_size=step_size,
+    #         mtx=mtx,
+    #         cubesat=cubesat,
+    #     ),
+    #     promotes=['*'],
+    # )
+    prob.model.add_subsystem(
+        'comm_group',
+        CommGroup(
+            num_times=num_times,
+            num_cp=num_cp,
+            step_size=step_size,
+            mtx=mtx,
+            Ground_station=Ground_station(
+                name='UCSD',
+                lon=-117.1611,
+                lat=32.7157,
+                alt=0.4849,
+            ),
+        ),
+        promotes=['*'],
+    )
+    prob.setup()
+    prob.run_model()
+    t = np.arange(num_times) * step_size
+    plt.plot(t, prob['P_comm'])
+    plt.plot(t, prob['Download_rate'])
+    plt.show()

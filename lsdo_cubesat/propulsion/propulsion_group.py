@@ -84,7 +84,8 @@ class PropulsionGroup(Group):
             out_name='mass_flow_rate',
             coeffs_dict=dict(thrust_scalar=-1. /
                              (cubesat['acceleration_due_to_gravity'] *
-                              cubesat['specific_impulse'])))
+                              cubesat['specific_impulse']), ),
+        )
         self.add_subsystem('mass_flow_rate_comp', comp, promotes=['*'])
 
         comp = PropellantMassRK4Comp(

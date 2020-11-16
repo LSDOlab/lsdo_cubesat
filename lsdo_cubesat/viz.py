@@ -74,7 +74,7 @@ class Viz(BaseViz):
             Frame(
                 height_in=20.,
                 width_in=25.,
-                nrows=5,
+                nrows=6,
                 ncols=15,
                 wspace=0.4,
                 hspace=0.4,
@@ -118,6 +118,41 @@ class Viz(BaseViz):
 
             thrust_scalar = data_dict_current[
                 '{}_cubesat_group.thrust_scalar'.format(cubesat_name)]
+
+            # number of battery cells
+            num_series = data_dict_current[
+                '{}_cubesat_group.num_series'.format(cubesat_name)]
+            num_series = data_dict_all['{}_cubesat_group.num_series'.format(
+                cubesat_name)]
+
+            # propellant mass
+            total_propellant_used = data_dict_current[
+                '{}_cubesat_group.total_propellant_used'.format(cubesat_name)]
+            total_propellant_used = data_dict_all[
+                '{}_cubesat_group.total_propellant_used'.format(cubesat_name)]
+
+            # propellant volume
+            total_propellant_volume = data_dict_current[
+                '{}_cubesat_group.total_propellant_volume'.format(
+                    cubesat_name)]
+            total_propellant_volume = data_dict_all[
+                '{}_cubesat_group.total_propellant_volume'.format(
+                    cubesat_name)]
+
+            # battery mass
+            battery_mass = data_dict_current[
+                '{}_cubesat_group.battery_mass'.format(cubesat_name)]
+            battery_mass = data_dict_all[
+                '{}_cubesat_group.battery_mass'.format(cubesat_name)]
+
+            # battery volume
+            battery_volume = data_dict_current[
+                '{}_cubesat_group.battery_volume'.format(cubesat_name)]
+            battery_volume = data_dict_all[
+                '{}_cubesat_group.battery_volume'.format(cubesat_name)]
+
+            soc = data_dict_current['{}_cubesat_group.cell_model.soc'.format(
+                cubesat_name)]
 
             for ground_station_name in ground_station_names:
 
@@ -186,6 +221,7 @@ class Viz(BaseViz):
         total_data_download = data_dict_current['total_data_downloaded']
         total_propellant_used = data_dict_current['total_propellant_used']
         observation_dot = data_dict_current['observation_dot']
+        obj = data_dict_current['obj']
         obj = data_dict_all['obj']
 
         # optics_matrix = data_dict_list[ind][
@@ -200,6 +236,76 @@ class Viz(BaseViz):
         #     "sunshade_cubesat_group.relative_orbit_state"][:3, :]
         # r_sunshade = np.linalg.norm(sunshade_matrix, ord=1, axis=0)
         self.get_frame(1).clear_all_axes()
+
+        with self.get_frame(1)[5, 0:3] as ax:
+            # battery_mass = np.array(
+            #     data_dict_all['{}_cubesat_group.battery_mass'.format(
+            #         cubesat_name)]).flatten()
+            # print('battery_mass')
+            # print(battery_mass)
+            # battery_volume = np.array(
+            #     data_dict_all['{}_cubesat_group.battery_volume'.format(
+            #         cubesat_name)]).flatten()
+            # print('battery_volume')
+            # print(battery_volume)
+            # total_propellant_used = np.array(
+            #     data_dict_all['{}_cubesat_group.total_propellant_used'.format(
+            #         cubesat_name)]).flatten()
+            # print('total_propellant_used')
+            # print(total_propellant_used)
+            # total_propellant_volume = np.array(
+            #     data_dict_all['{}_cubesat_group.total_propellant_volume'.
+            #                   format(cubesat_name)]).flatten()
+            # print('total_propellant_volume')
+            # print(total_propellant_volume)
+
+            obj = np.array(data_dict_all['obj']).flatten()
+            sns.lineplot(x=np.arange(ind), y=obj[:ind], ax=ax)
+            ax.set_ylim(
+                self.get_limits(
+                    ['obj'],
+                    fig_axis=0,
+                    data_axis=0,
+                    lower_margin=0.1,
+                    upper_margin=0.1,
+                    mode='final',
+                ))
+            ax.set_xlim(0, len(obj))
+            ax.set_xlabel('iterations')
+            ax.set_ylabel('obj')
+
+        with self.get_frame(1)[5, 4:7] as ax:
+            print(data_dict_all.keys())
+            num_series = np.array(
+                data_dict_all['detector_cubesat_group.num_series']).flatten()
+            sns.lineplot(x=np.arange(ind), y=num_series[:ind], ax=ax)
+            ax.set_ylim(
+                self.get_limits(
+                    ['detector_cubesat_group.num_series'],
+                    fig_axis=0,
+                    data_axis=0,
+                    lower_margin=0.1,
+                    upper_margin=0.1,
+                    mode='final',
+                ))
+            ax.set_xlim(0, len(num_series))
+            ax.set_xlabel('iterations')
+            ax.set_ylabel('detector_cubesat_group.num_series')
+
+        with self.get_frame(1)[5, 8:10] as ax:
+            soc = data_dict_current['detector_cubesat_group.cell_model.soc']
+            sns.lineplot(x=np.arange(time).flatten(), y=soc.flatten(), ax=ax)
+            # ax.set_ylim(
+            #     self.get_limits(
+            #         ['detector_cubesat_group.cell_model.soc'],
+            #         fig_axis=1,
+            #         data_axis=0,
+            #         lower_margin=0.1,
+            #         upper_margin=0.1,
+            #         mode='final',
+            #     ))
+            ax.set_xlabel('num_times')
+            ax.set_ylabel('detector_cubesat_group.cell_model.soc')
 
         with self.get_frame(1)[0, 0:3] as ax:
 
@@ -293,7 +399,7 @@ class Viz(BaseViz):
                                    reference_orbit[1, :],
                                    reference_orbit[2, :])
 
-            path = "/home/lsdo/Cubesat/lsdo_cubesat/map/world.jpg"
+            path = "/Users/victor/packages/lsdo_cubesat/lsdo_cubesat/map/world.jpg"
             earth = mpimg.imread(path)
             # img = Image.open(path)
             ax.imshow(earth, extent=[-180, 180, -100, 100], aspect='auto')
@@ -440,7 +546,7 @@ class Viz(BaseViz):
         with self.get_frame(1)[3, 4:7] as ax:
             num_times = np.arange(time)
             pitch = data_dict_current['detector_cubesat_group.pitch']
-            print(pitch.shape)
+            # print(pitch.shape)
             pitch.reshape((1, time))
             sns.lineplot(x=num_times, y=pitch, ax=ax)
             ax.set_ylim(
@@ -545,7 +651,7 @@ class Viz(BaseViz):
 
             Georgia_data_rate = data_dict_current[
                 'detector_cubesat_group.Georgia_comm_group.Download_rate']
-            # print(data_rate.shape)
+            # print(Georgia_data_rate)
 
             num_times = np.arange(time)
             sns.lineplot(x=num_times, y=Georgia_data_rate, ax=ax)

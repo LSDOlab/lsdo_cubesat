@@ -1,0 +1,25 @@
+Options Dictionaries
+====================
+
+LSDO CubeSat provides several dictionary-like classes to simplify
+setting options for Groups and Components.
+These classes enable the user to create, for example, several instances
+of ground stations with different lattitudes and longitudes, or several
+CubeSats with different orbit inclinations.
+The components provided by LSDO CubeSat read these values at model
+setup.
+
+Ground_station
+--------------
+
+.. embed-options-table :: lsdo_cubesat.swarm.ground_station, Ground_station, initialize
+
+Cubesat
+-------
+
+.. embed-options-table :: lsdo_cubesat.swarm.cubesat, Cubesat, initialize
+
+Swarm
+-----
+
+.. embed-options-table :: lsdo_cubesat.swarm.swarm, Swarm, initialize

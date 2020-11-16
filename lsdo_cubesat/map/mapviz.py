@@ -103,7 +103,7 @@ plt.show()
 # C = B[np.lexsort(B[:, ::-1].T)]
 # print(C)
 
-path = "/home/lsdo/Cubesat/lsdo_cubesat/map/world.jpg"
+path = "/Users/victor/packages/lsdo_cubesat/lsdo_cubesat/map/world.jpg"
 earth = mpimg.imread(path)
 
 img = Image.open(path)

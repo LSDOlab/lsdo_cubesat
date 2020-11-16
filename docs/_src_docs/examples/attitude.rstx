@@ -1,0 +1,7 @@
+Attitude Dynamics
+=================
+
+Time history of attitude dynamics
+---------------------------------
+
+.. embed-module-plot :: lsdo_cubesat.examples.attitude_example, 80

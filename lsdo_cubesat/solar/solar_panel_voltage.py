@@ -1,7 +1,6 @@
 import numpy as np
 from openmdao.api import ExplicitComponent
 
-from lsdo_utils.miscellaneous_functions.structure_data import structure_data
 from smt.surrogate_models import RMTB, RMTC
 
 

@@ -2,10 +2,7 @@ import numpy as np
 
 
 def make_random_bounded_array(n, bound):
-    rba = np.random.rand(n) - 0.5
-    m = np.amax(np.absolute(rba))
-    rba *= (bound - 0.000001) / m
-    return rba
+    return np.sign(bound) * bound * (np.random.rand(n) - 0.5)
 
 
 def make_random_signed_array(n, sgn=1, bound=0):
@@ -32,7 +29,3 @@ def make_random_signed_array(n, sgn=1, bound=0):
             rpa -= b3 * bound
             b3 = (rpa >= bound).astype(int)
     return sgn * rpa
-
-
-a = make_random_signed_array(10, sgn=-1, bound=0.5)
-print(a)

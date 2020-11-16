@@ -22,6 +22,7 @@ class AttitudeGroup(Group):
         self.options.declare('num_cp', types=int)
         self.options.declare('cubesat')
         self.options.declare('mtx')
+        self.options.declare('step_size', types=float)
 
     def setup(self):
         num_times = self.options['num_times']
@@ -29,6 +30,7 @@ class AttitudeGroup(Group):
         num_cp = self.options['num_cp']
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
+        step_size = self.options['step_size']
 
         # CADRE mass props (3U)
         I = np.array([18.0, 18.0, 6.0]) * 1e-3
@@ -37,14 +39,16 @@ class AttitudeGroup(Group):
         wq0 = np.array([-1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
 
         comp = IndepVarComp()
-        comp.add_output('external_torques_x_cp', val=np.zeros(num_cp))
-        comp.add_output('external_torques_y_cp', val=np.zeros(num_cp))
-        comp.add_output('external_torques_z_cp', val=np.zeros(num_cp))
-        comp.add_output('initial_angular_velocity_orientation', val=wq0)
-        comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
-        comp.add_design_var('external_torques_x_cp')
-        comp.add_design_var('external_torques_y_cp')
-        comp.add_design_var('external_torques_z_cp')
+        comp.add_output('times',
+                        units='s',
+                        val=np.linspace(0., step_size * (num_times - 1),
+                                        num_times))
+        # comp.add_output('roll_cp', val=2. * np.pi * np.random.rand(num_cp))
+        # comp.add_output('pitch_cp', val=2. * np.pi * np.random.rand(num_cp))
+        comp.add_output('roll_cp', val=np.ones(num_cp))
+        comp.add_output('pitch_cp', val=np.ones(num_cp))
+        comp.add_design_var('roll_cp')
+        comp.add_design_var('pitch_cp')
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         # Expand external_torques

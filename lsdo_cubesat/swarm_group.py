@@ -1,19 +1,24 @@
-from openmdao.api import Group, ExecComp, NonlinearBlockGS, LinearBlockGS
-
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
-
-from lsdo_cubesat.cubesat_group import CubesatGroup
-from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
-from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
-from lsdo_cubesat.communication.ground_station import Ground_station
 import numpy as np
+from openmdao.api import ExecComp, Group
+
+from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
+from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.cubesat_group import CubesatGroup
+from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
+from lsdo_utils.api import get_bspline_mtx
+from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+    ElementwiseMaxComp
 
 
 class SwarmGroup(Group):
     def initialize(self):
         self.options.declare('swarm')
+        self.options.declare('add_battery', types=bool)
+        self.options.declare('optimize_plant', types=bool)
+        self.options.declare('new_attitude', types=bool)
+        self.options.declare('battery_time_scale', types=float)
+        self.options.declare('attitude_time_scale', types=float)
 
     def setup(self):
         swarm = self.options['swarm']
@@ -21,7 +26,12 @@ class SwarmGroup(Group):
         num_times = swarm['num_times']
         num_cp = swarm['num_cp']
         step_size = swarm['step_size']
+        add_battery = self.options['add_battery']
         mtx = get_bspline_mtx(num_cp, num_times, order=4)
+        optimize_plant = self.options['optimize_plant']
+        new_attitude = self.options['new_attitude']
+        battery_time_scale = self.options['battery_time_scale']
+        attitude_time_scale = self.options['attitude_time_scale']
 
         group = ReferenceOrbitGroup(
             num_times=num_times,
@@ -31,14 +41,16 @@ class SwarmGroup(Group):
         )
         self.add_subsystem('reference_orbit_group', group, promotes=['*'])
 
-        # load training data
-        az = np.genfromtxt('data/arrow_xData.csv', delimiter=',')
-        el = np.genfromtxt('data/arrow_yData.csv', delimiter=',')
-        yt = np.genfromtxt('data/arrow_zData.csv', delimiter=',')
+        sm = None
+        if add_battery:
+            # load training data
+            az = np.genfromtxt('training_data/arrow_xData.csv', delimiter=',')
+            el = np.genfromtxt('training_data/arrow_yData.csv', delimiter=',')
+            yt = np.genfromtxt('training_data/arrow_zData.csv', delimiter=',')
 
-        # generate surrogate model with 20 training points
-        # must be the same as the number of points used to create model
-        sm = smt_exposure(20, az, el, yt)
+            # generate surrogate model with 20 training points
+            # must be the same as the number of points used to create model
+            sm = smt_exposure(20, az, el, yt)
 
         for cubesat in swarm.children:
             name = cubesat['name']
@@ -50,19 +62,12 @@ class SwarmGroup(Group):
                     cubesat=cubesat,
                     mtx=mtx,
                     Ground_station=Ground_station,
+                    add_battery=add_battery,
                     sm=sm,
-                )
-                group.nonlinear_solver = NonlinearBlockGS(
-                    iprint=0,
-                    maxiter=40,
-                    atol=1e-14,
-                    rtol=1e-12,
-                )
-                group.linear_solver = LinearBlockGS(
-                    iprint=0,
-                    maxiter=40,
-                    atol=1e-14,
-                    rtol=1e-12,
+                    optimize_plant=optimize_plant,
+                    new_attitude=new_attitude,
+                    attitude_time_scale=attitude_time_scale,
+                    battery_time_scale=battery_time_scale,
                 )
             self.add_subsystem('{}_cubesat_group'.format(name), group)
 
