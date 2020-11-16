@@ -36,6 +36,11 @@ export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
 make -C docs clean
 make -C docs html
 
+ls
+ls _build
+ls _build/html/
+ls html/
+
 #######################
 # Update GitHub Pages #
 #######################
