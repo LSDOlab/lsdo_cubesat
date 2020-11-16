@@ -149,5 +149,5 @@ texinfo_documents = [
      'lsdo_cubesat', 'One line description of project.', 'Miscellaneous'),
 ]
 
-# todo_include_todos = True
+todo_include_todos = True
 numpydoc_show_class_members = False

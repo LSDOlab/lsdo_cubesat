@@ -36,11 +36,6 @@ export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
 make -C docs clean
 make -C docs html
 
-ls
-ls _build
-ls _build/html/
-ls html/
-
 #######################
 # Update GitHub Pages #
 #######################
@@ -58,10 +53,6 @@ git init
 git remote add deploy "https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 git checkout -b gh-pages
 
-echo !_build/ >> .gitignore
-echo !*.html >> .gitignore
-
-
 # add .nojekyll to the root so that github won't 404 on content added to dirs
 # that start with an underscore (_), such as our "_content" dir..
 touch .nojekyll
@@ -69,14 +60,9 @@ touch .nojekyll
 # Add README
 cat > README.md <<EOF
 # GitHub Pages Cache
-
 Nothing to see here. The contents of this branch are essentially a cache that's not intended to be viewed on github.com.
-
-
 If you're looking to update our documentation, check the relevant development branch's 'docs/' dir.
-
 For more information on how this documentation is built using Sphinx, Read the Docs, and GitHub Actions/Pages, see:
-
  * https://tech.michaelaltfield.net/2020/07/18/sphinx-rtd-github-pages-1
 EOF
 
