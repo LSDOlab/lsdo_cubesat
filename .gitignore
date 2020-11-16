@@ -1,15 +1,21 @@
-*.egg-info
+**/*.egg-info
 __pycache__/
 .DS_Store
-*.html
-*.out
 **/.DS_Store
 *.swp
 docs/_build
 /doctrees
 **/__pycache__/
-*.pyc
+**/*.pyc
 **/.mypy_cache/
 **/.vscode
+
+# user input, output, and "build" files
+**/*.mov
+**/*.avi
+*.html
+*.out
+lsdo_cubesat/cad/
 lsdo_cubesat/_data/
 lsdo_cubesat/_frames/
+lsdo_cubesat/_animation_frames/

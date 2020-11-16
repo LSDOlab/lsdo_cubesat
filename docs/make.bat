@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=ozone
+set SPHINXPROJ=lsdo_cubesat
 
 if "%1" == "" goto help
 

@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = ozone
+SPHINXPROJ    = lsdo_cubesat
 SOURCEDIR     = .
 BUILDDIR      = _build
 PDFBUILDDIR   = /tmp
