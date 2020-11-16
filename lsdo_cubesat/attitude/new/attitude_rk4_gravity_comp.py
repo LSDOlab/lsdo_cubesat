@@ -21,6 +21,48 @@ C4 = 1.875 * mu * J4 * Re**4
 
 
 class AttitudeRK4GravityComp(RK4Comp):
+    """
+    Attitude dynamics model for spacecraft in orbit about point mass.
+    The dynamics are integrated using the Runge-Kutta 4 method.
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    step_size : float
+        Constant time step size to use for integration
+    moment_inertia_ratios: array
+        Ratio of moments of inertia along principal axes,
+        ``(I[1] - I[2])/I[0]``, ``(I[2] - I[0])/I[1]``,
+        ``(I[0] - I[1])/I[2]``
+
+    Parameters
+    ----------
+    initial_angular_velocity_orientation : shape=7
+        Initial angular velocity and orientation. First three
+        elements correspond to angular velocity. Fourth element
+        corresponds to scalar part of unit quaternion. Last three
+        elements correspond to vector part of unit quaternion.
+    osculating_orbit_angular_speed : shape=(1,num_times)
+        Orbit angular speed. Remains constant for circular orbit.
+    external_torques_x : shape=num_times
+        Exogenous inputs (x), can be from any actuator or external
+        moment other than gravity (e.g. atmospheric drag)
+    external_torques_y : shape=num_times
+        Exogenous inputs (y), can be from any actuator or external
+        moment other than gravity (e.g. atmospheric drag)
+    external_torques_z : shape=num_times
+        Exogenous inputs (z), can be from any actuator or external
+        moment other than gravity (e.g. atmospheric drag)
+
+    Returns
+    -------
+    angular_velocity_orientation : shape=(7,num_times)
+        Time history of angular velocity and orientation. First three
+        elements correspond to angular velocity. Fourth element
+        corresponds to scalar part of unit quaternion. Last three
+        elements correspond to vector part of unit quaternion.
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('step_size', types=float)
@@ -44,18 +86,21 @@ class AttitudeRK4GravityComp(RK4Comp):
 
         self.add_input(
             'external_torques_x',
+            val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
         self.add_input(
             'external_torques_y',
+            val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
         self.add_input(
             'external_torques_z',
+            val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
@@ -63,7 +108,7 @@ class AttitudeRK4GravityComp(RK4Comp):
         self.add_input('osculating_orbit_angular_speed',
                        shape=(1, n),
                        val=0.0011023132117858924,
-                       desc='Mean motion of oscullating orbit')
+                       desc='Angular speed of oscullating orbit')
 
         self.add_input('initial_angular_velocity_orientation',
                        shape=7,

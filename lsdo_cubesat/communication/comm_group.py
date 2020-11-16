@@ -30,6 +30,29 @@ from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
 
 
 class CommGroup(Group):
+    """
+    Communication Discipline
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    step_size : float
+        Constant time step size to use for integration
+    num_cp : int
+        Dimension of design variables/number of control points for
+        BSpline components.
+    Ground_station : Ground_station
+        Ground_station OptionsDictionary containing name, latitude,
+        longitude, and altitude coordinates.
+
+    Parameters
+    ----------
+    orbit_state_km : shape=7
+        Time history of orbit position (km) and velocity (km/s)
+    rot_mtx_i_b_3x3n : shape=(3,3,n)
+        Time history of rotation matrices from ECI to body frame
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)
@@ -123,3 +146,70 @@ class CommGroup(Group):
         #     Data=np.empty(num_times),
         # )
         # self.add_subsystem('total_data_downloaded_comp', comp, promotes=['*'])
+
+
+if __name__ == '__main__':
+    from openmdao.api import Problem, IndepVarComp
+    import matplotlib.pyplot as plt
+    from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+    from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
+    prob = Problem()
+    num_times = 20
+    step_size = 0.1
+    num_cp = 5
+    mtx = get_bspline_mtx(num_cp, num_times, order=4)
+    initial_orbit_state_magnitude = np.array([1e-3] * 3 + [1e-3] * 3)
+    cubesat = Cubesat(
+        name='optics',
+        dry_mass=1.3,
+        initial_orbit_state=initial_orbit_state_magnitude * np.random.rand(6),
+        approx_altitude_km=500.,
+        specific_impulse=47.,
+        perigee_altitude=500.,
+        apogee_altitude=500.,
+    )
+
+    # prob.model.add_subsystem(
+    #     'orbit',
+    #     OrbitGroup(
+    #         num_times=num_times,
+    #         num_cp=num_cp,
+    #         step_size=step_size,
+    #         mtx=mtx,
+    #         cubesat=cubesat,
+    #     ),
+    #     promotes=['*'],
+    # )
+    # prob.model.add_subsystem(
+    #     'att',
+    #     AttitudeGroup(
+    #         num_times=num_times,
+    #         num_cp=num_cp,
+    #         step_size=step_size,
+    #         mtx=mtx,
+    #         cubesat=cubesat,
+    #     ),
+    #     promotes=['*'],
+    # )
+    prob.model.add_subsystem(
+        'comm_group',
+        CommGroup(
+            num_times=num_times,
+            num_cp=num_cp,
+            step_size=step_size,
+            mtx=mtx,
+            Ground_station=Ground_station(
+                name='UCSD',
+                lon=-117.1611,
+                lat=32.7157,
+                alt=0.4849,
+            ),
+        ),
+        promotes=['*'],
+    )
+    prob.setup()
+    prob.run_model()
+    t = np.arange(num_times) * step_size
+    plt.plot(t, prob['P_comm'])
+    plt.plot(t, prob['Download_rate'])
+    plt.show()

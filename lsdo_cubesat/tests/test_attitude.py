@@ -4,10 +4,11 @@ from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
 import matplotlib.pyplot as plt
 from lsdo_cubesat.attitude.new.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
 import numpy as np
+# import pytest
 
 np.random.seed(0)
 num_times = 100
-step_size = 1e-7
+step_size = 1e-8
 I = np.array([90, 100, 80])
 wq0 = np.random.rand(7) - 0.5
 wq0[3:] /= np.linalg.norm(wq0[3:])
@@ -42,4 +43,25 @@ prob.model.add_subsystem(
 )
 
 prob.setup(check=True, force_alloc_complex=True)
-prob.check_partials(compact_print=True)
+check_dict = prob.check_partials(compact_print=True)
+# rel_vals = []
+# abs_vals = []
+# for comp, ofwrt in check_dict.items():
+#     for key, val in ofwrt.items():
+#         rel_vals.append(val['rel error'][0])
+#         abs_vals.append(val['abs error'][0])
+# assert (np.all(np.less(rel_vals, 1e-6)))
+# assert (np.all(np.less(abs_vals, 1e-6)))
+
+# ok = '[  OK  ]: '
+# fail = '[ FAIL ]: '
+# if val['rel error'][0] < 1e-6:
+#     print(ok, 'REL ', key[0], ' wrt ', key[1])
+# else:
+#     print(fail, 'REL ', key[0], ' wrt ', key[1], ', VAL=',
+#           val['rel error'][0])
+# if val['abs error'][0] < 1e-6:
+#     print(ok, 'ABS ', key[0], ' wrt ', key[1])
+# else:
+#     print(fail, 'ABS ', key[0], ' wrt ', key[1], ', VAL=',
+#           val['abs error'][0])
