@@ -54,6 +54,8 @@ git remote add deploy "https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSIT
 git checkout -b gh-pages
 
 echo !_build/ >> .gitignore
+echo !*.html >> .gitignore
+
 
 # add .nojekyll to the root so that github won't 404 on content added to dirs
 # that start with an underscore (_), such as our "_content" dir..
