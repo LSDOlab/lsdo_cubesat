@@ -2,11 +2,23 @@ import numpy as np
 
 from openmdao.api import ExplicitComponent
 
-# 'position_km'
-# 'velocity_km_s'
-
 
 class OrbitStateDecompositionComp(ExplicitComponent):
+    """
+    Decompose state vector into position and velocity
+
+    Options
+    -------
+    num_times : int
+        Number of time steps in a given trajectory
+    position_name : str
+        Name of position vector
+    velocity_name : str
+        Name of velocity vector
+    orbit_state_name : str
+        Name of state vector to decompose; first three elements store
+        position vector, last three store velocity vector
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('position_name', types=str)
@@ -49,29 +61,3 @@ class OrbitStateDecompositionComp(ExplicitComponent):
 
         outputs[position_name] = inputs[orbit_state_name][:3, :]
         outputs[velocity_name] = inputs[orbit_state_name][3:, :]
-
-
-if __name__ == '__main__':
-    from openmdao.api import Problem, IndepVarComp
-
-    num_times = 3
-
-    prob = Problem()
-
-    comp = IndepVarComp()
-    orbit_state_name = 'orbit_state'
-    comp.add_output(orbit_state_name, np.random.rand(6, num_times))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-    comp = OrbitStateDecompositionComp(num_times=num_times,
-                                       orbit_state_name='orbit_state',
-                                       position_name='position',
-                                       velocity_name='velocity')
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
-
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
-    # prob.check_partials()

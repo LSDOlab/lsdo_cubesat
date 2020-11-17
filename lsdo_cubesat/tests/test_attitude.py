@@ -41,4 +41,10 @@ prob.model.add_subsystem(
 )
 
 prob.setup(check=True, force_alloc_complex=True)
-check_dict = prob.check_partials(compact_print=True)
+cp = prob.check_partials(compact_print=True)
+
+
+# pytest
+def test_fn():
+    from openmdao.utils.assert_utils import assert_check_partials
+    assert_check_partials(cp, atol=1.e-6, rtol=1.e-6)

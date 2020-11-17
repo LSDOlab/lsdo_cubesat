@@ -14,15 +14,31 @@ from lsdo_cubesat.orbit.rot_mtx_t_i_comp import RotMtxTIComp
 
 
 class ReferenceOrbitGroup(Group):
+    """
+    Reference orbit for use with swarm models. The reference orbit is
+    propagated using J2, J3, J4 perturbations. The position vector for
+    the reference orbit is on the order of thousands of kilometers,
+    while the positions of the spacecraft may be on the order of meters.
+    Control optimization may be performed using the relative positions
+    without accumulating errors that would accumulate using the absolute
+    position vector.
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    step_size : float
+        Constant time step size to use for integration
+    cubesat : Cubesat
+        Cubesat OptionsDictionary with initial orbital elements
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
-        self.options.declare('num_cp', types=int)
         self.options.declare('step_size', types=float)
         self.options.declare('cubesat')
 
     def setup(self):
         num_times = self.options['num_times']
-        num_cp = self.options['num_cp']
         step_size = self.options['step_size']
         cubesat = self.options['cubesat']
 
