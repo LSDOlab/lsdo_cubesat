@@ -31,7 +31,8 @@ from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
 
 class CommGroup(Group):
     """
-    Communication Discipline
+    Communication Discipline. Use one CommGroup per groundstation, per
+    spacecraft.
 
     Options
     -------
@@ -134,18 +135,6 @@ class CommGroup(Group):
 
         comp = BitRateComp(num_times=num_times)
         self.add_subsystem('Download_rate', comp, promotes=['*'])
-
-        # comp = DataDownloadComp(
-        #     num_times=num_times,
-        #     step_size=step_size,
-        # )
-        # self.add_subsystem('Data_download_rk4_comp', comp, promotes=['*'])
-
-        # comp = ExecComp(
-        #     'total_data_downloaded= Data[-1] - Data[0]',
-        #     Data=np.empty(num_times),
-        # )
-        # self.add_subsystem('total_data_downloaded_comp', comp, promotes=['*'])
 
 
 if __name__ == '__main__':
