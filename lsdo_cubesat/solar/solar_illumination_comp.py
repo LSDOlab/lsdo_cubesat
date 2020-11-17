@@ -4,7 +4,7 @@ from openmdao.api import ExplicitComponent
 from smt.surrogate_models import RMTB
 
 
-class SolarExposure(ExplicitComponent):
+class SolarIlluminationComp(ExplicitComponent):
     """
     Generic model for computing solar power as a function of azimuth and
     elevation (roll and pitch)
@@ -41,7 +41,6 @@ class SolarExposure(ExplicitComponent):
         r = np.mod(r, np.pi)
         p = np.mod(p, np.pi)
 
-
         # predict sunlit area percent
         rp = np.concatenate(
             (
@@ -59,7 +58,7 @@ class SolarExposure(ExplicitComponent):
             shifted = predicted_area - lower
         else:
             shifted = predicted_area
-        self.scaler = min(1, upper)/max(shifted)
+        self.scaler = min(1, upper) / max(shifted)
         scaled = self.scaler * shifted
         outputs['sunlit_area'] = scaled.flatten()
 
@@ -71,7 +70,6 @@ class SolarExposure(ExplicitComponent):
         # wrap input angles
         r = np.mod(r, np.pi)
         p = np.mod(p, np.pi)
-
 
         # predict sunlit area percent derivatives
         rp = np.concatenate(
@@ -93,46 +91,3 @@ class SolarExposure(ExplicitComponent):
             rp,
             1,
         ).flatten()
-
-
-if __name__ == "__main__":
-    from openmdao.api import Problem, IndepVarComp, Group
-    from lsdo_cubesat.solar.smt_exposure import smt_exposure
-    from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
-    np.random.seed(0)
-
-    times = 1500
-
-    # load training data
-    az = np.genfromtxt('../training_data/arrow_xData.csv',
-                       delimiter=',')
-    el = np.genfromtxt('../training_data/arrow_yData.csv',
-                       delimiter=',')
-    yt = np.genfromtxt('../training_data/arrow_zData.csv',
-                       delimiter=',')
-
-    # generate surrogate model with 20 training points
-    # must be the same as the number of points used to create model
-    sm = smt_exposure(20, az, el, yt)
-
-    roll = make_random_bounded_array(times, 10)
-    pitch = make_random_bounded_array(times, 10)
-
-    # check partials
-    ivc = IndepVarComp()
-    ivc.add_output('roll', val=roll)
-    ivc.add_output('pitch', val=pitch)
-    prob = Problem()
-    prob.model = Group()
-    prob.model.add_subsystem(
-        'ivc',
-        ivc,
-        promotes=['*'],
-    )
-    prob.model.add_subsystem(
-        'spm',
-        SolarExposure(num_times=times, sm=sm),
-        promotes=['*'],
-    )
-    prob.setup()
-    prob.check_partials(compact_print=True)

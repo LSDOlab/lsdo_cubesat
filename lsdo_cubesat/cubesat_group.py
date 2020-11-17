@@ -13,7 +13,7 @@ from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
-from lsdo_cubesat.solar.solar_exposure import SolarExposure
+from lsdo_cubesat.solar.solar_illumination_comp import SolarIlluminationComp
 from lsdo_cubesat.utils.ks_comp import KSComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
 from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
@@ -87,8 +87,8 @@ class CubesatGroup(Group):
             self.add_subsystem('attitude_group', group, promotes=['*'])
 
         if add_battery:
-            comp = SolarExposure(num_times=num_times, sm=sm)
-            self.add_subsystem('solar_exposure', comp, promotes=['*'])
+            comp = SolarIllumination(num_times=num_times, sm=sm)
+            self.add_subsystem('solar_illumination', comp, promotes=['*'])
 
             # From BCT
             # https://storage.googleapis.com/blue-canyon-tech-news/1/2020/06/BCT_DataSheet_Components_PowerSystems_06_2020.pdf

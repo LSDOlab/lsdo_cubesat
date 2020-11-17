@@ -1,15 +1,16 @@
 import matplotlib.pyplot as plt
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
 import numpy as np
-import os
-here = os.path.dirname(os.path.abspath(__file__))
+from lsdo_cubesat.examples.data.cubesat_xdata import cubesat_xdata as az
+from lsdo_cubesat.examples.data.cubesat_ydata import cubesat_ydata as el
+from lsdo_cubesat.examples.data.cubesat_zdata import cubesat_zdata as yt
 
 n = 10
 
 # load training data
-az = np.genfromtxt(here + '/data/cubesat_xdata.csv', delimiter=',')
-el = np.genfromtxt(here + '/data/cubesat_ydata.csv', delimiter=',')
-yt = np.genfromtxt(here + '/data/cubesat_zdata.csv', delimiter=',')
+# az = np.genfromtxt(here + '/data/cubesat_xdata.csv', delimiter=',')
+# el = np.genfromtxt(here + '/data/cubesat_ydata.csv', delimiter=',')
+# yt = np.genfromtxt(here + '/data/cubesat_zdata.csv', delimiter=',')
 
 fig, ax = plt.subplots(1, 4)
 CS = ax[0].contourf(

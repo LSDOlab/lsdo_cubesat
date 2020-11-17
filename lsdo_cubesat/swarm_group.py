@@ -9,8 +9,9 @@ from lsdo_cubesat.solar.smt_exposure import smt_exposure
 from lsdo_cubesat.utils.api import get_bspline_mtx
 from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
-import os
-here = os.path.dirname(os.path.abspath(__file__))
+from lsdo_cubesat.examples.data.cubesat_xdata import cubesat_xdata as az
+from lsdo_cubesat.examples.data.cubesat_ydata import cubesat_ydata as el
+from lsdo_cubesat.examples.data.cubesat_zdata import cubesat_zdata as yt
 
 
 class SwarmGroup(Group):
@@ -45,12 +46,12 @@ class SwarmGroup(Group):
         sm = None
         if add_battery:
             # load training data
-            az = np.genfromtxt(here + '/solar/training/data/cubesat_xdata.csv',
-                               delimiter=',')
-            el = np.genfromtxt(here + '/solar/training/data/cubesat_ydata.csv',
-                               delimiter=',')
-            yt = np.genfromtxt(here + '/solar/training/data/cubesat_zdata.csv',
-                               delimiter=',')
+            # az = np.genfromtxt(here + '/solar/training/data/cubesat_xdata.csv',
+            #                    delimiter=',')
+            # el = np.genfromtxt(here + '/solar/training/data/cubesat_ydata.csv',
+            #                    delimiter=',')
+            # yt = np.genfromtxt(here + '/solar/training/data/cubesat_zdata.csv',
+            #                    delimiter=',')
 
             # generate surrogate model with 20 training points
             # must be the same as the number of points used to create model
