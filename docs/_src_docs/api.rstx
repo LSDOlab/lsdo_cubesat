@@ -20,4 +20,5 @@ surrogate models.
   api/options
   api/orbit
   api/attitude
+  api/communication
   api/training

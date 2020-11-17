@@ -13,8 +13,7 @@ gravity gradient, drag).
 Orbit Angular Speed
 -------------------
 
-.. autoclass::
-lsdo_cubesat.orbit.orbit_angular_speed_group.OrbitAngularSpeedGroup
+.. autoclass:: lsdo_cubesat.orbit.orbit_angular_speed_group.OrbitAngularSpeedGroup
 
 State Decomposition
 -------------------
@@ -27,6 +26,6 @@ Reference Orbit Integrator Component (for Swarms)
 .. autoclass:: lsdo_cubesat.orbit.reference_orbit_rk4_comp.ReferenceOrbitRK4Comp
 
 Reference Orbit Group (for Swarms)
-----------------------------
+----------------------------------
 
 .. autoclass:: lsdo_cubesat.orbit.reference_orbit_group.ReferenceOrbitGroup
