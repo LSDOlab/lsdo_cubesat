@@ -30,7 +30,8 @@ class ReferenceOrbitGroup(Group):
     step_size : float
         Constant time step size to use for integration
     cubesat : Cubesat
-        Cubesat OptionsDictionary with initial orbital elements
+        Cubesat OptionsDictionary with initial orbital elements,
+        specific impulse
     """
     def initialize(self):
         self.options.declare('num_times', types=int)

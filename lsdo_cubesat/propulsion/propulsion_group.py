@@ -10,8 +10,24 @@ from lsdo_cubesat.propulsion.propellant_mass_rk4_comp import PropellantMassRK4Co
 
 class PropulsionGroup(Group):
     """
+    This Goup computes the mass and volume of the total propellant
+    consumed based on thrust profile.
+
+    Options
+    ----------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    num_cp : int
+        Dimension of design variables/number of control points for
+        BSpline components.
+    step_size : float
+        Constant time step size to use for integration
+    cubesat : Cubesat
+        Cubesat OptionsDictionary with initial orbital elements,
+        specific impulse
     mtx : array
-        Result of
+        Matrix that translates control points (num_cp) to actual points
+        (num_times)
     """
     def initialize(self):
         self.options.declare('num_times', types=int)

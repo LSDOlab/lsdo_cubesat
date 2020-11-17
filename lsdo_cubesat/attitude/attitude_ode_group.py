@@ -1,12 +1,12 @@
 import numpy as np
 from openmdao.api import Group, IndepVarComp
 
-from lsdo_cubesat.attitude.new.attitude_rk4_comp import AttitudeRK4Comp
-from lsdo_cubesat.attitude.new.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
-from lsdo_cubesat.attitude.new.attitude_state_decomposition_comp import \
+from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
+from lsdo_cubesat.attitude.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
+from lsdo_cubesat.attitude.attitude_state_decomposition_comp import \
     AttitudeStateDecompositionComp
-from lsdo_cubesat.attitude.new.inertia_ratios_comp import InertiaRatiosComp
-from lsdo_cubesat.attitude.new.rot_mtx_to_rpy import RotMtxToRollPitchYaw
+from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
+from lsdo_cubesat.attitude.rot_mtx_to_rpy import RotMtxToRollPitchYaw
 from lsdo_cubesat.utils.finite_difference_comp import FiniteDifferenceComp
 from lsdo_cubesat.utils.normalize_last_quaternion import \
     NormalizeLastQuaternion
@@ -16,7 +16,7 @@ from lsdo_cubesat.utils.api import (ArrayExpansionComp, ArrayReorderComp,
 from lsdo_cubesat.utils.api import get_bspline_mtx
 
 
-class AttitudeGroup(Group):
+class AttitudeOdeGroup(Group):
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('step_size', types=float)

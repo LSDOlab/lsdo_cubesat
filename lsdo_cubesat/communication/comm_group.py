@@ -19,14 +19,10 @@ from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
 from lsdo_cubesat.ground_station_group import GSGroup
-# from lsdo_cubesat.api import GS_net, Ground_station
-from lsdo_cubesat.swarm.ground_station import Ground_station
-from lsdo_cubesat.swarm.GS_net import GS_net
+from lsdo_cubesat.options.ground_station import Ground_station
 from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
                                     ElementwiseMaxComp, LinearCombinationComp,
                                     PowerCombinationComp, get_bspline_mtx)
-
-# from lsdo_cubesat.communication.Ground_comm import Groundcomm
 
 
 class CommGroup(Group):
@@ -46,6 +42,9 @@ class CommGroup(Group):
     Ground_station : Ground_station
         Ground_station OptionsDictionary containing name, latitude,
         longitude, and altitude coordinates.
+    mtx : array
+        Matrix that translates control points (num_cp) to actual points
+        (num_times)
 
     Parameters
     ----------
@@ -53,6 +52,11 @@ class CommGroup(Group):
         Time history of orbit position (km) and velocity (km/s)
     rot_mtx_i_b_3x3n : shape=(3,3,n)
         Time history of rotation matrices from ECI to body frame
+
+    Returns
+    -------
+    Download_rate
+    P_comm
     """
     def initialize(self):
         self.options.declare('num_times', types=int)

@@ -5,7 +5,7 @@ from lsdo_cubesat.orbit.reference_orbit_rk4_comp import ReferenceOrbitRK4Comp
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.orbit.initial_orbit_comp import InitialOrbitComp
 from lsdo_cubesat.orbit.orbit_state_decomposition_comp import OrbitStateDecompositionComp
-from lsdo_cubesat.swarm.cubesat import Cubesat
+from lsdo_cubesat.options.cubesat import Cubesat
 import seaborn as sns
 
 np.random.seed(0)

@@ -19,7 +19,6 @@ class AttitudeGroup(Group):
     def setup(self):
         num_times = self.options['num_times']
         num_cp = self.options['num_cp']
-        cubesat = self.options['cubesat']
         mtx = self.options['mtx']
         step_size = self.options['step_size']
 
@@ -61,7 +60,6 @@ class AttitudeGroup(Group):
         )
         self.add_subsystem('rot_mtx_i_b_3x3xn_comp', comp, promotes=['*'])
 
-        #
         for var_name in [
                 'times',
                 'roll',
