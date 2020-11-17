@@ -5,7 +5,7 @@ from lsdo_utils.api import OptionsDictionary
 
 class Cubesat(OptionsDictionary):
     def initialize(self):
-        self.declare('name', types=str)
+        self.declare('name', default='cubesat', types=str)
         self.declare('dry_mass', types=float)
         self.declare('initial_orbit_state', types=np.ndarray)
         self.declare('approx_altitude_km',

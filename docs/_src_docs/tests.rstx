@@ -5,4 +5,5 @@ Tests
   :maxdepth: 1
   :titlesonly:
 
-  tests/attitude
+  tests/rigid_body
+  tests/sc_attitude

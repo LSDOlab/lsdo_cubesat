@@ -1,5 +1,5 @@
-Attitude Dynamics Components
-============================
+Attitude Disciplines
+====================
 
 Rigid Body
 ----------

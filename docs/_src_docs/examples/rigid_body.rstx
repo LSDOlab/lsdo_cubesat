@@ -1,0 +1,7 @@
+Rigid Body Dynamics
+===================
+
+This example shows the time history of a rigid body with no external
+moments acting on it.
+
+.. embed-module-plot :: lsdo_cubesat.examples.rigid_body_example, 80

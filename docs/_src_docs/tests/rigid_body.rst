@@ -1,5 +1,5 @@
-Attitude Dynamics
-=================
+Rigid Body Dynamics
+===================
 
 Partial derivatives
 -------------------
@@ -14,7 +14,7 @@ the attitude module.
   from openmdao.api import Problem, Group
   from openmdao.api import IndepVarComp
   from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
-  from lsdo_cubesat.attitude.new.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
+  from lsdo_cubesat.attitude.new.attitude_rk4_comp import AttitudeRK4Comp
   import numpy as np
   
   np.random.seed(0)
@@ -45,7 +45,7 @@ the attitude module.
   prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
   prob.model.add_subsystem(
       'comp',
-      AttitudeRK4GravityComp(
+      AttitudeRK4Comp(
           num_times=num_times,
           step_size=step_size,
           moment_inertia_ratios=np.array([2.0 / 3.0, -2.0 / 3.0, 0]),
@@ -71,22 +71,21 @@ the attitude module.
   INFO: checking missing_recorders
   WARNING: The Problem has no recorder of any kind attached
   INFO: checking comp_has_no_outputs
-  ----------------------------------------
-  Component: AttitudeRK4GravityComp 'comp'
-  ----------------------------------------
+  ---------------------------------
+  Component: AttitudeRK4Comp 'comp'
+  ---------------------------------
   '<output>'                     wrt '<variable>'                           | fwd mag.   | rev mag.   | check mag. | a(fwd-chk) | a(rev-chk) | a(fwd-rev) | r(fwd-chk) | r(rev-chk) | r(fwd-rev)
   ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   
-  'angular_velocity_orientation' wrt 'external_torques_x'                   | 7.0356e-07 | 7.0356e-07 | 7.0317e-07 | 3.1582e-09 | 3.1582e-09 | 0.0000e+00 | 4.4914e-03 | 4.4914e-03 | 0.0000e+00 >REL_TOL
-  'angular_velocity_orientation' wrt 'external_torques_y'                   | 7.0356e-07 | 7.0356e-07 | 7.0313e-07 | 4.4341e-09 | 4.4341e-09 | 0.0000e+00 | 6.3062e-03 | 6.3062e-03 | 0.0000e+00 >REL_TOL
+  'angular_velocity_orientation' wrt 'external_torques_x'                   | 7.0356e-07 | 7.0356e-07 | 7.0372e-07 | 3.9362e-09 | 3.9362e-09 | 0.0000e+00 | 5.5934e-03 | 5.5934e-03 | 0.0000e+00 >REL_TOL
+  'angular_velocity_orientation' wrt 'external_torques_y'                   | 7.0356e-07 | 7.0356e-07 | 7.0358e-07 | 3.5887e-09 | 3.5887e-09 | 0.0000e+00 | 5.1007e-03 | 5.1007e-03 | 0.0000e+00 >REL_TOL
   'angular_velocity_orientation' wrt 'external_torques_z'                   | 7.0356e-07 | 7.0356e-07 | 7.0366e-07 | 3.9656e-09 | 3.9656e-09 | 0.0000e+00 | 5.6357e-03 | 5.6357e-03 | 0.0000e+00 >REL_TOL
-  'angular_velocity_orientation' wrt 'initial_angular_velocity_orientation' | 2.6458e+01 | 2.6458e+01 | 2.4495e+01 | 1.0000e+01 | 1.0000e+01 | 3.6453e-20 | 4.0825e-01 | 4.0825e-01 | 1.4882e-21 >ABS_TOL >REL_TOL
-  'angular_velocity_orientation' wrt 'osculating_orbit_angular_speed'       | 1.5482e-09 | 1.5482e-09 | 3.5900e-09 | 3.4410e-09 | 3.4410e-09 | 0.0000e+00 | 9.5848e-01 | 9.5848e-01 | 0.0000e+00 >REL_TOL
+  'angular_velocity_orientation' wrt 'initial_angular_velocity_orientation' | 2.6458e+01 | 2.6458e+01 | 2.4495e+01 | 1.0000e+01 | 1.0000e+01 | 3.6442e-20 | 4.0825e-01 | 4.0825e-01 | 1.4877e-21 >ABS_TOL >REL_TOL
   
-  #######################################################################
-  Sub Jacobian with Largest Relative Error: AttitudeRK4GravityComp 'comp'
-  #######################################################################
+  ################################################################
+  Sub Jacobian with Largest Relative Error: AttitudeRK4Comp 'comp'
+  ################################################################
   '<output>'                     wrt '<variable>'                           | fwd mag.   | rev mag.   | check mag. | a(fwd-chk) | a(rev-chk) | a(fwd-rev) | r(fwd-chk) | r(rev-chk) | r(fwd-rev)
   ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  'angular_velocity_orientation' wrt 'osculating_orbit_angular_speed'       | 1.5482e-09 | 1.5482e-09 | 3.5900e-09 | 3.4410e-09 | 3.4410e-09 | 0.0000e+00 | 9.5848e-01 | 9.5848e-01 | 0.0000e+00
+  'angular_velocity_orientation' wrt 'initial_angular_velocity_orientation' | 2.6458e+01 | 2.6458e+01 | 2.4495e+01 | 1.0000e+01 | 1.0000e+01 | 3.6442e-20 | 4.0825e-01 | 4.0825e-01 | 1.4877e-21
   

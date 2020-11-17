@@ -5,4 +5,6 @@ Examples library
   :maxdepth: 1
   :titlesonly:
 
-  examples/attitude
+  examples/rigid_body
+  examples/sc_attitude
+  examples/orbit

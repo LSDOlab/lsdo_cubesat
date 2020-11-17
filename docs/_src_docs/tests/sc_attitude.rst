@@ -1,5 +1,5 @@
-Attitude Dynamics
-=================
+Spacecraft Attitude Dynamics
+============================
 
 Partial derivatives
 -------------------

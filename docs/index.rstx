@@ -21,7 +21,6 @@ Documentation
 
    _src_docs/getting_started
    _src_docs/quick_example
-   _src_docs/options.rst
    _src_docs/examples
    _src_docs/api
    _src_docs/tests

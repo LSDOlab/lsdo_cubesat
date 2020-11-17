@@ -23,22 +23,22 @@ Ground_station
      -  Acceptable types
      -  Description
   *  -  name
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['str']
      -  
   *  -  lon
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['float']
      -  
   *  -  lat
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['float']
      -  
   *  -  alt
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['float']
      -  
@@ -62,17 +62,17 @@ Cubesat
      -  Acceptable types
      -  Description
   *  -  name
-     -  <object object at 0x7ffe36753e80>
+     -  cubesat
      -  None
      -  ['str']
      -  
   *  -  dry_mass
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['float']
      -  
   *  -  initial_orbit_state
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['ndarray']
      -  
@@ -141,17 +141,17 @@ Swarm
      -  Acceptable types
      -  Description
   *  -  num_times
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['int']
      -  
   *  -  num_cp
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['int']
      -  
   *  -  step_size
-     -  <object object at 0x7ffe36753e80>
+     -  <object object at 0x7f9e45467960>
      -  None
      -  ['float']
      -  

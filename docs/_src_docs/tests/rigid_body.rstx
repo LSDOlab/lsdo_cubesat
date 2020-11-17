@@ -1,5 +1,5 @@
-Attitude Dynamics
-=================
+Rigid Body Dynamics
+===================
 
 Partial derivatives
 -------------------
@@ -9,4 +9,4 @@ gradient-based optimization.
 The following script checks the accuracy of the partial derivatives for
 the attitude module.
 
-.. embed-module-print :: lsdo_cubesat.tests.test_attitude
+.. embed-module-print :: lsdo_cubesat.tests.test_rigid_body
