@@ -1,11 +1,17 @@
 Solar Illumination
 ==================
 
-Raytracing
-----------
+Training a Surrogate Model
+--------------------------
 
-compute_solar_illumination is a function used when generating training
-data for the surrogate model.
+In this example, a surrogate model is trained on data to compute the
+total solar illumination on a spacecraft's solar panels.
 
+.. embed-module-plot :: lsdo_cubesat.examples.solar_exposure_example, 80
 
-.. embed-module :: lsdo_cubesat.solar.training.compute_solar_illumination
+Generating Training Data
+------------------------
+
+In this example, the training data for the surrogate model is generated.
+
+.. embed-module :: lsdo_cubesat.examples.generate_training_data_example

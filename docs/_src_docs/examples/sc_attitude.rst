@@ -10,7 +10,7 @@ about Earth with small, random control inputs.
   from openmdao.api import IndepVarComp
   from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
   import matplotlib.pyplot as plt
-  from lsdo_cubesat.attitude.new.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
+  from lsdo_cubesat.attitude.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
   import numpy as np
   import seaborn as sns
   

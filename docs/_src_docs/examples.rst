@@ -8,3 +8,4 @@ Examples library
   examples/rigid_body
   examples/sc_attitude
   examples/orbit
+  examples/solar

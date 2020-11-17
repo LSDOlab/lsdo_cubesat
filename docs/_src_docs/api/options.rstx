@@ -12,14 +12,14 @@ setup.
 Ground_station
 --------------
 
-.. embed-options-table :: lsdo_cubesat.swarm.ground_station, Ground_station, initialize
+.. embed-options-table :: lsdo_cubesat.options.ground_station, Ground_station, initialize
 
 Cubesat
 -------
 
-.. embed-options-table :: lsdo_cubesat.swarm.cubesat, Cubesat, initialize
+.. embed-options-table :: lsdo_cubesat.options.cubesat, Cubesat, initialize
 
 Swarm
 -----
 
-.. embed-options-table :: lsdo_cubesat.swarm.swarm, Swarm, initialize
+.. embed-options-table :: lsdo_cubesat.options.swarm, Swarm, initialize
