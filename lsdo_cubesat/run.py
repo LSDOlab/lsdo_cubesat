@@ -4,7 +4,7 @@ import openmdao.api as om
 from openmdao.api import ExecComp, pyOptSparseDriver
 
 from lsdo_cubesat.api import Cubesat, Swarm, SwarmGroup
-from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.swarm.ground_station import Ground_station
 from lsdo_viz.api import Problem
 
 add_battery = True
