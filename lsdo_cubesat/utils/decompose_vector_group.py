@@ -1,10 +1,9 @@
 from openmdao.api import Group
 
-from lsdo_utils.api import ArrayExpansionComp, ArrayContractionComp, PowerCombinationComp
+from lsdo_cubesat.utils.api import ArrayExpansionComp, ArrayContractionComp, PowerCombinationComp
 
 
 class DecomposeVectorGroup(Group):
-
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('vec_name', types=str)
@@ -22,7 +21,9 @@ class DecomposeVectorGroup(Group):
             out_name='tmp_{}_2'.format(vec_name),
             powers_dict={vec_name: 2.},
         )
-        self.add_subsystem('tmp_{}_2_comp'.format(vec_name), comp, promotes=['*'])
+        self.add_subsystem('tmp_{}_2_comp'.format(vec_name),
+                           comp,
+                           promotes=['*'])
 
         comp = ArrayContractionComp(
             shape=(3, num_times),
@@ -30,10 +31,12 @@ class DecomposeVectorGroup(Group):
             out_name='tmp_{}_2'.format(norm_name),
             in_name='tmp_{}_2'.format(vec_name),
         )
-        self.add_subsystem('tmp_{}_2_comp'.format(norm_name), comp, promotes=['*'])
+        self.add_subsystem('tmp_{}_2_comp'.format(norm_name),
+                           comp,
+                           promotes=['*'])
 
         comp = PowerCombinationComp(
-            shape=(num_times,),
+            shape=(num_times, ),
             out_name=norm_name,
             powers_dict={'tmp_{}_2'.format(norm_name): 0.5},
         )
@@ -45,14 +48,17 @@ class DecomposeVectorGroup(Group):
             out_name='tmp_{}_expanded'.format(norm_name),
             in_name=norm_name,
         )
-        self.add_subsystem('tmp_{}_expanded_comp'.format(norm_name), comp, promotes=['*'])
+        self.add_subsystem('tmp_{}_expanded_comp'.format(norm_name),
+                           comp,
+                           promotes=['*'])
 
-        comp = PowerCombinationComp(
-            shape=(3, num_times),
-            out_name=unit_vec_name,
-            powers_dict={
-                vec_name: 1.,
-                'tmp_{}_expanded'.format(norm_name): -1.,
-            }
-        )
-        self.add_subsystem('{}_comp'.format(unit_vec_name), comp, promotes=['*'])
+        comp = PowerCombinationComp(shape=(3, num_times),
+                                    out_name=unit_vec_name,
+                                    powers_dict={
+                                        vec_name: 1.,
+                                        'tmp_{}_expanded'.format(norm_name):
+                                        -1.,
+                                    })
+        self.add_subsystem('{}_comp'.format(unit_vec_name),
+                           comp,
+                           promotes=['*'])

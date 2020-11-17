@@ -11,9 +11,9 @@ from lsdo_cubesat.utils.finite_difference_comp import FiniteDifferenceComp
 from lsdo_cubesat.utils.normalize_last_quaternion import \
     NormalizeLastQuaternion
 from lsdo_cubesat.utils.quaternion_to_rot_mtx import QuaternionToRotMtx
-from lsdo_utils.api import (ArrayExpansionComp, ArrayReorderComp, BsplineComp,
-                            PowerCombinationComp)
-from lsdo_utils.api import get_bspline_mtx
+from lsdo_cubesat.utils.api import (ArrayExpansionComp, ArrayReorderComp,
+                                    BsplineComp, PowerCombinationComp)
+from lsdo_cubesat.utils.api import get_bspline_mtx
 
 
 class AttitudeGroup(Group):

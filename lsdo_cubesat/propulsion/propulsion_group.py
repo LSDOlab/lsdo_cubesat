@@ -2,13 +2,17 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, ExecComp
 
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
+from lsdo_cubesat.utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
 
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
 from lsdo_cubesat.propulsion.propellant_mass_rk4_comp import PropellantMassRK4Comp
 
 
 class PropulsionGroup(Group):
+    """
+    mtx : array
+        Result of
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)

@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
 
-from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp
+from lsdo_cubesat.utils.api import ArrayReorderComp, LinearCombinationComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp

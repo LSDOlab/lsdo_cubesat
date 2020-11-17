@@ -6,8 +6,8 @@ from lsdo_cubesat.swarm.ground_station import Ground_station
 from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+from lsdo_cubesat.utils.api import get_bspline_mtx
+from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
 from os.path import expanduser
 home = expanduser("~")

@@ -22,9 +22,9 @@ from lsdo_cubesat.ground_station_group import GSGroup
 # from lsdo_cubesat.api import GS_net, Ground_station
 from lsdo_cubesat.swarm.ground_station import Ground_station
 from lsdo_cubesat.swarm.GS_net import GS_net
-from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
-                            ElementwiseMaxComp, LinearCombinationComp,
-                            PowerCombinationComp, get_bspline_mtx)
+from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
+                                    ElementwiseMaxComp, LinearCombinationComp,
+                                    PowerCombinationComp, get_bspline_mtx)
 
 # from lsdo_cubesat.communication.Ground_comm import Groundcomm
 

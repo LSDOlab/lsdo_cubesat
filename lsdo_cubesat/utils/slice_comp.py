@@ -1,8 +1,8 @@
 import numpy as np
 from openmdao.api import ExplicitComponent
 from math import ceil
-from lsdo_utils.miscellaneous_functions.get_array_indices import get_array_indices
-from lsdo_utils.miscellaneous_functions.decompose_shape_tuple import decompose_shape_tuple
+from lsdo_cubesat.utils.miscellaneous_functions.get_array_indices import get_array_indices
+from lsdo_cubesat.utils.miscellaneous_functions.decompose_shape_tuple import decompose_shape_tuple
 
 
 class SliceComp(ExplicitComponent):

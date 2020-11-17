@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from pylab import *
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
-# from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
-# from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
+# from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
+# from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import ElementwiseMaxComp
 
 # path = "/home/lsdo/Cubesat/lsdo_cubesat/1/_data/opt.00478.pkl"
 path = "/home/lsdo/Cubesat/lsdo_cubesat/_data/opt.00583.pkl"
