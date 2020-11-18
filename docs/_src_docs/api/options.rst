@@ -1,4 +1,4 @@
-Options Dictionaries
+Defining Parameters
 ====================
 
 LSDO CubeSat provides several dictionary-like classes to simplify
@@ -26,27 +26,27 @@ Ground_station
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['str']
-     -  
+     -
   *  -  lon
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['float']
-     -  
+     -
   *  -  lat
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['float']
-     -  
+     -
   *  -  alt
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['float']
-     -  
+     -
   *  -  antAngle
      -  2.0
      -  None
      -  ['float']
-     -  
+     -
 
 Cubesat
 -------
@@ -65,67 +65,67 @@ Cubesat
      -  cubesat
      -  None
      -  ['str']
-     -  
+     -
   *  -  dry_mass
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['float']
-     -  
+     -
   *  -  initial_orbit_state
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['ndarray']
-     -  
+     -
   *  -  approx_altitude_km
      -  **Required**
      -  None
      -  ['float']
-     -  
+     -
   *  -  acceleration_due_to_gravity
      -  9.81
      -  None
      -  ['float']
-     -  
+     -
   *  -  specific_impulse
      -  47.0
      -  None
      -  ['float']
-     -  
+     -
   *  -  perigee_altitude
      -  500.1
      -  None
      -  ['float']
-     -  
+     -
   *  -  apogee_altitude
      -  499.9
      -  None
      -  ['float']
-     -  
+     -
   *  -  RAAN
      -  66.279
      -  None
      -  ['float']
-     -  
+     -
   *  -  inclination
      -  82.072
      -  None
      -  ['float']
-     -  
+     -
   *  -  argument_of_periapsis
      -  0.0
      -  None
      -  ['float']
-     -  
+     -
   *  -  true_anomaly
      -  337.987
      -  None
      -  ['float']
-     -  
+     -
   *  -  radius_earth_km
      -  6371.0
      -  None
      -  ['float']
-     -  
+     -
 
 Swarm
 -----
@@ -144,24 +144,24 @@ Swarm
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['int']
-     -  
+     -
   *  -  num_cp
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['int']
-     -  
+     -
   *  -  step_size
      -  <object object at 0x7f84afad9b20>
      -  None
      -  ['float']
-     -  
+     -
   *  -  cross_threshold
      -  -0.87
      -  None
      -  ['float']
-     -  
+     -
   *  -  launch_date
      -  0.0
      -  None
      -  ['float']
-     -  
+     -
