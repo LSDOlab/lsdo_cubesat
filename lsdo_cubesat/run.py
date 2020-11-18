@@ -4,12 +4,12 @@ import openmdao.api as om
 from openmdao.api import ExecComp, pyOptSparseDriver
 
 from lsdo_cubesat.api import Cubesat, Swarm, SwarmGroup
-from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import Ground_station
 from lsdo_viz.api import Problem
 
-add_battery = True
-new_attitude = False
-optimize_plant = True
+add_battery = False
+attitude_integrator = False
+optimize_plant = False
 if optimize_plant:
     add_battery = True
 
@@ -172,7 +172,7 @@ swarm_group = SwarmGroup(
     swarm=swarm,
     add_battery=add_battery,
     optimize_plant=optimize_plant,
-    new_attitude=new_attitude,
+    attitude_integrator=attitude_integrator,
     attitude_time_scale=attitude_time_scale,
     battery_time_scale=battery_time_scale,
 )
@@ -264,7 +264,7 @@ for sc in ['sunshade', 'optics', 'detector']:
     plt.title(sc + ' P_comm_cp')
     plt.show()
 
-    if new_attitude:
+    if attitude_integrator:
         ux = prob[sc + '_cubesat_group.external_torques_x']
         uy = prob[sc + '_cubesat_group.external_torques_y']
         uz = prob[sc + '_cubesat_group.external_torques_z']
@@ -299,7 +299,7 @@ for sc in ['sunshade', 'optics', 'detector']:
     plt.plot(roll)
     plt.plot(pitch)
 
-    if new_attitude:
+    if attitude_integrator:
         yaw = prob[sc + '_cubesat_group.yaw']
         plt.plot(yaw)
         plt.title(sc + ' roll, pitch, and yaw')

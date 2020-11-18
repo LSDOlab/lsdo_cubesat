@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp
 
-from lsdo_utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp, ArrayExpansionComp
+from lsdo_cubesat.utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp
 
 # from lsdo_cubesat.utils.rot_mtx_to_quaternion import RotMtxToQuaternion
 from lsdo_cubesat.utils.quaternion_to_rot_mtx import QuaternionToRotMtx
@@ -28,7 +28,6 @@ class AttitudeGroup(Group):
         num_times = self.options['num_times']
         step_size = self.options['step_size']
         num_cp = self.options['num_cp']
-        cubesat = self.options['cubesat']
         mtx = self.options['mtx']
         step_size = self.options['step_size']
 
@@ -133,7 +132,6 @@ class AttitudeGroup(Group):
         )
         self.add_subsystem('rot_mtx_i_b_3x3xn_comp', comp, promotes=['*'])
 
-        # Get finite difference of roll, pitch, yaw rates to set constraints
         for var_name in [
                 'times',
                 'roll',

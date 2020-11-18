@@ -7,21 +7,20 @@ from openmdao.api import (ExecComp, Group, IndepVarComp, LinearBlockGS,
 from lsdo_battery.battery_model import BatteryModel
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
-from lsdo_cubesat.attitude.new.attitude_group import \
-    AttitudeGroup as NewAttitudeGroup
+from lsdo_cubesat.attitude.attitude_ode_group import AttitudeOdeGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
-# from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
-from lsdo_cubesat.solar.solar_exposure import SolarExposure
+from lsdo_cubesat.solar.solar_illumination_comp import SolarIlluminationComp
 from lsdo_cubesat.utils.ks_comp import KSComp
 from lsdo_cubesat.utils.slice_comp import SliceComp
-from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
-                            LinearCombinationComp, PowerCombinationComp,
-                            ScalarExpansionComp, get_bspline_mtx)
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
+                                    LinearCombinationComp,
+                                    PowerCombinationComp, ScalarExpansionComp,
+                                    get_bspline_mtx)
+from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
 
 
@@ -36,7 +35,7 @@ class CubesatGroup(Group):
         self.options.declare('add_battery', types=bool)
         self.options.declare('sm')
         self.options.declare('optimize_plant', types=bool)
-        self.options.declare('new_attitude', types=bool)
+        self.options.declare('attitude_integrator', types=bool)
         self.options.declare('fast_time_scale', types=float)
         self.options.declare('battery_time_scale', types=float)
         self.options.declare('attitude_time_scale', types=float)
@@ -51,7 +50,7 @@ class CubesatGroup(Group):
         add_battery = self.options['add_battery']
         sm = self.options['sm']
         optimize_plant = self.options['optimize_plant']
-        new_attitude = self.options['new_attitude']
+        attitude_integrator = self.options['attitude_integrator']
         battery_time_scale = self.options['battery_time_scale']
         attitude_time_scale = self.options['attitude_time_scale']
 
@@ -59,9 +58,9 @@ class CubesatGroup(Group):
         comp.add_output('Initial_Data', val=np.zeros((1, )))
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
-        if new_attitude:
+        if attitude_integrator:
             step = max(1, ceil(step_size / attitude_time_scale))
-            group = NewAttitudeGroup(
+            group = AttitudeOdeGroup(
                 num_times=num_times * step,
                 num_cp=num_cp,
                 cubesat=cubesat,
@@ -88,8 +87,8 @@ class CubesatGroup(Group):
             self.add_subsystem('attitude_group', group, promotes=['*'])
 
         if add_battery:
-            comp = SolarExposure(num_times=num_times, sm=sm)
-            self.add_subsystem('solar_exposure', comp, promotes=['*'])
+            comp = SolarIllumination(num_times=num_times, sm=sm)
+            self.add_subsystem('solar_illumination', comp, promotes=['*'])
 
             # From BCT
             # https://storage.googleapis.com/blue-canyon-tech-news/1/2020/06/BCT_DataSheet_Components_PowerSystems_06_2020.pdf
@@ -169,7 +168,7 @@ class CubesatGroup(Group):
         )
         orbit_avionics.add_subsystem('orbit_group', group, promotes=['*'])
 
-        # if new_attitude:
+        # if attitude_integrator:
         # compute osculating orbit angular speed to feed into
         # attitude model
         # self.add_subsystem(
@@ -369,22 +368,18 @@ class CubesatGroup(Group):
                 promotes=['*'],
             )
 
-        self.add_constraint(
-            'battery_and_propellant_mass',
-            lower=0,
-            # Don't bother with an upper limit because we are indirectly
-            # minimizing mass, and we don't want to make the problem
-            # infeasible
-            # upper=1.33,
-        )
+            self.add_constraint(
+                'battery_and_propellant_mass',
+                lower=0,
+            )
 
-        # 1U (10cm)**3
-        u = 10**3 / 100**3
-        self.add_constraint(
-            'battery_and_propellant_volume',
-            lower=0,
-            # upper=u,
-        )
+            # 1U (10cm)**3
+            u = 10**3 / 100**3
+            self.add_constraint(
+                'battery_and_propellant_volume',
+                lower=0,
+                # upper=u,
+            )
 
         comp = DataDownloadComp(
             num_times=num_times,
@@ -397,3 +392,12 @@ class CubesatGroup(Group):
             Data=np.empty(num_times),
         )
         self.add_subsystem('KS_total_Data_comp', comp, promotes=['*'])
+
+
+if __name__ == '__main__':
+
+    from openmdao.api import Problem, Group
+    from openmdao.api import IndepVarComp
+
+    prob = Problem()
+    prob.model = CubesatGroup()

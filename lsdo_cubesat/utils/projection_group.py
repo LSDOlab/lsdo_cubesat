@@ -1,10 +1,9 @@
 from openmdao.api import Group
 
-from lsdo_utils.api import ArrayExpansionComp, ArrayContractionComp, PowerCombinationComp
+from lsdo_cubesat.utils.api import ArrayExpansionComp, ArrayContractionComp, PowerCombinationComp
 
 
 class ProjectionGroup(Group):
-
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('in1_name', types=str)
@@ -27,7 +26,9 @@ class ProjectionGroup(Group):
                 in2_name: 2.,
             },
         )
-        self.add_subsystem('tmp_{}_multiplied_comp'.format(out_name), comp, promotes=['*'])
+        self.add_subsystem('tmp_{}_multiplied_comp'.format(out_name),
+                           comp,
+                           promotes=['*'])
 
         comp = ArrayContractionComp(
             shape=shape,
@@ -35,7 +36,9 @@ class ProjectionGroup(Group):
             out_name='tmp_{}_summed'.format(out_name),
             in_name='tmp_{}_multiplied'.format(out_name),
         )
-        self.add_subsystem('{}_summed_comp'.format(out_name), comp, promotes=['*'])
+        self.add_subsystem('{}_summed_comp'.format(out_name),
+                           comp,
+                           promotes=['*'])
 
         comp = ArrayExpansionComp(
             shape=shape,

@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp
 
-from lsdo_utils.api import CrossProductComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
+from lsdo_cubesat.utils.api import CrossProductComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
 from lsdo_cubesat.utils.projection_group import ProjectionGroup

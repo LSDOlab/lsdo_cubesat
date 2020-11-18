@@ -2,13 +2,33 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, ExecComp
 
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
+from lsdo_cubesat.utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
 
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
 from lsdo_cubesat.propulsion.propellant_mass_rk4_comp import PropellantMassRK4Comp
 
 
 class PropulsionGroup(Group):
+    """
+    This Goup computes the mass and volume of the total propellant
+    consumed based on thrust profile.
+
+    Options
+    ----------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    num_cp : int
+        Dimension of design variables/number of control points for
+        BSpline components.
+    step_size : float
+        Constant time step size to use for integration
+    cubesat : Cubesat
+        Cubesat OptionsDictionary with initial orbital elements,
+        specific impulse
+    mtx : array
+        Matrix that translates control points (num_cp) to actual points
+        (num_times)
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)

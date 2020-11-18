@@ -21,6 +21,26 @@ drag = 1.e-6
 
 
 class InitialOrbitComp(ExplicitComponent):
+    """
+    Component for defining an initial orbit using Keplerian elements
+
+    Parameters
+    ----------
+    perigee_altitude : float
+        Perigee Altitude (km); altitude above Earth at perigee; note, this
+        is not the distance from the center of the Earth at perigee
+    apogee_altitude : float
+        Apogee Altitude (km); altitude above Earth at apogee; note, this
+        is not the distance from the center of the Earth at apogee
+    RAAN : float
+        Right Ascension of Ascending Node (degrees)
+    inclination : float
+        inclination (degrees)
+    argument_of_periapsis : float
+        Argument of periapsis (degrees)
+    true_anomaly : float
+        True Anomaly (degrees)
+    """
     def setup(self):
         # Inputs
         self.add_input('perigee_altitude', 500.)
@@ -131,45 +151,3 @@ class InitialOrbitComp(ExplicitComponent):
         J['initial_orbit_state_km', 'inclination'] = jacs[:, 3]
         J['initial_orbit_state_km', 'argument_of_periapsis'] = jacs[:, 4]
         J['initial_orbit_state_km', 'true_anomaly'] = jacs[:, 5]
-
-
-if __name__ == '__main__':
-
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
-
-    np.random.seed(0)
-
-    group = Group()
-
-    comp = IndepVarComp()
-
-    perigee_altitude = np.random.rand(1)
-    apogee_altitude = np.random.rand(1)
-    RAAN = np.random.rand(1)
-    inclination = np.random.rand(1)
-    argument_of_periapsis = np.random.rand(1)
-    true_anomaly = np.random.rand(1)
-
-    comp.add_output('perigee_altitude', val=perigee_altitude)
-    comp.add_output('apogee_altitude', val=apogee_altitude)
-    comp.add_output('RAAN', val=RAAN)
-    comp.add_output('inclination', val=inclination)
-    comp.add_output('argument_of_periapsis', val=argument_of_periapsis)
-    comp.add_output('true_anomaly', val=true_anomaly)
-
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
-
-    group.add_subsystem('Statecomp_Implicit',
-                        InitialOrbitComp(),
-                        promotes=['*'])
-
-    prob = Problem()
-    prob.model = group
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
-    print(prob['initial_orbit_state_km'].shape)
-    # prob.check_partials()

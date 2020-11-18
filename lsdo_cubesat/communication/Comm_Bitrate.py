@@ -9,8 +9,9 @@ from openmdao.api import ExecComp, ExplicitComponent, Group, IndepVarComp
 from six.moves import range
 
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
-from lsdo_utils.api import (ArrayExpansionComp, BsplineComp,
-                            LinearCombinationComp, PowerCombinationComp)
+from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
+                                    LinearCombinationComp,
+                                    PowerCombinationComp)
 
 
 class BitRateComp(ExplicitComponent):

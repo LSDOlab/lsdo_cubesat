@@ -24,6 +24,31 @@ C4 = 1.875 * mu * J4 * Re**4
 
 
 class ReferenceOrbitRK4Comp(RK4Comp):
+    """
+    Orbit propagator for use in ReferenceOrbitRK4Comp. Prefer
+    ReferenceOrbitGroup over ReferenceOrbitRK4Comp when building swarm
+    models. This component propagates the reference orbit subject to J2,
+    J3, and J4 perturbations using a Runge-Kutta 4 integrator.
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which to integrate dynamics
+    step_size : float
+        Constant time step size to use for integration
+
+    Paramters
+    ---------
+    initial_orbit_state_km : shape=6
+        Initial position and velocity vectors from Earth to satellite in
+        Earth-centered Inertial (ECI) frame
+
+    Returns
+    -------
+    reference_orbit_state_km : shape=(6, num_times)
+        Position and velocity vectors over time from Earth to satellite in
+        Earth-centered Inertial (ECI) frame
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('step_size', types=float)
@@ -165,64 +190,3 @@ class ReferenceOrbitRK4Comp(RK4Comp):
 
     def df_dx(self, external, state):
         return self.dfdx
-
-
-if __name__ == '__main__':
-
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
-    import matplotlib.pyplot as plt
-
-    np.random.seed(0)
-
-    group = Group()
-
-    comp = IndepVarComp()
-    n = 1500
-    m = 1
-    npts = 1
-    h = 1.5e-4
-
-    r_e2b_I0 = np.empty(6)
-    r_e2b_I0[:3] = 1000. * np.random.rand(3)
-    r_e2b_I0[3:] = 1. * np.random.rand(3)
-
-    thrust_ECI = np.random.rand(3, n)
-    mass = np.random.rand(1, n)
-
-    comp.add_output('force_3xn', val=thrust_ECI)
-    comp.add_output('initial_orbit_state_km', val=r_e2b_I0)
-    comp.add_output('mass', val=mass)
-
-    group.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-    comp = ReferenceOrbitRK4Comp(num_times=n, step_size=h)
-    group.add_subsystem('comp', comp, promotes=['*'])
-
-    prob = Problem()
-    prob.model = group
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
-
-    # X = np.arange(n)
-
-    orbit_X = prob['reference_orbit_state_km'][3, :]
-    orbit_Y = prob['reference_orbit_state_km'][4, :]
-    # orbit_Z = prob['reference_orbit_state_km'][2, :]
-    # state_X = prob['reference_orbit_state_km'][3, :]
-    # state_Y = prob['reference_orbit_state_km'][4, :]
-    # state_Z = prob['reference_orbit_state_km'][5, :]
-
-    # plt.plot(X, orbit_X, label='orbit_x')
-    # plt.plot(X, orbit_Y, label='orbit_y')
-    # plt.plot(X, orbit_Z, label='orbit_z')
-    # # plt.plot(X, state_X, label='state_x')
-    # # plt.plot(X, state_Y, label='state_y')
-    # # plt.plot(X, state_Z, label='state_z')
-
-    plt.plot(orbit_X, orbit_Y)
-    plt.show()
-    prob.check_partials()

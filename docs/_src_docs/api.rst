@@ -18,6 +18,8 @@ surrogate models.
   :titlesonly:
 
   api/options
-  api/groups
-  api/components
-  api/training
+  api/orbit
+  api/attitude
+  api/solar
+  api/communication
+  api/propulsion

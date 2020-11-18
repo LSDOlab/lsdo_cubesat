@@ -2,13 +2,16 @@ import numpy as np
 from openmdao.api import ExecComp, Group
 
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
-from lsdo_cubesat.communication.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import Ground_station
 from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
-from lsdo_utils.api import get_bspline_mtx
-from lsdo_utils.comps.arithmetic_comps.elementwise_max_comp import \
+from lsdo_cubesat.utils.api import get_bspline_mtx
+from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
+from lsdo_cubesat.examples.data.cubesat_xdata import cubesat_xdata as az
+from lsdo_cubesat.examples.data.cubesat_ydata import cubesat_ydata as el
+from lsdo_cubesat.examples.data.cubesat_zdata import cubesat_zdata as yt
 
 
 class SwarmGroup(Group):
@@ -16,7 +19,7 @@ class SwarmGroup(Group):
         self.options.declare('swarm')
         self.options.declare('add_battery', types=bool)
         self.options.declare('optimize_plant', types=bool)
-        self.options.declare('new_attitude', types=bool)
+        self.options.declare('attitude_integrator', types=bool)
         self.options.declare('battery_time_scale', types=float)
         self.options.declare('attitude_time_scale', types=float)
 
@@ -29,13 +32,12 @@ class SwarmGroup(Group):
         add_battery = self.options['add_battery']
         mtx = get_bspline_mtx(num_cp, num_times, order=4)
         optimize_plant = self.options['optimize_plant']
-        new_attitude = self.options['new_attitude']
+        attitude_integrator = self.options['attitude_integrator']
         battery_time_scale = self.options['battery_time_scale']
         attitude_time_scale = self.options['attitude_time_scale']
 
         group = ReferenceOrbitGroup(
             num_times=num_times,
-            num_cp=num_cp,
             step_size=step_size,
             cubesat=swarm.children[0],
         )
@@ -44,9 +46,12 @@ class SwarmGroup(Group):
         sm = None
         if add_battery:
             # load training data
-            az = np.genfromtxt('training_data/arrow_xData.csv', delimiter=',')
-            el = np.genfromtxt('training_data/arrow_yData.csv', delimiter=',')
-            yt = np.genfromtxt('training_data/arrow_zData.csv', delimiter=',')
+            # az = np.genfromtxt(here + '/solar/training/data/cubesat_xdata.csv',
+            #                    delimiter=',')
+            # el = np.genfromtxt(here + '/solar/training/data/cubesat_ydata.csv',
+            #                    delimiter=',')
+            # yt = np.genfromtxt(here + '/solar/training/data/cubesat_zdata.csv',
+            #                    delimiter=',')
 
             # generate surrogate model with 20 training points
             # must be the same as the number of points used to create model
@@ -65,7 +70,7 @@ class SwarmGroup(Group):
                     add_battery=add_battery,
                     sm=sm,
                     optimize_plant=optimize_plant,
-                    new_attitude=new_attitude,
+                    attitude_integrator=attitude_integrator,
                     attitude_time_scale=attitude_time_scale,
                     battery_time_scale=battery_time_scale,
                 )

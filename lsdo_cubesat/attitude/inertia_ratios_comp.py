@@ -23,7 +23,7 @@ class InertiaRatiosComp(ExplicitComponent):
         I = inputs['mass_moment_inertia_b_frame_km_m2']
         dKdI = np.zeros((3, 3))
 
-        dKdI[0, 0] = (I[2] - I[1]) / I[0]**2
+        dKdI[0, 0] = -(I[1] - I[2]) / I[0]**2
         dKdI[0, 1] = 1 / I[0]
         dKdI[0, 2] = -1 / I[0]
         dKdI[1, 0] = -1 / I[1]
@@ -41,11 +41,13 @@ if __name__ == '__main__':
 
     from openmdao.api import Problem, Group, IndepVarComp
 
+    np.random.seed(1)
+
     prob = Problem()
-    val = np.random.rand(3)
-    print(val)
     inputs = IndepVarComp()
-    inputs.add_output('mass_moment_inertia_b_frame_km_m2', val=val, shape=(3))
+    inputs.add_output('mass_moment_inertia_b_frame_km_m2',
+                      val=np.random.rand(3),
+                      shape=(3))
     prob.model.add_subsystem('inputs', inputs, promotes=['*'])
     prob.model.add_subsystem('inertia_ratios',
                              InertiaRatiosComp(),

@@ -1,12 +1,32 @@
 import numpy as np
 
 from openmdao.api import Group, IndepVarComp
-from lsdo_utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
+from lsdo_cubesat.utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
 from lsdo_cubesat.utils.norm import NormGroup
 from lsdo_cubesat.utils.random_arrays import make_random_signed_array, make_random_bounded_array
 
 
 class OrbitAngularSpeedGroup(Group):
+    """
+    Compute orbit angular speed from position and velocity vectors. For
+    position and velocity vectors that change over time, compute
+    osculating orbit angular velocity. Osculating orbit angular velocity
+    can be used to integrate attitude dynamics.
+
+    Options
+    -------
+    num_times : int
+        Number of time steps over which orbit is integrated
+
+    Parameters
+    ----------
+    position_km : shape=(3, num_times)
+    velocity_km_s : shape=(3, num_times)
+
+    Returns
+    -------
+    osculating_orbit_angular_speed : shape=(3, num_times)
+    """
     def initialize(self):
         self.options.declare('num_times', types=int)
 
@@ -219,34 +239,3 @@ class OrbitAngularSpeedGroup(Group):
             ),
             promotes=['*'],
         )
-
-
-if __name__ == '__main__':
-
-    from openmdao.api import Problem, IndepVarComp
-
-    np.random.seed(0)
-    num_times = 100
-
-    leo = np.abs(np.random.rand(3, num_times)) * 10 + 6371 + 150
-
-    comp = IndepVarComp()
-    comp.add_output('position_km', val=leo)
-    comp.add_output('velocity_km_s', val=np.random.rand(3, num_times))
-    # comp.add_output('eccentricity',
-    #                 val=make_random_signed_array(num_times, sgn=1, bound=1))
-
-    prob = Problem()
-    prob.model.add_subsystem(
-        'indeps',
-        comp,
-        promotes=['*'],
-    )
-    prob.model.add_subsystem(
-        'orbit_angular_speed_group',
-        OrbitAngularSpeedGroup(num_times=num_times),
-        promotes=['*'],
-    )
-    prob.setup()
-    prob.run_model()
-    prob.check_partials(compact_print=True)
