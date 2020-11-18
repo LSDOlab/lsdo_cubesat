@@ -1,5 +1,5 @@
-API
-===
+Discipline Models
+=================
 
 The disciplines provided by LSDO CubeSat are split into OpenMDAO
 Component classes and Group classes.

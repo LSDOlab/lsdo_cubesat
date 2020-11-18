@@ -3,13 +3,11 @@ LSDO CubeSat Toolbox
 
 The LSDO CubeSat Toolbox is an open-source tool for large-scale design
 optimization of CubeSats and CubeSat swarms.
-This toolbox enables trade studies and
 
 It is built on top of the `OpenMDAO framework
-<https://github.com/openmdao/blue>`_, which is described and documented
-`here <https://blue.readthedocs.io>`_.
+<https://openmdao.org/>`_.
 
-The source code is hosted `here <https://github.com/lsdolab/lsdo_cubesat>`_.
+The source code is hosted on `GitHub <https://github.com/lsdolab/lsdo_cubesat>`_.
 
 Documentation
 -------------

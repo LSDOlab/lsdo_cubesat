@@ -1,4 +1,4 @@
-Attitude Disciplines
+Attitude Discipline
 ====================
 
 Rigid Body

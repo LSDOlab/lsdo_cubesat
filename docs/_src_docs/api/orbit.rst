@@ -1,4 +1,4 @@
-Orbit Disciplines
+Orbit Discipline
 =================
 
 Initial Orbit
