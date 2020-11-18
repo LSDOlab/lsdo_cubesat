@@ -1,14 +1,14 @@
 Discipline Models
 =================
 
-The disciplines provided by LSDO CubeSat are split into OpenMDAO
+The disciplines provided by LSDO CubeSat are defined using OpenMDAO
 Component classes and Group classes.
 Component classes model simple disciplines while Group classes package
 disciplines together, simplifying model construction.
 
 In addition to Component and Group classes for modeling the CubeSat
-disciplines, LSDO CubeSat provides ``OptionsDictionary`` classes to
-initialize each discipline.
+disciplines, LSDO CubeSat provides classes containing parameters for
+initializing each discipline.
 
 Finally, LSDO CubeSat provides functions to generate training data for
 surrogate models.
@@ -20,6 +20,6 @@ surrogate models.
   api/options
   api/orbit
   api/attitude
-  api/solar
   api/communication
   api/propulsion
+  api/solar
