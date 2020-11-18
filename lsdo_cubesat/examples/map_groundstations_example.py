@@ -8,6 +8,39 @@ import seaborn as sns
 
 from PIL import Image
 
+from lsdo_cubesat.options.ground_station import Ground_station
+
+ucsd = Ground_station(
+    name='UCSD',
+    lon=-117.1611,
+    lat=32.8801,
+    alt=0.4849,
+)
+uiuc = Ground_station(
+    name='UIUC',
+    lon=-88.2272,
+    lat=32.8801,
+    alt=0.2329,
+)
+gt = Ground_station(
+    name='Georgia',
+    lon=-84.3963,
+    lat=33.7756,
+    alt=0.2969,
+)
+mtu = Ground_station(
+    name='Montana',
+    lon=-109.5337,
+    lat=33.7756,
+    alt=1.04,
+)
+mich = Ground_station(
+    name='Michigan',
+    lon=-83.7264,
+    lat=42.2708,
+    alt=0.2329,
+)
+
 ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
 lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
 
@@ -27,11 +60,11 @@ img = Image.open(path)
 fig, ax = plt.subplots()
 sns.set()
 ax.imshow(earth, extent=[-180, 180, -100, 100])
-ax.scatter(-83.7264, 42.2708, marker="p", label="Michigan")
-ax.scatter(-117.2340, 32.8801, marker="p", label="UCSD")
-ax.scatter(-88.2272, 40.1020, marker="p", label="UIUC")
-ax.scatter(-84.3963, 33.7756, marker="p", label="Georgia")
-ax.scatter(-109.533691, 46.9653, marker="p", label="Montana")
+ax.scatter(mich['lon'], mich['lat'], marker="p", label=mich['name'])
+ax.scatter(ucsd['lon'], ucsd['lat'], marker="p", label=ucsd['name'])
+ax.scatter(uiuc['lon'], uiuc['lat'], marker="p", label=uiuc['name'])
+ax.scatter(gt['lon'], gt['lat'], marker="p", label=gt['name'])
+ax.scatter(mtu['lon'], mtu['lat'], marker="p", label=mtu['name'])
 plt.xlabel("longitude")
 plt.ylabel("latitude")
 plt.title("Groundstation Locations")
