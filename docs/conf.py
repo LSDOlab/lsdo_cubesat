@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'lsdo_cubesat'
-copyright = '2020, Victor Gandarillas'
+copyright = '2020, LSDO Lab, UCSD'
 author = 'Victor Gandarillas'
 
 # The version info for the project you're documenting, acts as replacement for

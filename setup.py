@@ -11,6 +11,7 @@ setup(
         'dash-daq==0.1.0',
         'openmdao',
         'smt',
+        'pint',
         # 'sphinx_auto_embed',
     ],
 )
