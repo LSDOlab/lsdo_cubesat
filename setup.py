@@ -12,6 +12,6 @@ setup(
         'openmdao',
         'smt',
         'pint',
-        # 'sphinx_auto_embed',
+        'numpy',
     ],
 )

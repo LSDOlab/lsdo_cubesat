@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp
 
-from lsdo_utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp
+from lsdo_cubesat.utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp
 
 from lsdo_cubesat.utils.finite_difference_comp import FiniteDifferenceComp
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp

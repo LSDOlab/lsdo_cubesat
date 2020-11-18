@@ -23,4 +23,4 @@ from lsdo_cubesat.utils.miscellaneous_functions.get_array_indices import get_arr
 from lsdo_cubesat.utils.miscellaneous.options_dictionary import OptionsDictionary
 from lsdo_cubesat.utils.miscellaneous.simple_types import float_types
 
-import lsdo_utils.miscellaneous.constants as constants
+import lsdo_cubesat.utils.miscellaneous.constants as constants

@@ -1,7 +1,7 @@
 import numpy as np
 
 from openmdao.api import Group, IndepVarComp
-from lsdo_utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
+from lsdo_cubesat.utils.api import LinearCombinationComp, LinearPowerCombinationComp, PowerCombinationComp, ArrayExpansionComp, CrossProductComp, ArrayContractionComp
 from lsdo_cubesat.utils.norm import NormGroup
 from lsdo_cubesat.utils.random_arrays import make_random_signed_array, make_random_bounded_array
 
