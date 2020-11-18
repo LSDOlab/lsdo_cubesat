@@ -9,3 +9,4 @@ Examples library
   examples/sc_attitude
   examples/orbit
   examples/solar
+  examples/groundstations
