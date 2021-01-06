@@ -7,11 +7,12 @@ Training a Surrogate Model
 In this example, a surrogate model is trained on data to compute the
 total solar illumination on a spacecraft's solar panels.
 
-.. embed-module-plot :: lsdo_cubesat.examples.solar_illumination_training_example, 80
+.. jupyter-execute::
+  ../../../lsdo_cubesat/examples/solar_illumination_training_example.py
 
 Generating Training Data
 ------------------------
 
 In this example, the training data for the surrogate model is generated.
 
-.. embed-module :: lsdo_cubesat.examples.generate_training_data_example
+.. code-include :: lsdo_cubesat.examples.generate_training_data_example

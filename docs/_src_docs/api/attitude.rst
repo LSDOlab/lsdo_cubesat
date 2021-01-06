@@ -8,7 +8,7 @@ Use this component to model the rotation of a rigid body. This component
 does not model moments that depend on orientation (e.g. moments due to
 gravity gradient, drag).
 
-.. autoclass:: lsdo_cubesat.attitude.attitude_rk4_comp.AttitudeRK4Comp
+.. autoclass:: lsdo_cubesat.attitude.attitude_rk4_comp::AttitudeRK4Comp
 
 
 Rigid Body with Gravity Gradient

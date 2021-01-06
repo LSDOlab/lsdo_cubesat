@@ -1,6 +1,0 @@
-Groundstations
-==============
-
-This example shows the locations of some groundstations on a map of the Earth.
-
-.. embed-module-plot :: lsdo_cubesat.examples.map_groundstations_example, 80

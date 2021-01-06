@@ -1,7 +1,0 @@
-Reference Orbit
-================
-
-Reference Orbit for a Spacecraft with Thusters Turned Off
----------------------------------------------------------
-
-.. embed-module-plot :: lsdo_cubesat.examples.reference_orbit_rk4_comp_example, 80

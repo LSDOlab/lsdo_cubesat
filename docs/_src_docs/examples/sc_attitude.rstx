@@ -1,7 +1,0 @@
-Spacecraft Attitude Dynamics
-============================
-
-This example shows the time history of a spacecraft in circular orbit
-about Earth with small, random control inputs.
-
-.. embed-module-plot :: lsdo_cubesat.examples.attitude_gravity_example, 80

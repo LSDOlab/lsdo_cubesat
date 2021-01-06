@@ -14,14 +14,14 @@ from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
 from lsdo_cubesat.solar.solar_illumination_comp import SolarIlluminationComp
-from lsdo_cubesat.utils.ks_comp import KSComp
-from lsdo_cubesat.utils.slice_comp import SliceComp
 from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
                                     LinearCombinationComp,
                                     PowerCombinationComp, ScalarExpansionComp,
                                     get_bspline_mtx)
 from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
     ElementwiseMaxComp
+from lsdo_cubesat.utils.ks_comp import KSComp
+from lsdo_cubesat.utils.slice_comp import SliceComp
 
 
 class CubesatGroup(Group):
@@ -392,12 +392,3 @@ class CubesatGroup(Group):
             Data=np.empty(num_times),
         )
         self.add_subsystem('KS_total_Data_comp', comp, promotes=['*'])
-
-
-if __name__ == '__main__':
-
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
-
-    prob = Problem()
-    prob.model = CubesatGroup()

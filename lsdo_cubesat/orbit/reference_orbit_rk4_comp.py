@@ -2,12 +2,12 @@
 RK4 component for orbit compute
 """
 import os
-from six.moves import range
 
 import numpy as np
 import scipy.sparse
-
 from openmdao.api import ExplicitComponent
+from six.moves import range
+
 from lsdo_cubesat.utils.rk4_comp import RK4Comp
 
 # Constants
@@ -37,8 +37,8 @@ class ReferenceOrbitRK4Comp(RK4Comp):
     step_size : float
         Constant time step size to use for integration
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     initial_orbit_state_km : shape=6
         Initial position and velocity vectors from Earth to satellite in
         Earth-centered Inertial (ECI) frame
