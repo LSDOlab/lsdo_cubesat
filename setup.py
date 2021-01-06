@@ -1,5 +1,4 @@
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name='lsdo_cubesat',
@@ -7,11 +6,15 @@ setup(
     description='Large-scale optimization of CubeSat swarms',
     packages=find_packages(),
     install_requires=[
+        'numpy',
         'dash==1.2.0',
         'dash-daq==0.1.0',
         'openmdao',
         'smt',
         'pint',
-        'numpy',
+        'sphinx-rtd-theme',
+        'sphinx-code-include',
+        'jupyter-sphinx',
+        'numpydoc',
     ],
 )

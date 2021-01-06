@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import os
+import sys
+
+# -- General configuration ------------------------------------------------
+import sphinx_rtd_theme
+from openmdao.docutils import do_monkeypatch, embed_code, embed_options
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -12,9 +16,6 @@ sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('./_exts'))
 sys.path.insert(0, os.path.abspath('./docs/_exts'))
 
-# -- General configuration ------------------------------------------------
-import sphinx_rtd_theme
-from openmdao.docutils import embed_code, embed_options, do_monkeypatch
 do_monkeypatch()
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -25,6 +26,7 @@ do_monkeypatch()
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'numpy',
     'sphinx.ext.autodoc',
     # 'sphinx.ext.autosummary',
     # 'sphinx.ext.doctest',
@@ -34,8 +36,11 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
     'embed_code',
+    # 'embed_n2',
     # 'embed_options',
     'sphinx_rtd_theme',
+    'jupyter_sphinx',
+    'code_include.extension',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
