@@ -1,6 +1,7 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+from openmdao.api import IndepVarComp
+from omtools.api import Group
 
 from lsdo_cubesat.utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp
 
@@ -38,68 +39,77 @@ class AttitudeGroup(Group):
         # Initial angular velocity and quaternion
         wq0 = np.array([-1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
 
-        comp = IndepVarComp()
-        comp.add_output('times',
-                        units='s',
-                        val=np.linspace(0., step_size * (num_times - 1),
-                                        num_times))
-        # comp.add_output('roll_cp', val=2. * np.pi * np.random.rand(num_cp))
-        # comp.add_output('pitch_cp', val=2. * np.pi * np.random.rand(num_cp))
-        comp.add_output('roll_cp', val=np.ones(num_cp))
-        comp.add_output('pitch_cp', val=np.ones(num_cp))
-        comp.add_design_var('roll_cp')
-        comp.add_design_var('pitch_cp')
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-        # Decompose angular velocity and orientation
-        self.add_subsystem(
-            'attitude_state_decomp',
-            AttitudeStateDecompositionComp(
-                num_times=num_times,
-                angular_velocity_orientation='angular_velocity_orientation',
-                angular_velocity_name='angular_velocity',
-                quaternion_name='quaternions'),
-            promotes=['*'],
+        self.create_indep_var(
+            'times',
+            # units='s',
+            val=np.linspace(0., step_size * (num_times - 1), num_times),
         )
+        roll_cp = self.create_indep_var('roll_cp', val=np.ones(num_cp))
+        roll_cp = self.create_indep_var('pitch_cp', val=np.ones(num_cp))
+        self.add_design_var('roll_cp')
+        self.add_design_var('pitch_cp')
 
-        self.add_subsystem(
-            'normalize_last_quaternion',
-            NormalizeLastQuaternion(num_times=num_times, ),
-            promotes=['*'],
-        )
+        for var_name in ['roll', 'pitch']:
+            comp = BsplineComp(
+                num_pt=num_times,
+                num_cp=num_cp,
+                jac=mtx,
+                in_name='{}_cp'.format(var_name),
+                out_name=var_name,
+            )
+            self.add_subsystem('{}_comp'.format(var_name),
+                               comp,
+                               promotes=['*'])
 
-        # Compute rotation matrix
-        self.add_subsystem('rot_mtx_b_i_3x3xn_comp',
-                           QuaternionToRotMtx(num_times=num_times),
-                           promotes=['*'])
+        # # Decompose angular velocity and orientation
+        # self.add_subsystem(
+        #     'attitude_state_decomp',
+        #     AttitudeStateDecompositionComp(
+        #         num_times=num_times,
+        #         angular_velocity_orientation='angular_velocity_orientation',
+        #         angular_velocity_name='angular_velocity',
+        #         quaternion_name='quaternions'),
+        #     promotes=['*'],
+        # )
 
-        # Compute roll, pitch, yaw from rotation matrix (to use in finite
-        # difference for roll and pitch rate constraints)
-        self.add_subsystem(
-            'rot_mtx_to_rpy',
-            RotMtxToRollPitchYaw(
-                mtx_name='rot_mtx_b_i_3x3xn',
-                num_times=num_times,
-            ),
-            promotes=['*'],
-        )
+        # self.add_subsystem(
+        #     'normalize_last_quaternion',
+        #     NormalizeLastQuaternion(num_times=num_times, ),
+        #     promotes=['*'],
+        # )
 
-        # Transpose rotation matrix
-        comp = ArrayReorderComp(
-            in_shape=(3, 3, num_times),
-            out_shape=(3, 3, num_times),
-            in_subscripts='ijn',
-            out_subscripts='jin',
-            in_name='rot_mtx_b_i_3x3xn',
-            out_name='rot_mtx_i_b_3x3xn',
-        )
-        self.add_subsystem('rot_mtx_i_b_3x3xn_comp', comp, promotes=['*'])
+        # # Compute rotation matrix
+        # self.add_subsystem('rot_mtx_b_i_3x3xn_comp',
+        #                    QuaternionToRotMtx(num_times=num_times),
+        #                    promotes=['*'])
+
+        # # Compute roll, pitch, yaw from rotation matrix (to use in finite
+        # # difference for roll and pitch rate constraints)
+        # self.add_subsystem(
+        #     'rot_mtx_to_rpy',
+        #     RotMtxToRollPitchYaw(
+        #         mtx_name='rot_mtx_b_i_3x3xn',
+        #         num_times=num_times,
+        #     ),
+        #     promotes=['*'],
+        # )
+
+        # # Transpose rotation matrix
+        # comp = ArrayReorderComp(
+        #     in_shape=(3, 3, num_times),
+        #     out_shape=(3, 3, num_times),
+        #     in_subscripts='ijn',
+        #     out_subscripts='jin',
+        #     in_name='rot_mtx_b_i_3x3xn',
+        #     out_name='rot_mtx_i_b_3x3xn',
+        # )
+        # self.add_subsystem('rot_mtx_i_b_3x3xn_comp', comp, promotes=['*'])
 
         for var_name in [
                 'times',
                 'roll',
                 'pitch',
-                'yaw',
+                # 'yaw',
         ]:
             comp = FiniteDifferenceComp(
                 num_times=num_times,
