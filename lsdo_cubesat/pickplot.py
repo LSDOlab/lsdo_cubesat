@@ -101,7 +101,8 @@ obj = info['obj']
 
 # KS_data = info['detector_cubesat_group.KS_Data']
 UCSD_data_rate = info['detector_cubesat_group.UCSD_comm_group.Download_rate']
-GS_dist = info['detector_cubesat_group.UCSD_comm_group.GSdist']
+GS_dist = info[
+    'detector_cubesat_group.UCSD_comm_group.distance_to_groundstation']
 
 # sunshade_UCSD_data = info['detector_cubesat_group.UCSD_comm_group.Data']
 # sunshade_UIUC_data = info['detector_cubesat_group.UIUC_comm_group.Data']

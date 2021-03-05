@@ -8,33 +8,33 @@ import seaborn as sns
 
 from PIL import Image
 
-from lsdo_cubesat.options.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import GroundStation
 
-ucsd = Ground_station(
+ucsd = GroundStation(
     name='UCSD',
     lon=-117.1611,
     lat=32.8801,
     alt=0.4849,
 )
-uiuc = Ground_station(
+uiuc = GroundStation(
     name='UIUC',
     lon=-88.2272,
     lat=32.8801,
     alt=0.2329,
 )
-gt = Ground_station(
+gt = GroundStation(
     name='Georgia',
     lon=-84.3963,
     lat=33.7756,
     alt=0.2969,
 )
-mtu = Ground_station(
+mtu = GroundStation(
     name='Montana',
     lon=-109.5337,
     lat=33.7756,
     alt=1.04,
 )
-mich = Ground_station(
+mich = GroundStation(
     name='Michigan',
     lon=-83.7264,
     lat=42.2708,

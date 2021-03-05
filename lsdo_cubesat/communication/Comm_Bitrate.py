@@ -44,7 +44,7 @@ class BitRateComp(ExplicitComponent):
                        desc='Transmitter gain over time')
 
         self.add_input(
-            'GSdist',
+            'distance_to_groundstation',
             shape=num_times,
             units='km',
             desc='Distance from ground station to satellite over time')
@@ -65,26 +65,26 @@ class BitRateComp(ExplicitComponent):
         num_times = self.options['num_times']
         P_comm = inputs['P_comm']
         gain = inputs['gain']
-        GSdist = inputs['GSdist']
+        distance_to_groundstation = inputs['distance_to_groundstation']
         CommLOS = inputs['CommLOS']
 
-        a = np.where(np.abs(GSdist > 1e-10))
-        b = np.where(np.abs(GSdist <= 1e-10))
+        a = np.where(np.abs(distance_to_groundstation > 1e-10))
+        b = np.where(np.abs(distance_to_groundstation <= 1e-10))
         S2 = np.zeros(num_times)
-        S2[a] = GSdist[a] * 1e3
+        S2[a] = distance_to_groundstation[a] * 1e3
         S2[b] = 1e-10
         outputs['Download_rate'] = self.alpha * P_comm * gain * \
             CommLOS / S2 ** 2
 
         # for i in range(0, num_times):
-        #     if np.abs(GSdist[i]) > 1e-10:
-        #         S2 = GSdist[i] * 1e3
+        #     if np.abs(distance_to_groundstation[i]) > 1e-10:
+        #         S2 = distance_to_groundstation[i] * 1e3
         #     else:
         #         S2 = 1e-10
         #     outputs['Download_rate'][i] = self.alpha * P_comm[i] * gain[i] * \
         #         CommLOS[i] / S2 ** 2
 
-        # np.savetxt("rundata/GSdist.csv", GSdist, header="GSdist")
+        # np.savetxt("rundata/distance_to_groundstation.csv", distance_to_groundstation, header="distance_to_groundstation")
         # np.savetxt("rundata/P_comm.csv", P_comm, header="P_comm")
         # np.savetxt("rundata/gain.csv", gain, header="gain")
         # np.savetxt("rundata/CommLOS_final.csv", CommLOS, header="CommLOS")
@@ -97,7 +97,7 @@ class BitRateComp(ExplicitComponent):
 
         P_comm = inputs['P_comm']
         gain = inputs['gain']
-        GSdist = inputs['GSdist']
+        distance_to_groundstation = inputs['distance_to_groundstation']
         CommLOS = inputs['CommLOS']
 
         S2 = 0.0
@@ -108,8 +108,8 @@ class BitRateComp(ExplicitComponent):
 
         for i in range(0, num_times):
 
-            if np.abs(GSdist[i]) > 1e-10:
-                S2 = GSdist[i] * 1e3
+            if np.abs(distance_to_groundstation[i]) > 1e-10:
+                S2 = distance_to_groundstation[i] * 1e3
             else:
                 S2 = 1e-10
 
@@ -133,8 +133,8 @@ class BitRateComp(ExplicitComponent):
                 dDr += self.dD_dP * d_inputs['P_comm']
             if 'gain' in d_inputs:
                 dDr += self.dD_dGt * d_inputs['gain']
-            if 'GSdist' in d_inputs:
-                dDr += self.dD_dS * d_inputs['GSdist']
+            if 'distance_to_groundstation' in d_inputs:
+                dDr += self.dD_dS * d_inputs['distance_to_groundstation']
             if 'CommLOS' in d_inputs:
                 dDr += self.dD_dLOS * d_inputs['CommLOS']
         else:
@@ -142,8 +142,8 @@ class BitRateComp(ExplicitComponent):
                 d_inputs['P_comm'] += self.dD_dP.T * dDr
             if 'gain' in d_inputs:
                 d_inputs['gain'] += self.dD_dGt.T * dDr
-            if 'GSdist' in d_inputs:
-                d_inputs['GSdist'] += self.dD_dS.T * dDr
+            if 'distance_to_groundstation' in d_inputs:
+                d_inputs['distance_to_groundstation'] += self.dD_dS.T * dDr
             if 'CommLOS' in d_inputs:
                 d_inputs['CommLOS'] += self.dD_dLOS.T * dDr
 
@@ -159,7 +159,9 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('P_comm', val=16.0 * np.ones(num_times), units='W')
     comp.add_output('gain', val=1.0 * np.ones(num_times))
-    comp.add_output('GSdist', val=600.0 * np.ones(num_times), units='km')
+    comp.add_output('distance_to_groundstation',
+                    val=600.0 * np.ones(num_times),
+                    units='km')
     comp.add_output('CommLOS', val=np.ones(num_times))
 
     prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])

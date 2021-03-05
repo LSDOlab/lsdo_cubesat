@@ -10,14 +10,10 @@ class EarthspinRotationMtx(ExplicitComponent):
     """
     def initialize(self):
         self.options.declare('num_times', types=int)
+        self.options.declare('q_E', types=np.ndarray)
 
     def setup(self):
         num_times = self.options['num_times']
-
-        self.add_input('q_E',
-                       shape=(4, num_times),
-                       units=None,
-                       desc='Quaternion matrix in Earth-fixed frame over time')
 
         self.add_output(
             'Rot_ECI_EF',
@@ -40,8 +36,7 @@ class EarthspinRotationMtx(ExplicitComponent):
 
     def compute(self, inputs, outputs):
         num_times = self.options['num_times']
-
-        q_E = inputs['q_E']
+        q_E = self.options['q_E']
 
         outputs['Rot_ECI_EF'][0,
                               0, :] = 1 - 2 * q_E[2, :]**2 - 2 * q_E[3, :]**2

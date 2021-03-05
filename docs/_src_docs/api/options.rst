@@ -42,7 +42,7 @@ Ground_station
      -  None
      -  ['float']
      -
-  *  -  antAngle
+  *  -  antenna_angle
      -  2.0
      -  None
      -  ['float']

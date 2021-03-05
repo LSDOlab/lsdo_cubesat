@@ -1,7 +1,9 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
-
+from openmdao.api import IndepVarComp, NonlinearBlockGS, LinearBlockGS
+import omtools.api as ot
+from omtools.api import Group
+import omtools.api as ot
 from lsdo_cubesat.utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
@@ -74,55 +76,52 @@ class ReferenceOrbitGroup(Group):
         # )
         # self.add_subsystem('mass_comp', comp, promotes=['*'])
 
+        # NOTE: omtools needs to be more mature before converting InitialOrbitComp to ot.Group
         comp = InitialOrbitComp()
         self.add_subsystem('initial_orbit_comp', comp, promotes=['*'])
 
+        # NOTE: Integrators cannot be converted to ot.Group
         comp = ReferenceOrbitRK4Comp(
             num_times=num_times,
             step_size=step_size,
         )
         self.add_subsystem('orbit_rk4_comp', comp, promotes=['*'])
 
-        comp = OrbitStateDecompositionComp(
-            num_times=num_times,
-            position_name='position_km',
-            velocity_name='velocity_km_s',
-            orbit_state_name='reference_orbit_state_km',
-        )
-        self.add_subsystem('orbit_state_decomposition_comp',
-                           comp,
-                           promotes=['*'])
-
-        comp = LinearCombinationComp(
+        reference_orbit_state_km = self.declare_input(
+            'reference_orbit_state_km',
             shape=(6, num_times),
-            out_name='reference_orbit_state',
-            coeffs_dict=dict(reference_orbit_state_km=1.e3),
         )
-        self.add_subsystem('position_comp', comp, promotes=['*'])
+        position_km = reference_orbit_state_km[0:3, :]
+        velocity_km_s = reference_orbit_state_km[3:, :]
 
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='position_km',
-            norm_name='radius_km',
-            unit_vec_name='position_unit_vec',
-        )
-        self.add_subsystem('position_decomposition_group',
-                           group,
-                           promotes=['*'])
+        print('position_km.shape', position_km.shape)
+        print('position_km.val', position_km.val)
+        print(velocity_km_s.shape)
 
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='velocity_km_s',
-            norm_name='speed_km_s',
-            unit_vec_name='velocity_unit_vec',
+        reference_orbit_state = self.register_output(
+            'reference_orbit_state',
+            1e3 * reference_orbit_state_km,
         )
-        self.add_subsystem('velocity_decomposition_group',
-                           group,
-                           promotes=['*'])
+        position_unit_vec = self.register_output(
+            'position_unit_vec',
+            position_km / ot.expand(
+                ot.pnorm(position_km, axis=0),
+                (3, num_times),
+                'j->ij',
+            ),
+        )
+        print('position_unit_vec.val', position_unit_vec.val)
+        velocity_unit_vec = self.register_output(
+            'velocity_unit_vec',
+            velocity_km_s / ot.expand(
+                ot.pnorm(velocity_km_s, axis=0),
+                (3, num_times),
+                'j->ij',
+            ),
+        )
 
-        comp = LinearCombinationComp(
-            shape=(num_times, ),
-            out_name='radius',
-            coeffs_dict=dict(radius_km=1.e3),
+        radius_km = self.declare_input(
+            'radius_km',
+            shape=(3, num_times),
         )
-        self.add_subsystem('radius_comp', comp, promotes=['*'])
+        self.register_output('radius', 1e3 * radius_km)

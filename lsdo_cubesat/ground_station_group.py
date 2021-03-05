@@ -51,7 +51,7 @@ class GSGroup(Group):
                 'lon',
                 'lat',
                 'alt',
-                'antAngle',
+                'antenna_angle',
         ]:
             comp.add_output(var_name, val=ground_station[var_name])
 
@@ -79,7 +79,7 @@ class GSGroup(Group):
         self.add_subsystem('r_b2g_B', comp, promotes=['*'])
 
         comp = AntRotationComp(num_times=num_times)
-        self.add_subsystem('q_A', comp, promotes=['*'])
+        self.add_subsystem('antenna_orientation', comp, promotes=['*'])
 
         comp = AntennaRotationMtx(num_times=num_times)
         self.add_subsystem('Rot_AB', comp, promotes=['*'])

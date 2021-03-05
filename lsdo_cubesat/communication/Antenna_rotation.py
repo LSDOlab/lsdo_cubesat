@@ -13,40 +13,41 @@ class AntRotationComp(ExplicitComponent):
     def setup(self):
         num_times = self.options['num_times']
 
-        self.add_input('antAngle',
+        self.add_input('antenna_angle',
                        0.0,
                        units='rad',
                        desc='Fiexed antenna angle')
 
         self.add_output(
-            'q_A',
+            'antenna_orientation',
             np.zeros((4, num_times)),
             units=None,
             desc='Quarternion matrix in antenna angle frame over time')
 
-        self.declare_partials('q_A', 'antAngle')
+        self.declare_partials('antenna_orientation', 'antenna_angle')
 
     def compute(self, inputs, outputs):
-        antAngle = inputs['antAngle']
+        antenna_angle = inputs['antenna_angle']
 
         rt2 = np.sqrt(2)
-        outputs['q_A'][0, :] = np.cos(antAngle / 2.)
-        outputs['q_A'][1, :] = np.sin(antAngle / 2.) / rt2
-        outputs['q_A'][2, :] = -np.sin(antAngle / 2.) / rt2
-        outputs['q_A'][3, :] = 0.0
+        outputs['antenna_orientation'][0, :] = np.cos(antenna_angle / 2.)
+        outputs['antenna_orientation'][1, :] = np.sin(antenna_angle / 2.) / rt2
+        outputs['antenna_orientation'][
+            2, :] = -np.sin(antenna_angle / 2.) / rt2
+        outputs['antenna_orientation'][3, :] = 0.0
 
     def compute_partials(self, inputs, partials):
         num_times = self.options['num_times']
-        antAngle = inputs['antAngle']
+        antenna_angle = inputs['antenna_angle']
 
         rt2 = np.sqrt(2)
         dq_dt = np.zeros((4, num_times))
-        dq_dt[0, :] = -np.sin(antAngle / 2.) / 2.
-        dq_dt[1, :] = np.cos(antAngle / 2.) / rt2 / 2.
-        dq_dt[2, :] = -np.cos(antAngle / 2.) / rt2 / 2.
+        dq_dt[0, :] = -np.sin(antenna_angle / 2.) / 2.
+        dq_dt[1, :] = np.cos(antenna_angle / 2.) / rt2 / 2.
+        dq_dt[2, :] = -np.cos(antenna_angle / 2.) / rt2 / 2.
         dq_dt[3, :] = 0.0
 
-        partials['q_A', 'antAngle'] = dq_dt.flatten()
+        partials['antenna_orientation', 'antenna_angle'] = dq_dt.flatten()
 
 
 if __name__ == '__main__':
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     num_times = 3
 
-    comp.add_output('antAngle', val=1.0, units='rad')
+    comp.add_output('antenna_angle', val=1.0, units='rad')
 
     group.add_subsystem('Inputcomp', comp, promotes=['*'])
     group.add_subsystem('antenna_angle',

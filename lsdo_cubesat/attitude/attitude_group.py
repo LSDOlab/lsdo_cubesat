@@ -13,6 +13,7 @@ from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
 from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
 from lsdo_cubesat.attitude.attitude_state_decomposition_comp import AttitudeStateDecompositionComp
 from lsdo_cubesat.attitude.rot_mtx_to_rpy import RotMtxToRollPitchYaw
+from lsdo_cubesat.utils.comps.array_comps.array_expansion_comp import ArrayExpansionComp
 
 
 class AttitudeGroup(Group):
@@ -49,44 +50,6 @@ class AttitudeGroup(Group):
         comp.add_design_var('roll_cp')
         comp.add_design_var('pitch_cp')
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-        # Expand external_torques
-        for var_name in [
-                'external_torques_x',
-                'external_torques_y',
-                'external_torques_z',
-        ]:
-            comp = BsplineComp(
-                num_pt=num_times,
-                num_cp=num_cp,
-                jac=mtx,
-                in_name='{}_cp'.format(var_name),
-                out_name=var_name,
-            )
-            self.add_subsystem('{}_comp'.format(var_name),
-                               comp,
-                               promotes=['*'])
-
-        # Compute inertia ratios for attitude dynamics (assumes these are time-invariant)
-        self.add_subsystem('inertia_ratios_comp',
-                           InertiaRatiosComp(),
-                           promotes=['*'])
-
-        # Expand inertia ratios (AttitudeRK4Comp assumes these are time-varying)
-        self.add_subsystem('expand_inertia_ratios',
-                           ArrayExpansionComp(
-                               shape=(3, num_times),
-                               expand_indices=[1],
-                               in_name='moment_inertia_ratios',
-                               out_name='moment_inertia_ratios_3xn',
-                           ),
-                           promotes=['*'])
-
-        # Integrate attitude dynamics
-        self.add_subsystem('attitude_rk4',
-                           AttitudeRK4Comp(num_times=num_times,
-                                           step_size=step_size),
-                           promotes=['*'])
 
         # Decompose angular velocity and orientation
         self.add_subsystem(

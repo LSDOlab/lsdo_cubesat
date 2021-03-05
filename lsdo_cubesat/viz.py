@@ -168,9 +168,9 @@ class Viz(BaseViz):
                     '{}_cubesat_group.{}_comm_group.Download_rate'.format(
                         cubesat_name, ground_station_name)]
 
-                GSdist = data_dict_current[
-                    '{}_cubesat_group.{}_comm_group.GSdist'.format(
-                        cubesat_name, ground_station_name)]
+                distance_to_groundstation = data_dict_current[
+                    '{}_cubesat_group.{}_comm_group.distance_to_groundstation'.
+                    format(cubesat_name, ground_station_name)]
 
                 r_b2g_I = data_dict_current[
                     '{}_cubesat_group.{}_comm_group.r_b2g_I'.format(

@@ -1,11 +1,14 @@
 import numpy as np
+from openmdao.api import ExecComp, IndepVarComp
 
-from openmdao.api import Group, IndepVarComp, ExecComp
-
-from lsdo_cubesat.utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
-
+import omtools.api as ot
+from lsdo_cubesat.propulsion.propellant_mass_rk4_comp import \
+    PropellantMassRK4Comp
+from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
+                                    LinearCombinationComp,
+                                    PowerCombinationComp)
 from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
-from lsdo_cubesat.propulsion.propellant_mass_rk4_comp import PropellantMassRK4Comp
+from omtools.api import Group
 
 
 class PropulsionGroup(Group):
@@ -43,34 +46,45 @@ class PropulsionGroup(Group):
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
 
-        shape = (3, num_times)
-
         thrust_unit_vec = np.outer(
             np.array([1., 0., 0.]),
             np.ones(num_times),
         )
 
-        comp = IndepVarComp()
-        comp.add_output('thrust_unit_vec_b_3xn', val=thrust_unit_vec)
-        comp.add_output('thrust_scalar_mN_cp', val=1.e-3 * np.ones(num_cp))
-        comp.add_output('initial_propellant_mass', 0.17)
-        comp.add_design_var('thrust_scalar_mN_cp', lower=0., upper=20000)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-        comp = MtxVecComp(
-            num_times=num_times,
-            mtx_name='rot_mtx_i_b_3x3xn',
-            vec_name='thrust_unit_vec_b_3xn',
-            out_name='thrust_unit_vec_3xn',
+        thrust_unit_vec_b_3xn = self.create_indep_var(
+            'thrust_unit_vec_b_3xn',
+            val=thrust_unit_vec,
         )
-        self.add_subsystem('thrust_unit_vec_3xn_comp', comp, promotes=['*'])
-
-        comp = LinearCombinationComp(
-            shape=(num_cp, ),
-            out_name='thrust_scalar_cp',
-            coeffs_dict=dict(thrust_scalar_mN_cp=1.e-3),
+        thrust_scalar_mN_cp = self.create_indep_var(
+            'thrust_scalar_mN_cp',
+            val=1.e-3 * np.ones(num_cp),
+            dv=True,
+            # lower=0.,
+            # upper=20000,
         )
-        self.add_subsystem('thrust_scalar_cp_comp', comp, promotes=['*'])
+        initial_propellant_mass = self.create_indep_var(
+            'initial_propellant_mass',
+            val=0.17,
+        )
+
+        rot_mtx_i_b_3x3xn = self.declare_input(
+            'rot_mtx_i_b_3x3xn',
+            (3, 3, num_times),
+        )
+
+        thrust_unit_vec_3xn = self.register_output(
+            'thrust_unit_vec_3xn',
+            ot.einsum(
+                rot_mtx_i_b_3x3xn,
+                thrust_unit_vec_b_3xn,
+                subscripts='ijk,jk->jk',
+            ),
+        )
+
+        thrust_scalar_cp = self.register_output(
+            'thrust_scalar_cp',
+            1e-3 * thrust_scalar_mN_cp,
+        )
 
         comp = BsplineComp(
             num_pt=num_times,
@@ -80,47 +94,42 @@ class PropulsionGroup(Group):
             out_name='thrust_scalar',
         )
         self.add_subsystem('thrust_scalar_comp', comp, promotes=['*'])
+        thrust_scalar = self.declare_input('thrust_scalar',
+                                           shape=(1, num_times))
+        ones = self.declare_input('ones', shape=(3, ), val=1)
 
-        comp = ArrayExpansionComp(
-            shape=shape,
-            expand_indices=[0],
-            in_name='thrust_scalar',
-            out_name='thrust_scalar_3xn',
-        )
-        self.add_subsystem('thrust_scalar_3xn_comp', comp, promotes=['*'])
-
-        comp = PowerCombinationComp(
-            shape=shape,
-            out_name='thrust_3xn',
-            powers_dict=dict(
-                thrust_unit_vec_3xn=1.,
-                thrust_scalar_3xn=1.,
+        thrust_scalar_3xn = self.register_output(
+            'thrust_scalar_3xn',
+            ot.einsum(
+                ones,
+                thrust_scalar,
+                subscripts='i,jk->ik',
             ),
         )
-        self.add_subsystem('thrust_3xn_comp', comp, promotes=['*'])
 
-        comp = LinearCombinationComp(
-            shape=(num_times, ),
-            out_name='mass_flow_rate',
-            coeffs_dict=dict(thrust_scalar=-1. /
-                             (cubesat['acceleration_due_to_gravity'] *
-                              cubesat['specific_impulse']), ),
+        # thrust_3xn = thrust_unit_vec_3xn * thrust_scalar_3xn
+
+        mass_flow_rate = self.register_output(
+            'mass_flow_rate',
+            -1. / (cubesat['acceleration_due_to_gravity'] *
+                   cubesat['specific_impulse']) * thrust_scalar,
         )
-        self.add_subsystem('mass_flow_rate_comp', comp, promotes=['*'])
 
+        # NOTE: cannot convert integrators to omtools.Group
         comp = PropellantMassRK4Comp(
             num_times=num_times,
             step_size=step_size,
         )
         self.add_subsystem('propellant_mass_rk4_comp', comp, promotes=['*'])
+        propellant_mass = self.declare_input('propellant_mass',
+                                             shape=(1, num_times))
 
-        comp = ExecComp(
-            'total_propellant_used=propellant_mass[0] - propellant_mass[-1]',
-            propellant_mass=np.empty(num_times),
+        total_propellant_used = self.register_output(
+            'total_propellant_used',
+            propellant_mass[0, 0] - propellant_mass[0, num_times - 1],
         )
-        self.add_subsystem('total_propellant_used_comp', comp, promotes=['*'])
 
-        # NOTE: Use Ideal Gas Law
+        # NOTE: Using Ideal Gas Law
         # boltzmann = 1.380649e-23
         # avogadro = 6.02214076e23
         boltzmann_avogadro = 1.380649 * 6.02214076
@@ -129,14 +138,39 @@ class PropulsionGroup(Group):
         pressure = 100 * 6895
         temperature = 273.15 + 56
         # (273.15+25)*1.380649*6.02214076/(152.05/1000)/(100*6895)
-        self.add_subsystem(
-            'compute_propellant_volume',
-            PowerCombinationComp(
-                shape=(1, ),
-                out_name='total_propellant_volume',
-                coeff=temperature * boltzmann_avogadro /
-                r236fa_molecular_mass_kg / pressure,
-                powers_dict=dict(total_propellant_used=1.0, ),
-            ),
-            promotes=['*'],
+
+        total_propellant_volume = self.register_output(
+            'total_propellant_volume',
+            (temperature * boltzmann_avogadro / r236fa_molecular_mass_kg /
+             pressure) * total_propellant_used,
         )
+
+
+if __name__ == "__main__":
+    from openmdao.api import Problem
+    from openmdao.api import n2
+    from lsdo_cubesat.utils.api import get_bspline_mtx
+    from lsdo_cubesat.options.cubesat import Cubesat
+    initial_orbit_state_magnitude = np.array([1e-3] * 3 + [1e-3] * 3)
+    num_times = 30
+    num_cp = 10
+    prob = Problem()
+    prob.model = PropulsionGroup(
+        num_times=num_times,
+        num_cp=num_cp,
+        step_size=0.1,
+        cubesat=Cubesat(
+            name='sunshade',
+            dry_mass=1.3,
+            initial_orbit_state=initial_orbit_state_magnitude *
+            np.random.rand(6),
+            approx_altitude_km=500.,
+            specific_impulse=47.,
+            apogee_altitude=500.001,
+            perigee_altitude=499.99,
+        ),
+        mtx=get_bspline_mtx(num_cp, num_times, order=4),
+    )
+    prob.setup()
+    prob.run_model()
+    n2(prob)

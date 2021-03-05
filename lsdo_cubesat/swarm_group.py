@@ -1,8 +1,9 @@
 import numpy as np
-from openmdao.api import ExecComp, Group
+from openmdao.api import ExecComp
+from omtools.api import Group
 
+from lsdo_cubesat.api import Swarm
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
-from lsdo_cubesat.options.ground_station import Ground_station
 from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
@@ -16,7 +17,7 @@ from lsdo_cubesat.examples.data.cubesat_zdata import cubesat_zdata as yt
 
 class SwarmGroup(Group):
     def initialize(self):
-        self.options.declare('swarm')
+        self.options.declare('swarm', types=Swarm)
         self.options.declare('add_battery', types=bool)
         self.options.declare('optimize_plant', types=bool)
         self.options.declare('attitude_integrator', types=bool)
@@ -36,12 +37,15 @@ class SwarmGroup(Group):
         battery_time_scale = self.options['battery_time_scale']
         attitude_time_scale = self.options['attitude_time_scale']
 
-        group = ReferenceOrbitGroup(
-            num_times=num_times,
-            step_size=step_size,
-            cubesat=swarm.children[0],
+        self.add_subsystem(
+            'reference_orbit_group',
+            ReferenceOrbitGroup(
+                num_times=num_times,
+                step_size=step_size,
+                cubesat=swarm.children[0],
+            ),
+            promotes=['*'],
         )
-        self.add_subsystem('reference_orbit_group', group, promotes=['*'])
 
         sm = None
         if add_battery:
@@ -57,30 +61,36 @@ class SwarmGroup(Group):
             # must be the same as the number of points used to create model
             sm = smt_exposure(20, az, el, yt)
 
-        for cubesat in swarm.children:
-            name = cubesat['name']
-            for Ground_station in cubesat.children:
-                group = CubesatGroup(
-                    num_times=num_times,
-                    num_cp=num_cp,
-                    step_size=step_size,
-                    cubesat=cubesat,
-                    mtx=mtx,
-                    Ground_station=Ground_station,
-                    add_battery=add_battery,
-                    sm=sm,
-                    optimize_plant=optimize_plant,
-                    attitude_integrator=attitude_integrator,
-                    attitude_time_scale=attitude_time_scale,
-                    battery_time_scale=battery_time_scale,
-                )
-            self.add_subsystem('{}_cubesat_group'.format(name), group)
-
-        group = AlignmentGroup(
-            swarm=swarm,
-            mtx=mtx,
+        # for cubesat in swarm.children:
+        #     name = cubesat['name']
+        #     for ground_station in cubesat.children:
+        #         group = CubesatGroup(
+        #             num_times=num_times,
+        #             num_cp=num_cp,
+        #             step_size=step_size,
+        #             cubesat=cubesat,
+        #             mtx=mtx,
+        #             ground_station=ground_station,
+        #             add_battery=add_battery,
+        #             sm=sm,
+        #             optimize_plant=optimize_plant,
+        #             attitude_integrator=attitude_integrator,
+        #             attitude_time_scale=attitude_time_scale,
+        #             battery_time_scale=battery_time_scale,
+        #         )
+        #     self.add_subsystem(
+        #         '{}_cubesat_group'.format(name),
+        #         group,
+        #         promotes=['*'],
+        #     )
+        self.add_subsystem(
+            'alignment_group',
+            AlignmentGroup(
+                swarm=swarm,
+                mtx=mtx,
+            ),
+            promotes=['*'],
         )
-        self.add_subsystem('alignment_group', group, promotes=['*'])
 
         comp = ExecComp(
             'total_propellant_used' +
@@ -115,7 +125,7 @@ class SwarmGroup(Group):
             )
 
             self.connect(
-                '{}_cubesat_group.total_Data'.format(name),
+                '{}_cubesat_group.total_data'.format(name),
                 '{}_cubesat_group_total_Data'.format(name),
             )
 
@@ -130,8 +140,8 @@ class SwarmGroup(Group):
 
         for cubesat in swarm.children:
             cubesat_name = cubesat['name']
-            for Ground_station in cubesat.children:
-                Ground_station_name = Ground_station['name']
+            for ground_station in cubesat.children:
+                Ground_station_name = ground_station['name']
 
                 for var_name in ['orbit_state_km', 'rot_mtx_i_b_3x3xn']:
                     self.connect(

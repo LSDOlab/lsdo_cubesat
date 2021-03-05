@@ -9,6 +9,8 @@ import numpy as np
 from openmdao.api import ExplicitComponent
 from lsdo_cubesat.utils.utils import get_array_indices
 
+Re = 6378.137
+
 
 def LOS(x):
     b = np.argsort(x)
@@ -18,8 +20,6 @@ def LOS(x):
 
 
 class CommLOSComp(ExplicitComponent):
-    Re = 6378.137
-
     def initialize(self):
         self.options.declare('num_times', types=int)
 
@@ -52,19 +52,13 @@ class CommLOSComp(ExplicitComponent):
         self.declare_partials('CommLOS', 'r_b2g_I', rows=rows, cols=cols)
         self.declare_partials('CommLOS', 'r_e2g_I', rows=rows, cols=cols)
 
-    def LOS(self, x):
-        b = np.argsort(x)
-        x[b[:50]] = 1
-        x[b[50:]] = 0
-        return x
-
     def compute(self, inputs, outputs):
         num_times = self.options['num_times']
 
         r_b2g_I = inputs['r_b2g_I']
         r_e2g_I = inputs['r_e2g_I']
 
-        proj = np.sum(r_b2g_I * r_e2g_I, axis=0) / self.Re
+        proj = np.sum(r_b2g_I * r_e2g_I, axis=0) / Re
 
         # np.savetxt("rundata/optics_r_b2g_I.csv", r_b2g_I, header="r_b2g_I")
 
@@ -85,18 +79,18 @@ class CommLOSComp(ExplicitComponent):
     #     r_e2g_I = inputs['r_e2g_I']
 
     #     Rb = 7e4
-    #     proj = np.sum(r_b2g_I * r_e2g_I, axis=0) / self.Re
+    #     proj = np.sum(r_b2g_I * r_e2g_I, axis=0) / Re
 
     #     grad_proj = sigmoid_grad(proj - Rb)
 
     #     dLOS_drb = partials['CommLOS', 'r_b2g_I'].reshape(3, num_times)
     #     dLOS_dre = partials['CommLOS', 'r_e2g_I'].reshape(3, num_times)
 
-    #     dLOS_drb = grad_proj * r_e2g_I / self.Re
-    #     dLOS_dre = grad_proj * r_b2g_I / self.Re
+    #     dLOS_drb = grad_proj * r_e2g_I / Re
+    #     dLOS_dre = grad_proj * r_b2g_I / Re
 
-    # partials['CommLOS','r_b2g_I'] = (grad_proj * r_e2g_I/self.Re).flatten()
-    # partials['CommLOS','r_e2g_I'] = (grad_proj * r_b2g_I/self.Re).flatten()
+    # partials['CommLOS','r_b2g_I'] = (grad_proj * r_e2g_I/Re).flatten()
+    # partials['CommLOS','r_e2g_I'] = (grad_proj * r_b2g_I/Re).flatten()
 
 
 if __name__ == '__main__':

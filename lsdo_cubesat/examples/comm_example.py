@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from openmdao.api import IndepVarComp, Problem
+from openmdao.api import IndepVarComp, Problem, n2
 
 from lsdo_cubesat.api import Cubesat
 from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
-from lsdo_cubesat.options.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import GroundStation
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
                                     ElementwiseMaxComp, LinearCombinationComp,
@@ -56,7 +56,7 @@ prob.model.add_subsystem(
         num_cp=num_cp,
         step_size=step_size,
         mtx=mtx,
-        Ground_station=Ground_station(
+        ground_station=GroundStation(
             name='UCSD',
             lon=-117.1611,
             lat=32.7157,
@@ -67,7 +67,8 @@ prob.model.add_subsystem(
 )
 prob.setup()
 prob.run_model()
-t = np.arange(num_times) * step_size
-plt.plot(t, prob['P_comm'])
-plt.plot(t, prob['Download_rate'])
-plt.show()
+n2(prob)
+# t = np.arange(num_times) * step_size
+# plt.plot(t, prob['P_comm'])
+# plt.plot(t, prob['Download_rate'])
+# plt.show()

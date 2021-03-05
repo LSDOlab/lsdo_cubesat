@@ -45,7 +45,11 @@ class RelativeOrbitRK4Comp(RK4Comp):
 
         self.add_input('mass', shape=(1, n), desc='mass of Cubesat')
 
-        self.add_input('radius', shape=(1, n))
+        self.add_input(
+            'radius',
+            shape=(1, n),
+            desc='distance from center of Earth',
+        )
 
         self.add_input(
             'initial_orbit_state',
