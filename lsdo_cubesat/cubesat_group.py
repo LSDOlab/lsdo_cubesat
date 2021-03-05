@@ -80,7 +80,7 @@ class CubesatGroup(Group):
         # else:
         self.add_subsystem(
             'attitude_group',
-            AttitudeGroup(
+            AttitudeOdeGroup(
                 num_times=num_times,
                 num_cp=num_cp,
                 cubesat=cubesat,
