@@ -61,28 +61,28 @@ class SwarmGroup(Group):
             # must be the same as the number of points used to create model
             sm = smt_exposure(20, az, el, yt)
 
-        # for cubesat in swarm.children:
-        #     name = cubesat['name']
-        #     for ground_station in cubesat.children:
-        #         group = CubesatGroup(
-        #             num_times=num_times,
-        #             num_cp=num_cp,
-        #             step_size=step_size,
-        #             cubesat=cubesat,
-        #             mtx=mtx,
-        #             ground_station=ground_station,
-        #             add_battery=add_battery,
-        #             sm=sm,
-        #             optimize_plant=optimize_plant,
-        #             attitude_integrator=attitude_integrator,
-        #             attitude_time_scale=attitude_time_scale,
-        #             battery_time_scale=battery_time_scale,
-        #         )
-        #     self.add_subsystem(
-        #         '{}_cubesat_group'.format(name),
-        #         group,
-        #         promotes=['*'],
-        #     )
+        for cubesat in swarm.children:
+            name = cubesat['name']
+            for ground_station in cubesat.children:
+                group = CubesatGroup(
+                    num_times=num_times,
+                    num_cp=num_cp,
+                    step_size=step_size,
+                    cubesat=cubesat,
+                    mtx=mtx,
+                    ground_station=ground_station,
+                    add_battery=add_battery,
+                    sm=sm,
+                    optimize_plant=optimize_plant,
+                    attitude_integrator=attitude_integrator,
+                    attitude_time_scale=attitude_time_scale,
+                    battery_time_scale=battery_time_scale,
+                )
+            self.add_subsystem(
+                '{}_cubesat_group'.format(name),
+                group,
+                # promotes=['*'],
+            )
         self.add_subsystem(
             'alignment_group',
             AlignmentGroup(

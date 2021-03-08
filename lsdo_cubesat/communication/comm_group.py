@@ -82,7 +82,7 @@ class CommGroup(Group):
         comp.add_output('P_comm_cp', val=13.0 * np.ones(num_cp), units='W')
         comp.add_design_var('P_comm_cp', lower=0., upper=20.0)
         comp.add_output('gain', val=16.0 * np.ones(num_times))
-        comp.add_output('Initial_Data', val=0.0)
+        comp.add_output('initial_data', val=0.0)
 
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 

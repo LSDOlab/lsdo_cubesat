@@ -46,22 +46,31 @@ class PropulsionGroup(Group):
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
 
+        # Define the direction of thrust in the body frame; constant
+        # during optimization (not a design variable)
         thrust_unit_vec = np.outer(
             np.array([1., 0., 0.]),
             np.ones(num_times),
         )
-
         thrust_unit_vec_b_3xn = self.create_indep_var(
             'thrust_unit_vec_b_3xn',
             val=thrust_unit_vec,
         )
+        # Omnidirectional thrust
+        self.add_design_var('thrust_unit_vec_b_3xn')
+
+        # Magnitude of thrust set by optimizer (design variable)
+        # TODO: get upper and lower bounds
+        # TODO: Do the upper and lower bounds differ for thrusters along
+        # different axes (e.g. different cant angles)? Yes. Change later.
         thrust_scalar_mN_cp = self.create_indep_var(
             'thrust_scalar_mN_cp',
             val=1.e-3 * np.ones(num_cp),
-            dv=True,
             # lower=0.,
             # upper=20000,
         )
+        self.add_design_var('thrust_scalar_mN_cp')
+
         initial_propellant_mass = self.create_indep_var(
             'initial_propellant_mass',
             val=0.17,
@@ -86,18 +95,21 @@ class PropulsionGroup(Group):
             1e-3 * thrust_scalar_mN_cp,
         )
 
-        comp = BsplineComp(
-            num_pt=num_times,
-            num_cp=num_cp,
-            jac=mtx,
-            in_name='thrust_scalar_cp',
-            out_name='thrust_scalar',
+        self.add_subsystem(
+            'thrust_scalar_comp',
+            BsplineComp(
+                num_pt=num_times,
+                num_cp=num_cp,
+                jac=mtx,
+                in_name='thrust_scalar_cp',
+                out_name='thrust_scalar',
+            ),
+            promotes=['*'],
         )
-        self.add_subsystem('thrust_scalar_comp', comp, promotes=['*'])
         thrust_scalar = self.declare_input('thrust_scalar',
                                            shape=(1, num_times))
-        ones = self.declare_input('ones', shape=(3, ), val=1)
 
+        ones = self.declare_input('ones', shape=(3, ), val=1)
         thrust_scalar_3xn = self.register_output(
             'thrust_scalar_3xn',
             ot.einsum(
@@ -107,7 +119,11 @@ class PropulsionGroup(Group):
             ),
         )
 
-        # thrust_3xn = thrust_unit_vec_3xn * thrust_scalar_3xn
+        # Full time history of thrust in all three axes (inertial frame)
+        thrust_3xn = self.register_output(
+            'thrust_3xn',
+            thrust_scalar_3xn * thrust_unit_vec_3xn,
+        )
 
         mass_flow_rate = self.register_output(
             'mass_flow_rate',
@@ -116,13 +132,18 @@ class PropulsionGroup(Group):
         )
 
         # NOTE: cannot convert integrators to omtools.Group
-        comp = PropellantMassRK4Comp(
-            num_times=num_times,
-            step_size=step_size,
+        self.add_subsystem(
+            'propellant_mass_rk4_comp',
+            PropellantMassRK4Comp(
+                num_times=num_times,
+                step_size=step_size,
+            ),
+            promotes=['*'],
         )
-        self.add_subsystem('propellant_mass_rk4_comp', comp, promotes=['*'])
-        propellant_mass = self.declare_input('propellant_mass',
-                                             shape=(1, num_times))
+        propellant_mass = self.declare_input(
+            'propellant_mass',
+            shape=(1, num_times),
+        )
 
         total_propellant_used = self.register_output(
             'total_propellant_used',
@@ -139,6 +160,7 @@ class PropulsionGroup(Group):
         temperature = 273.15 + 56
         # (273.15+25)*1.380649*6.02214076/(152.05/1000)/(100*6895)
 
+        # TODO: constraint?
         total_propellant_volume = self.register_output(
             'total_propellant_volume',
             (temperature * boltzmann_avogadro / r236fa_molecular_mass_kg /

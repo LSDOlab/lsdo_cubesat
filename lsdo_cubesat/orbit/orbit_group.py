@@ -66,21 +66,21 @@ class OrbitGroup(Group):
             dry_mass + propellant_mass + battery_mass_exp,
         )
 
-        with self.create_group('drag_group') as drag:
-            thrust_3xn = drag.declare_input(
+        with self.create_group('drag_group') as drag_group:
+            thrust_3xn = drag_group.declare_input(
                 'thrust_3xn',
                 shape=(3, num_times),
             )
-            drag_3xn = drag.create_output(
+            drag_3xn = drag_group.create_output(
                 'drag_3xn',
                 shape=(3, num_times),
             )
 
-            force_3xn = drag.register_output(
+            force_3xn = drag_group.register_output(
                 'force_3xn',
                 thrust_3xn + drag_3xn,
             )
-            drag.add_subsystem(
+            drag_group.add_subsystem(
                 'relative_orbit_rk4_comp',
                 RelativeOrbitRK4Comp(
                     num_times=num_times,
@@ -88,34 +88,34 @@ class OrbitGroup(Group):
                 ),
                 promotes=['*'],
             )
-            relative_orbit_state = drag.declare_input(
+            relative_orbit_state = drag_group.declare_input(
                 'relative_orbit_state',
                 shape=(6, num_times),
             )
 
-            reference_orbit_state = drag.declare_input(
+            reference_orbit_state = drag_group.declare_input(
                 'reference_orbit_state',
                 shape=(6, num_times),
             )
-            orbit_state = drag.register_output(
+            orbit_state = drag_group.register_output(
                 'orbit_state',
                 relative_orbit_state + reference_orbit_state,
             )
-            orbit_state_km = drag.register_output(
+            orbit_state_km = drag_group.register_output(
                 'orbit_state_km',
                 1e-3 * orbit_state,
             )
-            drag.add_subsystem(
+            drag_group.add_subsystem(
                 'rot_mtx_t_i_3x3xn_comp',
                 RotMtxTIComp(num_times=num_times),
                 promotes=['*'],
             )
-            rot_mtx_t_i_3x3xn = drag.declare_input(
+            rot_mtx_t_i_3x3xn = drag_group.declare_input(
                 'rot_mtx_t_i_3x3xn',
                 shape=(3, 3, num_times),
             )
 
-            rot_mtx_i_t_3x3xn = drag.register_output(
+            rot_mtx_i_t_3x3xn = drag_group.register_output(
                 'rot_mtx_i_t_3x3xn',
                 ot.einsum(
                     rot_mtx_t_i_3x3xn,
@@ -123,7 +123,7 @@ class OrbitGroup(Group):
                 ),
             )
 
-            drag_unit_vec_t_3xn = drag.declare_input(
+            drag_unit_vec_t_3xn = drag_group.declare_input(
                 'drag_unit_vec_t_3xn',
                 shape=(3, num_times),
             )
@@ -133,19 +133,19 @@ class OrbitGroup(Group):
                 drag_unit_vec_t_3xn,
                 subscripts='ijk,jk->ik',
             )
-            drag_scalar_3xn = drag.declare_input(
+            drag_scalar_3xn = drag_group.declare_input(
                 'drag_scalar_3xn',
                 shape=(3, num_times),
             )
             drag_3xn.define(drag_unit_vec_3xn * drag_scalar_3xn)
 
-            drag.nonlinear_solver = NonlinearBlockGS(
+            drag_group.nonlinear_solver = NonlinearBlockGS(
                 iprint=0,
                 maxiter=100,
                 atol=1e-14,
                 rtol=1e-12,
             )
-            drag.linear_solver = LinearBlockGS(
+            drag_group.linear_solver = LinearBlockGS(
                 iprint=0,
                 maxiter=100,
                 atol=1e-14,

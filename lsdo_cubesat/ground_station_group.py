@@ -46,7 +46,7 @@ class GSGroup(Group):
         comp.add_output('P_comm_cp', val=np.zeros(num_cp), units='W')
         comp.add_design_var('P_comm_cp', lower=0., upper=100.)
         comp.add_output('gain', val=16.0 * np.ones(num_times))
-        comp.add_output('Initial_Data', val=0.0)
+        comp.add_output('initial_data', val=0.0)
         for var_name in [
                 'lon',
                 'lat',

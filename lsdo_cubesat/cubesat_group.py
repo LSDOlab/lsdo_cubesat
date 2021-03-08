@@ -56,28 +56,33 @@ class CubesatGroup(Group):
         attitude_time_scale = self.options['attitude_time_scale']
 
         comp = IndepVarComp()
-        comp.add_output('Initial_Data', val=np.zeros((1, )))
+        comp.add_output('initial_data', val=np.zeros((1, )))
         self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
-        # if attitude_integrator:
-        #     step = max(1, ceil(step_size / attitude_time_scale))
-        #     group = AttitudeOdeGroup(
-        #         num_times=num_times * step,
-        #         num_cp=num_cp,
-        #         cubesat=cubesat,
-        #         mtx=mtx,
-        #         step_size=attitude_time_scale,
-        #     )
-        #     self.add_subsystem('attitude_group', group, promotes=['*'])
-        #     group = SliceComp(
-        #         shape=(3, 3, num_times * step),
-        #         step=step,
-        #         slice_axis=2,
-        #         in_name='rot_mtx_i_b_3x3xn_fast',
-        #         out_name='rot_mtx_i_b_3x3xn',
-        #     )
-        #     self.add_subsystem('rot_mtx_slow_ts_comp', group, promotes=['*'])
-        # else:
+        # # LEAVE THIS HERE (COMMENTED OUT)
+        # step = max(1, ceil(step_size / attitude_time_scale))
+        # group = AttitudeOdeGroup(
+        #     num_times=num_times * step,
+        #     num_cp=num_cp,
+        #     cubesat=cubesat,
+        #     mtx=mtx,
+        #     step_size=attitude_time_scale,
+        # )
+        # self.add_subsystem('attitude_group', group, promotes=['*'])
+        # group = SliceComp(
+        #     shape=(3, 3, num_times * step),
+        #     step=step,
+        #     slice_axis=2,
+        #     in_name='rot_mtx_i_b_3x3xn_fast',
+        #     out_name='rot_mtx_i_b_3x3xn',
+        # )
+        # self.add_subsystem('rot_mtx_slow_ts_comp', group,
+        # promotes=['*'])
+
+        # TODO: add actuators here
+        # output external_torques_x, external_torques_y,
+        # external_torques_z
+
         self.add_subsystem(
             'attitude_group',
             AttitudeOdeGroup(
@@ -115,6 +120,7 @@ class CubesatGroup(Group):
         # comp = SolarPanelVoltage(num_times=num_times)
         # self.add_subsystem('solar_panel_voltage', comp, promotes=['*'])
 
+        # TODO: connect thrust in propulsion gorup to force in orbit group
         group = PropulsionGroup(
             num_times=num_times,
             num_cp=num_cp,
