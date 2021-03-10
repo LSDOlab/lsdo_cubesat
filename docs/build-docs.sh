@@ -2,7 +2,7 @@
 
 # install package and dependencies
 apt-get -y install python3-pip
-pip3 install redbaron numpy Cython
+pip3 install redbaron
 pip3 install -e .
 
 # build docs
