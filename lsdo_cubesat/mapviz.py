@@ -57,9 +57,9 @@ X_reference = info['reference_orbit_state'][0, :]
 Y_reference = info['reference_orbit_state'][1, :]
 Z_reference = info['reference_orbit_state'][2, :]
 
-X_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][0, :]
-Y_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][1, :]
-Z_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][2, :]
+# X_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][0, :]
+# Y_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][1, :]
+# Z_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][2, :]
 
 X_detector_relative = info['detector_cubesat_group.relative_orbit_state'][0, :]
 Y_detector_relative = info['detector_cubesat_group.relative_orbit_state'][1, :]

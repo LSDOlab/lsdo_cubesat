@@ -108,13 +108,13 @@ class AlignmentGroup(Group):
         # Separation
 
         separation_constraint_names = [
-            ('sunshade', 'optics'),
+            # ('sunshade', 'optics'),
             ('optics', 'detector'),
         ]
 
         for name1, name2 in [
-            ('sunshade', 'optics'),
-            ('sunshade', 'detector'),
+                # ('sunshade', 'optics'),
+                # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]:
             position_name = 'position_{}_{}_km'.format(name1, name2)
@@ -147,7 +147,7 @@ class AlignmentGroup(Group):
         # Transverse displacement
 
         transverse_constraint_names = [
-            ('sunshade', 'detector'),
+            # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]
 

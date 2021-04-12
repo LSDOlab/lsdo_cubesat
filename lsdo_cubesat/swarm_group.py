@@ -2,7 +2,7 @@ import numpy as np
 from openmdao.api import ExecComp, Group
 
 from lsdo_cubesat.alignment.alignment_group import AlignmentGroup
-from lsdo_cubesat.options.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import GroundStation
 from lsdo_cubesat.cubesat_group import CubesatGroup
 from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbitGroup
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
@@ -59,14 +59,14 @@ class SwarmGroup(Group):
 
         for cubesat in swarm.children:
             name = cubesat['name']
-            for Ground_station in cubesat.children:
+            for ground_station in cubesat.children:
                 group = CubesatGroup(
                     num_times=num_times,
                     num_cp=num_cp,
                     step_size=step_size,
                     cubesat=cubesat,
                     mtx=mtx,
-                    Ground_station=Ground_station,
+                    ground_station=ground_station,
                     add_battery=add_battery,
                     sm=sm,
                     optimize_plant=optimize_plant,
@@ -84,8 +84,7 @@ class SwarmGroup(Group):
 
         comp = ExecComp(
             'total_propellant_used' +
-            '=sunshade_cubesat_group_total_propellant_used' +
-            '+optics_cubesat_group_total_propellant_used' +
+            '= optics_cubesat_group_total_propellant_used' +
             '+detector_cubesat_group_total_propellant_used'
             # '+5.e-14*ks_masked_distance_sunshade_optics_km' +
             # '+5.e-14 *ks_masked_distance_optics_detector_km'
@@ -93,8 +92,7 @@ class SwarmGroup(Group):
         self.add_subsystem('total_propellant_used_comp', comp, promotes=['*'])
 
         comp = ExecComp(
-            'total_data_downloaded' + '=sunshade_cubesat_group_total_Data' +
-            '+optics_cubesat_group_total_Data' +
+            'total_data_downloaded=' + '+optics_cubesat_group_total_Data' +
             '+detector_cubesat_group_total_Data'
             # '+5.e-14*ks_masked_distance_sunshade_optics_km' +
             # '+5.e-14 *ks_masked_distance_optics_detector_km'
@@ -130,14 +128,14 @@ class SwarmGroup(Group):
 
         for cubesat in swarm.children:
             cubesat_name = cubesat['name']
-            for Ground_station in cubesat.children:
-                Ground_station_name = Ground_station['name']
+            for ground_station in cubesat.children:
+                ground_station_name = ground_station['name']
 
                 for var_name in ['orbit_state_km', 'rot_mtx_i_b_3x3xn']:
                     self.connect(
                         '{}_cubesat_group.{}'.format(cubesat_name, var_name),
                         '{}_cubesat_group.{}_comm_group.{}'.format(
-                            cubesat_name, Ground_station_name, var_name))
+                            cubesat_name, ground_station_name, var_name))
 
                 # self.connect(
                 #     'times', '{}_cubesat_group.attitude_group.times'.format(

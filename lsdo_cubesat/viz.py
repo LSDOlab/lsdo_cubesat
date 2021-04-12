@@ -13,7 +13,7 @@ from lsdo_viz.api import BaseViz, Frame
 sns.set(style='darkgrid')
 
 earth_radius = 6371.
-cubesat_names = ['sunshade', 'optics', 'detector']
+cubesat_names = ['optics', 'detector']
 ground_station_names = ['UCSD', 'UIUC', 'Georgia', 'Montana']
 
 time = 1501
@@ -196,24 +196,19 @@ class Viz(BaseViz):
                 #     '{}_cubesat_group.orbit_state_km'.format(
                 #         cubesat_name, ground_station_name)]
 
-        normal_distance_sunshade_detector = data_dict_current[
-            'normal_distance_sunshade_detector_mm']
+        # normal_distance_sunshade_detector = data_dict_current['normal_distance_sunshade_detector_mm']
         normal_distance_optics_detector = data_dict_current[
             'normal_distance_optics_detector_mm']
-        distance_sunshade_optics = data_dict_current[
-            'distance_sunshade_optics_mm']
+        # distance_sunshade_optics = data_dict_current['distance_sunshade_optics_mm']
         distance_optics_detector = data_dict_current[
             'distance_optics_detector_mm']
-        masked_normal_distance_sunshade_detector = data_dict_current[
-            'masked_normal_distance_sunshade_detector_mm_sq_sum']
+        # masked_normal_distance_sunshade_detector = data_dict_current['masked_normal_distance_sunshade_detector_mm_sq_sum']
         masked_normal_distance_optics_detector = data_dict_current[
             'masked_normal_distance_optics_detector_mm_sq_sum']
-        masked_distance_sunshade_optics = data_dict_current[
-            'masked_distance_sunshade_optics_mm_sq_sum']
+        # masked_distance_sunshade_optics = data_dict_current['masked_distance_sunshade_optics_mm_sq_sum']
         masked_distance_optics_detector = data_dict_current[
             'masked_distance_optics_detector_mm_sq_sum']
-        sunshade_relative = data_dict_current[
-            'sunshade_cubesat_group.relative_orbit_state_sq_sum']
+        # sunshade_relative = data_dict_current['sunshade_cubesat_group.relative_orbit_state_sq_sum']
         optics_relative = data_dict_current[
             'optics_cubesat_group.relative_orbit_state_sq_sum']
         detector_relative = data_dict_current[
@@ -437,30 +432,29 @@ class Viz(BaseViz):
             ax.set_xlabel("longitude")
             ax.set_ylabel("altitude")
 
-        with self.get_frame(1)[2, 0:3] as ax:
-            num_times = np.arange(time)
+        # with self.get_frame(1)[2, 0:3] as ax:
+        #     num_times = np.arange(time)
 
-            normal_distance_sunshade_detector = data_dict_current[
-                'normal_distance_sunshade_detector_mm']
+        #     # normal_distance_sunshade_detector = data_dict_current['normal_distance_sunshade_detector_mm']
 
-            # print(normal_distance_sunshade_detector.shape)
-            normal_distance_sunshade_detector.reshape((1, time))
-            sns.lineplot(x=num_times,
-                         y=normal_distance_sunshade_detector,
-                         ax=ax)
-            ax.set_ylim(
-                self.get_limits(
-                    ['normal_distance_sunshade_detector_mm'],
-                    fig_axis=0,
-                    data_axis=0,
-                    mode='final',
-                    lower_margin=0.1,
-                    upper_margin=0.1,
-                ), )
-            # ax.axvline(1000, color='red')
-            # ax.axvline(1400, color='red')
-            ax.set_xlabel('num_times')
-            ax.set_ylabel('alignment_s_d')
+        #     # print(normal_distance_sunshade_detector.shape)
+        #     # normal_distance_sunshade_detector.reshape((1, time))
+        #     # sns.lineplot(x=num_times,
+        #     #              y=normal_distance_sunshade_detector,
+        #     #              ax=ax)
+        #     ax.set_ylim(
+        #         self.get_limits(
+        #             ['normal_distance_sunshade_detector_mm'],
+        #             fig_axis=0,
+        #             data_axis=0,
+        #             mode='final',
+        #             lower_margin=0.1,
+        #             upper_margin=0.1,
+        #         ), )
+        #     # ax.axvline(1000, color='red')
+        #     # ax.axvline(1400, color='red')
+        #     ax.set_xlabel('num_times')
+        #     ax.set_ylabel('alignment_s_d')
 
         with self.get_frame(1)[2, 4:7] as ax:
             num_times = np.arange(time)
@@ -484,25 +478,24 @@ class Viz(BaseViz):
             ax.set_xlabel('num_times')
             ax.set_ylabel('alignment_o_d')
 
-        with self.get_frame(1)[2, 8:11] as ax:
-            num_times = np.arange(time)
+        # with self.get_frame(1)[2, 8:11] as ax:
+        #     num_times = np.arange(time)
 
-            distance_sunshade_optics = data_dict_current[
-                'distance_sunshade_optics_mm']
+        #     distance_sunshade_optics = data_dict_current['distance_sunshade_optics_mm']
 
-            distance_sunshade_optics.reshape((1, time))
-            sns.lineplot(x=num_times, y=distance_sunshade_optics, ax=ax)
-            ax.set_ylim(
-                self.get_limits(
-                    ['distance_sunshade_optics_mm'],
-                    fig_axis=0,
-                    data_axis=0,
-                    mode='final',
-                    lower_margin=0.1,
-                    upper_margin=0.1,
-                ), )
-            ax.set_xlabel('num_times')
-            ax.set_ylabel('seperation_s_o')
+        #     distance_sunshade_optics.reshape((1, time))
+        #     sns.lineplot(x=num_times, y=distance_sunshade_optics, ax=ax)
+        #     ax.set_ylim(
+        #         self.get_limits(
+        #             ['distance_sunshade_optics_mm'],
+        #             fig_axis=0,
+        #             data_axis=0,
+        #             mode='final',
+        #             lower_margin=0.1,
+        #             upper_margin=0.1,
+        #         ), )
+        #     ax.set_xlabel('num_times')
+        #     ax.set_ylabel('seperation_s_o')
 
         with self.get_frame(1)[2, 12:15] as ax:
             num_times = np.arange(time)

@@ -4,7 +4,7 @@ import numpy as np
 from openmdao.api import (ExecComp, Group, IndepVarComp, LinearBlockGS,
                           NonlinearBlockGS)
 
-from lsdo_battery.battery_model import BatteryModel
+from lsdo_battery.battery_pack import BatteryPack
 from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
 from lsdo_cubesat.attitude.attitude_ode_group import AttitudeOdeGroup
@@ -13,9 +13,8 @@ from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.orbit.orbit_angular_speed_group import OrbitAngularSpeedGroup
 from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.propulsion.propulsion_group import PropulsionGroup
-from lsdo_cubesat.solar.solar_illumination_comp import SolarIlluminationComp
-from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
-                                    LinearCombinationComp,
+from lsdo_cubesat.solar.solar_illumination import SolarIllumination
+from lsdo_cubesat.utils.api import (BsplineComp, LinearCombinationComp,
                                     PowerCombinationComp, ScalarExpansionComp,
                                     get_bspline_mtx)
 from lsdo_cubesat.utils.comps.arithmetic_comps.elementwise_max_comp import \
@@ -31,7 +30,7 @@ class CubesatGroup(Group):
         self.options.declare('step_size', types=float)
         self.options.declare('cubesat')
         self.options.declare('mtx')
-        self.options.declare('Ground_station')
+        self.options.declare('ground_station')
         self.options.declare('add_battery', types=bool)
         self.options.declare('sm')
         self.options.declare('optimize_plant', types=bool)
@@ -46,7 +45,7 @@ class CubesatGroup(Group):
         step_size = self.options['step_size']
         cubesat = self.options['cubesat']
         mtx = self.options['mtx']
-        Ground_station = self.options['Ground_station']
+        ground_station = self.options['ground_station']
         add_battery = self.options['add_battery']
         sm = self.options['sm']
         optimize_plant = self.options['optimize_plant']
@@ -86,7 +85,7 @@ class CubesatGroup(Group):
             )
             self.add_subsystem('attitude_group', group, promotes=['*'])
 
-        if add_battery:
+        if sm is not None:
             comp = SolarIllumination(num_times=num_times, sm=sm)
             self.add_subsystem('solar_illumination', comp, promotes=['*'])
 
@@ -113,9 +112,6 @@ class CubesatGroup(Group):
             # comp = SolarPanelVoltage(num_times=num_times)
             # self.add_subsystem('solar_panel_voltage', comp, promotes=['*'])
 
-        comp = SolarExposure(num_times=num_times, sm=sm)
-        self.add_subsystem('solar_exposure', comp, promotes=['*'])
-
         # From BCT
         # https://storage.googleapis.com/blue-canyon-tech-news/1/2020/06/BCT_DataSheet_Components_PowerSystems_06_2020.pdf
         # Solar panel area (3U): 0.12 m2
@@ -124,17 +120,6 @@ class CubesatGroup(Group):
         # 100% efficiency: 291.67 W/m2
         # 29.5% efficiency: 86.04 W/m2
         power_over_area = 86.04
-
-        self.add_subsystem(
-            'compute_solar_power',
-            PowerCombinationComp(
-                shape=(num_times, ),
-                out_name='solar_power',
-                coeff=power_over_area,
-                powers_dict=dict(sunlit_area=1.0, ),
-            ),
-            promotes=['*'],
-        )
 
         # comp = SolarPanelVoltage(num_times=num_times)
         # self.add_subsystem('solar_panel_voltage', comp, promotes=['*'])
@@ -181,14 +166,14 @@ class CubesatGroup(Group):
         #                    MeanMotionGroup(num_times=num_times, ),
         #                    promotes=['*'])
 
-        for Ground_station in cubesat.children:
-            name = Ground_station['name']
+        for ground_station in cubesat.children:
+            name = ground_station['name']
 
             group = CommGroup(
                 num_times=num_times,
                 num_cp=num_cp,
                 step_size=step_size,
-                Ground_station=Ground_station,
+                ground_station=ground_station,
                 mtx=mtx,
             )
 
@@ -215,22 +200,6 @@ class CubesatGroup(Group):
                                      comp,
                                      promotes=['*'])
 
-        if add_battery:
-            comp = ElementwiseMaxComp(
-                shape=shape,
-                in_names=[
-                    'UCSD_comm_group_P_comm',
-                    'UIUC_comm_group_P_comm',
-                    'Georgia_comm_group_P_comm',
-                    'Montana_comm_group_P_comm',
-                ],
-                out_name='KS_P_comm',
-                rho=rho,
-            )
-            orbit_avionics.add_subsystem('KS_P_comm_comp',
-                                         comp,
-                                         promotes=['*'])
-
         comp = ElementwiseMaxComp(
             shape=shape,
             in_names=[
@@ -242,21 +211,21 @@ class CubesatGroup(Group):
             out_name='KS_P_comm',
             rho=rho,
         )
-        self.add_subsystem('KS_P_comm_comp', comp, promotes=['*'])
+        orbit_avionics.add_subsystem('KS_P_comm_comp', comp, promotes=['*'])
 
-        for Ground_station in cubesat.children:
-            Ground_station_name = Ground_station['name']
+        for ground_station in cubesat.children:
+            ground_station_name = ground_station['name']
 
             orbit_avionics.connect(
-                '{}_comm_group.Download_rate'.format(Ground_station_name),
-                '{}_comm_group_Download_rate'.format(Ground_station_name),
+                '{}_comm_group.Download_rate'.format(ground_station_name),
+                '{}_comm_group_Download_rate'.format(ground_station_name),
             )
 
             if add_battery:
 
                 orbit_avionics.connect(
-                    '{}_comm_group.P_comm'.format(Ground_station_name),
-                    '{}_comm_group_P_comm'.format(Ground_station_name),
+                    '{}_comm_group.P_comm'.format(ground_station_name),
+                    '{}_comm_group_P_comm'.format(ground_station_name),
                 )
 
         if add_battery:
@@ -302,7 +271,7 @@ class CubesatGroup(Group):
 
             orbit_avionics.add_subsystem(
                 'battery',
-                BatteryModel(
+                BatteryPack(
                     num_times=num_times * step,
                     min_soc=0.05,
                     max_soc=0.95,
@@ -313,15 +282,15 @@ class CubesatGroup(Group):
                 promotes=['*'],
             )
 
-            orbit_avionics.add_subsystem(
-                'expand_battery_mass',
-                ScalarExpansionComp(
-                    shape=(num_times, ),
-                    in_name='battery_mass',
-                    out_name='battery_mass_exp',
-                ),
-                promotes=['*'],
-            )
+            # orbit_avionics.add_subsystem(
+            #     'expand_battery_mass',
+            #     ScalarExpansionComp(
+            #         shape=(num_times, ),
+            #         in_name='battery_mass',
+            #         out_name='battery_mass_exp',
+            #     ),
+            #     promotes=['*'],
+            # )
 
             orbit_avionics.nonlinear_solver = NonlinearBlockGS(
                 iprint=0,

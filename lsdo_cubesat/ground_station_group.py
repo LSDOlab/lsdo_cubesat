@@ -17,11 +17,8 @@ from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
 from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
-from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
-                                    LinearCombinationComp,
+from lsdo_cubesat.utils.api import (BsplineComp, LinearCombinationComp,
                                     PowerCombinationComp, get_bspline_mtx)
-
-# from lsdo_cubesat.cubesat_group import CubesatGroup
 
 
 class GSGroup(Group):

@@ -1,7 +1,7 @@
 from openmdao.api import Problem, IndepVarComp, Group
 from lsdo_cubesat.solar.smt_exposure import smt_exposure
 from lsdo_cubesat.utils.random_arrays import make_random_bounded_array
-from lsdo_cubesat.solar.solar_illumination_comp import SolarIlluminationComp
+from lsdo_cubesat.solar.solar_illumination import SolarIllumination
 import numpy as np
 from lsdo_cubesat.examples.data.cubesat_xdata import cubesat_xdata as az
 from lsdo_cubesat.examples.data.cubesat_ydata import cubesat_ydata as el
@@ -36,7 +36,7 @@ prob.model.add_subsystem(
 )
 prob.model.add_subsystem(
     'spm',
-    SolarIlluminationComp(num_times=times, sm=sm),
+    SolarIllumination(num_times=times, sm=sm),
     promotes=['*'],
 )
 prob.setup()

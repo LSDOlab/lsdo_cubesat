@@ -11,6 +11,7 @@ from lsdo_cubesat.orbit.initial_orbit_comp import InitialOrbitComp
 from lsdo_cubesat.orbit.relative_orbit_rk4_comp import RelativeOrbitRK4Comp
 from lsdo_cubesat.orbit.orbit_state_decomposition_comp import OrbitStateDecompositionComp
 from lsdo_cubesat.orbit.rot_mtx_t_i_comp import RotMtxTIComp
+from lsdo_cubesat.utils.api import ArrayExpansionComp
 
 
 class OrbitGroup(Group):

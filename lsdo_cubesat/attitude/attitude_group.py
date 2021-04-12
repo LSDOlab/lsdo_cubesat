@@ -13,6 +13,7 @@ from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
 from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
 from lsdo_cubesat.attitude.attitude_state_decomposition_comp import AttitudeStateDecompositionComp
 from lsdo_cubesat.attitude.rot_mtx_to_rpy import RotMtxToRollPitchYaw
+from lsdo_cubesat.utils.api import ArrayExpansionComp
 
 
 class AttitudeGroup(Group):

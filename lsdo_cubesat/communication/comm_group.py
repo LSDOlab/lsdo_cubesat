@@ -19,7 +19,7 @@ from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
 # from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
 from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
 from lsdo_cubesat.ground_station_group import GSGroup
-from lsdo_cubesat.options.ground_station import Ground_station
+from lsdo_cubesat.options.ground_station import GroundStation
 from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
                                     ElementwiseMaxComp, LinearCombinationComp,
                                     PowerCombinationComp, get_bspline_mtx)
@@ -39,8 +39,8 @@ class CommGroup(Group):
     num_cp : int
         Dimension of design variables/number of control points for
         BSpline components.
-    Ground_station : Ground_station
-        Ground_station OptionsDictionary containing name, latitude,
+    ground_station : GroundStation
+        GroundStation OptionsDictionary containing name, latitude,
         longitude, and altitude coordinates.
     mtx : array
         Matrix that translates control points (num_cp) to actual points
@@ -64,7 +64,7 @@ class CommGroup(Group):
         self.options.declare('step_size', types=float)
 
         # self.options.declare('cubesat')
-        self.options.declare('Ground_station')
+        self.options.declare('ground_station')
         self.options.declare('mtx')
 
     def setup(self):
@@ -74,16 +74,16 @@ class CommGroup(Group):
         step_size = self.options['step_size']
         # cubesat = self.options['cubesat']
         mtx = self.options['mtx']
-        Ground_station = self.options['Ground_station']
-        name = Ground_station['name']
+        ground_station = self.options['ground_station']
+        name = ground_station['name']
 
         comm_times = np.linspace(0., step_size * (num_times - 1), num_times)
 
         comp = IndepVarComp()
 
-        comp.add_output('lon', val=Ground_station['lon'], units='rad')
-        comp.add_output('lat', val=Ground_station['lat'], units='rad')
-        comp.add_output('alt', val=Ground_station['alt'], units='km')
+        comp.add_output('lon', val=ground_station['lon'], units='rad')
+        comp.add_output('lat', val=ground_station['lat'], units='rad')
+        comp.add_output('alt', val=ground_station['alt'], units='km')
 
         comp.add_output('comm_times', units='s', val=comm_times)
         comp.add_output('antAngle', val=1.6, units='rad')

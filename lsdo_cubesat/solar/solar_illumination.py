@@ -4,7 +4,7 @@ from openmdao.api import ExplicitComponent
 from smt.surrogate_models import RMTB
 
 
-class SolarIlluminationComp(ExplicitComponent):
+class SolarIllumination(ExplicitComponent):
     """
     Generic model for computing solar power as a function of azimuth and
     elevation (roll and pitch)

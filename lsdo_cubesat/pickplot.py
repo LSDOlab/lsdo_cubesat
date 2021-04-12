@@ -25,9 +25,9 @@ X_reference = info['reference_orbit_state'][0, :]
 Y_reference = info['reference_orbit_state'][1, :]
 Z_reference = info['reference_orbit_state'][2, :]
 
-X_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][0, :]
-Y_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][1, :]
-Z_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][2, :]
+# X_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][0, :]
+# Y_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][1, :]
+# Z_sunshade_relative = info['sunshade_cubesat_group.relative_orbit_state'][2, :]
 
 X_detector_relative = info['detector_cubesat_group.relative_orbit_state'][0, :]
 Y_detector_relative = info['detector_cubesat_group.relative_orbit_state'][1, :]
@@ -37,7 +37,7 @@ X_optics_relative = info['optics_cubesat_group.relative_orbit_state'][0, :]
 Y_optics_relative = info['optics_cubesat_group.relative_orbit_state'][1, :]
 Z_optics_relative = info['optics_cubesat_group.relative_orbit_state'][2, :]
 
-time = np.arange((X_sunshade_relative.shape[0]))
+time = np.arange((X_detector_relative.shape[0]))
 
 x = np.linspace(-10, 10, 100)
 
@@ -55,16 +55,16 @@ r_optics = np.linalg.norm(optics_matrix, ord=1, axis=0)
 detector_matrix = info["detector_cubesat_group.relative_orbit_state"][:3, :]
 r_detector = np.linalg.norm(detector_matrix, ord=1, axis=0)
 
-sunshade_matrix = info["sunshade_cubesat_group.relative_orbit_state"][:3, :]
-r_sunshade = np.linalg.norm(sunshade_matrix, ord=1, axis=0)
+# sunshade_matrix = info["sunshade_cubesat_group.relative_orbit_state"][:3, :]
+# r_sunshade = np.linalg.norm(sunshade_matrix, ord=1, axis=0)
 
 time = np.arange(r_orbit.shape[0])
 
 theta = 2 * np.pi / (r_orbit.shape[0]) * time
 
-A = info["normal_distance_sunshade_detector_mm"]
+# A = info["normal_distance_sunshade_detector_mm"]
 B = info["normal_distance_optics_detector_mm"]
-C = info["distance_sunshade_optics_mm"]
+# C = info["distance_sunshade_optics_mm"]
 D = info["distance_optics_detector_mm"]
 E = info["detector_cubesat_group.roll"]
 F = info["detector_cubesat_group.pitch"]
@@ -86,17 +86,15 @@ mask_vec = info['mask_vec']
 # sunshade_Montana_Data = info[
 #     'sunshade_cubesat_group.Montana_comm_group.total_data_downloaded']
 
-masked_normal_distance_sunshade_detector = info[
-    'masked_normal_distance_sunshade_detector_mm_sq_sum']
+# masked_normal_distance_sunshade_detector = info[ 'masked_normal_distance_sunshade_detector_mm_sq_sum']
 masked_normal_distance_optics_detector = info[
     'masked_normal_distance_optics_detector_mm_sq_sum']
-masked_distance_sunshade_optics = info[
-    'masked_distance_sunshade_optics_mm_sq_sum']
+# masked_distance_sunshade_optics = info[ 'masked_distance_sunshade_optics_mm_sq_sum']
 masked_distance_optics_detector = info[
     'masked_distance_optics_detector_mm_sq_sum']
 optics_relative = info['optics_cubesat_group.relative_orbit_state_sq_sum']
 detector_relative = info['detector_cubesat_group.relative_orbit_state_sq_sum']
-sunshade_relative = info["sunshade_cubesat_group.relative_orbit_state_sq_sum"]
+# sunshade_relative = info["sunshade_cubesat_group.relative_orbit_state_sq_sum"]
 obj = info['obj']
 
 # KS_data = info['detector_cubesat_group.KS_Data']
@@ -108,12 +106,10 @@ GS_dist = info['detector_cubesat_group.UCSD_comm_group.GSdist']
 # sunshade_Georgia_data = info['detector_cubesat_group.Georgia_comm_group.Data']
 # sunshade_Montana_data = info['detector_cubesat_group.Montana_comm_group.Data']
 
-sunshade_UCSD_LOS = info['detector_cubesat_group.UCSD_comm_group.CommLOS']
-sunshade_UIUC_LOS = info['detector_cubesat_group.UIUC_comm_group.CommLOS']
-sunshade_Georgia_LOS = info[
-    'detector_cubesat_group.Georgia_comm_group.CommLOS']
-sunshade_Montana_LOS = info[
-    'detector_cubesat_group.Montana_comm_group.CommLOS']
+# sunshade_UCSD_LOS = info['detector_cubesat_group.UCSD_comm_group.CommLOS']
+# sunshade_UIUC_LOS = info['detector_cubesat_group.UIUC_comm_group.CommLOS']
+# sunshade_Georgia_LOS = info['detector_cubesat_group.Georgia_comm_group.CommLOS']
+# sunshade_Montana_LOS = info['detector_cubesat_group.Montana_comm_group.CommLOS']
 
 # print(masked_normal_distance_optics_detector / 1500)
 # print(masked_normal_distance_optics_detector / 1500)
@@ -146,11 +142,11 @@ velocity = np.linalg.norm(velocity, ord=1, axis=0)
 time = np.arange(1501)
 
 print(obj)
-print(masked_normal_distance_sunshade_detector / 1500)
+# print(masked_normal_distance_sunshade_detector / 1500)
 print(masked_normal_distance_optics_detector / 1500)
-print(masked_distance_sunshade_optics / 1500)
+# print(masked_distance_sunshade_optics / 1500)
 print(masked_distance_optics_detector / 1500)
-print(sunshade_relative / 1500)
+# print(sunshade_relative / 1500)
 print(optics_relative / 1500)
 print(detector_relative / 1500)
 print(info['total_data_downloaded'])
@@ -226,9 +222,9 @@ sns.set()
 # plt.plot(time, velocity)
 # plt.plot(time, info['mask_vec'], label='mask_vec')
 # plt.plot(time, info['observation_dot'], label='observation_dot')
-plt.plot(time, A, label="alignment_s_d")
+# plt.plot(time, A, label="alignment_s_d")
 plt.plot(time, B, label="alignment_o_d")
-plt.plot(time, C, label="seperation_s_o")
+# plt.plot(time, C, label="seperation_s_o")
 plt.plot(time, D, label="seperation_o_d")
 # plt.plot(time, sunshade_UCSD_data.T)
 # plt.plot(time, sunshade_UIUC_data.T)

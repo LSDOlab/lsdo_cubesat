@@ -3,7 +3,7 @@ import numpy as np
 from lsdo_cubesat.utils.api import OptionsDictionary
 
 
-class Ground_station(OptionsDictionary):
+class GroundStation(OptionsDictionary):
     def initialize(self):
         self.declare('name', types=str)
         self.declare('lon', types=float)

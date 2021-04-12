@@ -77,17 +77,17 @@ def get_layout(prob):
             ('pitch', slice(None)),
             ('thrust_scalar', slice(None)),
             ('thrust_scalar', slice(None)),
-            # 
-            ('masked_normal_distance_sunshade_detector_mm', slice(None)),
+            #
+            # ('masked_normal_distance_sunshade_detector_mm', slice(None)),
             ('masked_normal_distance_optics_detector_mm', slice(None)),
-            ('masked_distance_sunshade_optics_mm', slice(None)),
+            # ('masked_distance_sunshade_optics_mm', slice(None)),
             ('masked_distance_optics_detector_mm', slice(None)),
-            # # 
-            ('normal_distance_sunshade_detector_mm', slice(None)),
+            # #
+            # ('normal_distance_sunshade_detector_mm', slice(None)),
             ('normal_distance_optics_detector_mm', slice(None)),
-            ('distance_sunshade_optics_mm', slice(None)),
+            # ('distance_sunshade_optics_mm', slice(None)),
             ('distance_optics_detector_mm', slice(None)),
-            # 
+            #
             ('orbit_state', 0),
             ('orbit_state', 1),
             ('relative_orbit_state', 0),
@@ -101,7 +101,7 @@ def get_layout(prob):
             # 'propellant_mass',
             # 'mass',
         ],
-    num_columns):
+            num_columns):
         widget = Plot2D(
             xlabel='time',
             ylabel=var_name,
@@ -111,7 +111,7 @@ def get_layout(prob):
 
         if 'mm' not in var_name:
             cubesat_names = [
-                'sunshade_cubesat_group.',
+                # 'sunshade_cubesat_group.',
                 'optics_cubesat_group.',
                 'detector_cubesat_group.',
             ]

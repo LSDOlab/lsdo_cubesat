@@ -9,7 +9,7 @@ CubeSats with different orbit inclinations.
 The components provided by LSDO CubeSat read these values at model
 setup.
 
-Ground_station
+GroundStation
 --------------
 
 .. list-table:: List of options
