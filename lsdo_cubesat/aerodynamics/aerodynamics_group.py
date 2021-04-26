@@ -1,6 +1,6 @@
 import numpy as np
 
-from omtools.api import Group, IndepVarComp
+from omtools.api import Group
 
 
 class AerodynamicsGroup(Group):
