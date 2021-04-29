@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+from omtools.api import Group
 
 
 class AerodynamicsGroup(Group):
@@ -21,6 +21,4 @@ class AerodynamicsGroup(Group):
 
         shape = (3, num_times)
 
-        comp = IndepVarComp()
-        comp.add_output('drag_scalar_3xn', val=1.e-6, shape=shape)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        self.create_indep_var('drag_scalar_3xn', val=1.e-6, shape=shape)
