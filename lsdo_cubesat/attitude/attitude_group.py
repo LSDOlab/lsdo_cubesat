@@ -1,6 +1,7 @@
 import numpy as np
-
 from openmdao.api import Group, IndepVarComp
+from omtools.api import Group
+import omtools.api as ot
 
 from lsdo_cubesat.utils.api import ArrayReorderComp, BsplineComp, PowerCombinationComp
 
@@ -38,18 +39,23 @@ class AttitudeGroup(Group):
         # Initial angular velocity and quaternion
         wq0 = np.array([-1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
 
-        comp = IndepVarComp()
-        comp.add_output('times',
-                        units='s',
-                        val=np.linspace(0., step_size * (num_times - 1),
+        self.create_indep_var('times', units='s', val=np.linspace(0., step_size * (num_times - 1),
                                         num_times))
+
+        self.create_indep_var('roll_cp', val=np.ones(num_cp))
+        self.create_indep_var('pitch_cp', val=np.ones(num_cp))
+        # comp = IndepVarComp()
+        # comp.add_output('times',
+                        # units='s',
+                        # val=np.linspace(0., step_size * (num_times - 1),
+                                        # num_times))
         # comp.add_output('roll_cp', val=2. * np.pi * np.random.rand(num_cp))
         # comp.add_output('pitch_cp', val=2. * np.pi * np.random.rand(num_cp))
-        comp.add_output('roll_cp', val=np.ones(num_cp))
-        comp.add_output('pitch_cp', val=np.ones(num_cp))
-        comp.add_design_var('roll_cp')
-        comp.add_design_var('pitch_cp')
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        # comp.add_output('roll_cp', val=np.ones(num_cp))
+        # comp.add_output('pitch_cp', val=np.ones(num_cp))
+        # comp.add_design_var('roll_cp')
+        # comp.add_design_var('pitch_cp')
+        # self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         # Expand external_torques
         for var_name in [
