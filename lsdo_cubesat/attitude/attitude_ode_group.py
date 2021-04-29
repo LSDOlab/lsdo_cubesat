@@ -1,5 +1,7 @@
 import numpy as np
 from openmdao.api import Group, IndepVarComp
+from omtools.api import Group
+import omtools.api as ot
 
 from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
 from lsdo_cubesat.attitude.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
@@ -38,20 +40,29 @@ class AttitudeOdeGroup(Group):
         # wq0 = np.array([-1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
         wq0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-        comp = IndepVarComp()
-        comp.add_output('times',
-                        units='s',
+        self.create_indep_var('times',
                         val=np.linspace(0., step_size * (num_times - 1),
                                         num_times))
-        comp.add_output('external_torques_x_cp', val=np.zeros(num_cp))
-        comp.add_output('external_torques_y_cp', val=np.zeros(num_cp))
-        comp.add_output('external_torques_z_cp', val=np.zeros(num_cp))
-        comp.add_output('initial_angular_velocity_orientation', val=wq0)
-        comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
-        comp.add_design_var('external_torques_x_cp')
-        comp.add_design_var('external_torques_y_cp')
-        comp.add_design_var('external_torques_z_cp')
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        self.create_indep_var('external_torques_x_cp', val=np.zeros(num_cp))
+        self.create_indep_var('external_torques_y_cp', val=np.zeros(num_cp))
+        self.create_indep_var('external_torques_z_cp', val=np.zeros(num_cp))
+        self.create_indep_var('initial_angular_velocity_orientation', val=wq0)
+        self.create_indep_var('mass_moment_inertia_b_frame_km_m2', val=I)
+
+#        comp = IndepVarComp()
+#       comp.add_output('times',
+#                        units='s',
+#                        val=np.linspace(0., step_size * (num_times - 1),
+#                                        num_times))
+#        comp.add_output('external_torques_x_cp', val=np.zeros(num_cp))
+#        comp.add_output('external_torques_y_cp', val=np.zeros(num_cp))
+#        comp.add_output('external_torques_z_cp', val=np.zeros(num_cp))
+#       comp.add_output('initial_angular_velocity_orientation', val=wq0)
+#        comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
+#        comp.add_design_var('external_torques_x_cp')
+#        comp.add_design_var('external_torques_y_cp')
+#        comp.add_design_var('external_torques_z_cp')
+#        self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
         # Expand external_torques
         for var_name in [
