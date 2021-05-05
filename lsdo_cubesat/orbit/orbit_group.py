@@ -46,17 +46,6 @@ class OrbitGroup(Group):
             comp.add_output(var_name, val=cubesat[var_name])
         self.add_subsystem('input_comp', comp, promotes=['*'])
 
-        self.add_subsystem(
-            'expand_battery_mass',
-            ArrayExpansionComp(
-                shape=(1, num_times),
-                expand_indices=[1],
-                in_name='battery_mass',
-                out_name='battery_mass_exp',
-            ),
-            promotes=['*'],
-        )
-
         comp = LinearCombinationComp(
             shape=(num_times, ),
             out_name='mass',

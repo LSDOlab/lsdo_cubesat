@@ -16,7 +16,7 @@ class AntennaRotationMtx(ExplicitComponent):
         num_times = self.options['num_times']
 
         self.add_input('q_A', np.zeros((4, num_times)), units=None,
-                       desc='Quarternion matrix in antenna angle frame over time')
+                       desc='Quaternion in antenna angle frame over time')
 
         self.add_output('Rot_AB', np.zeros((3, 3, num_times)), units=None,
                         desc='Rotation matrix from antenna angle to body-fixed '
@@ -48,7 +48,7 @@ class AntennaRotationMtx(ExplicitComponent):
         outputs['Rot_AB'][1, 2, :] = 2 * q_A[2, :] * q_A[3, :] - 2 * q_A[1, :] * q_A[0, :]
         outputs['Rot_AB'][2, 0, :] = 2 * q_A[1, :] * q_A[3, :] - 2 * q_A[2, :] * q_A[0, :]
         outputs['Rot_AB'][2, 1, :] = 2 * q_A[2, :] * q_A[3, :] + 2 * q_A[1, :] * q_A[0, :]
-        outputs['Rot_AB'][2, 2, :] = 1 - 2 * q_A[1, :]**2 - 2 * q_A[2, :]**2 
+        outputs['Rot_AB'][2, 2, :] = 1 - 2 * q_A[1, :]**2 - 2 * q_A[2, :]**2
 
 
     def compute_partials(self, inputs, partials):
@@ -71,15 +71,15 @@ class AntennaRotationMtx(ExplicitComponent):
         dRot_dq[3, :, 0] = 2 * q_A[3, :]
         dRot_dq[3, :, 1] = 2 * q_A[2, :]
         dRot_dq[3, :, 2] = 2 * q_A[1, :]
-        dRot_dq[3, :, 3] = 2 * q_A[0, :]  
+        dRot_dq[3, :, 3] = 2 * q_A[0, :]
         dRot_dq[4, :, 0] = 0
         dRot_dq[4, :, 1] = -4 * q_A[1, :]
         dRot_dq[4, :, 2] = 0
-        dRot_dq[4, :, 3] = -4 * q_A[3, :] 
+        dRot_dq[4, :, 3] = -4 * q_A[3, :]
         dRot_dq[5, :, 0] = -2 * q_A[1, :]
         dRot_dq[5, :, 1] = -2 * q_A[0, :]
         dRot_dq[5, :, 2] = 2 * q_A[3, :]
-        dRot_dq[5, :, 3] = 2 * q_A[2, :] 
+        dRot_dq[5, :, 3] = 2 * q_A[2, :]
         dRot_dq[6, :, 0] = -2 * q_A[2, :]
         dRot_dq[6, :, 1] = 2 * q_A[3, :]
         dRot_dq[6, :, 2] = -2 * q_A[0, :]
@@ -87,11 +87,11 @@ class AntennaRotationMtx(ExplicitComponent):
         dRot_dq[7, :, 0] = 2 * q_A[1, :]
         dRot_dq[7, :, 1] = 2 * q_A[0, :]
         dRot_dq[7, :, 2] = 2 * q_A[3, :]
-        dRot_dq[7, :, 3] = 2 * q_A[2, :] 
+        dRot_dq[7, :, 3] = 2 * q_A[2, :]
         dRot_dq[8, :, 0] = 0
         dRot_dq[8, :, 1] = -4 * q_A[1, :]
         dRot_dq[8, :, 2] = -4 * q_A[2, :]
-        dRot_dq[8, :, 3] = 0   
+        dRot_dq[8, :, 3] = 0
 
 
 

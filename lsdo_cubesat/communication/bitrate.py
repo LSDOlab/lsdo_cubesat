@@ -14,7 +14,7 @@ from lsdo_cubesat.utils.api import (ArrayExpansionComp, BsplineComp,
                                     PowerCombinationComp)
 
 
-class BitRateComp(ExplicitComponent):
+class BitRate(ExplicitComponent):
 
     # constants
     pi = 2 * np.arccos(0.)

@@ -4,7 +4,9 @@ from omtools.api import Group
 import omtools.api as ot
 
 from lsdo_cubesat.attitude.attitude_rk4_comp import AttitudeRK4Comp
-from lsdo_cubesat.attitude.attitude_rk4_gravity_comp import AttitudeRK4GravityComp
+from lsdo_cubesat.attitude.attitude_actuator import AttitudeActuator
+from lsdo_cubesat.attitude.attitude_rk4_gravity_comp import \
+    AttitudeRK4GravityComp
 from lsdo_cubesat.attitude.attitude_state_decomposition_comp import \
     AttitudeStateDecompositionComp
 from lsdo_cubesat.attitude.inertia_ratios_comp import InertiaRatiosComp
@@ -40,47 +42,42 @@ class AttitudeOdeGroup(Group):
         # wq0 = np.array([-1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
         wq0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-        self.create_indep_var('times',
-                        units='s',
-                        val=np.linspace(0., step_size * (num_times - 1),
-                                        num_times))
-        self.create_indep_var('external_torques_x_cp', val=np.zeros(num_cp))
-        self.create_indep_var('external_torques_y_cp', val=np.zeros(num_cp))
-        self.create_indep_var('external_torques_z_cp', val=np.zeros(num_cp))
+        self.create_indep_var(
+            'times',
+            val=np.linspace(0., step_size * (num_times - 1), num_times),
+        )
         self.create_indep_var('initial_angular_velocity_orientation', val=wq0)
         self.create_indep_var('mass_moment_inertia_b_frame_km_m2', val=I)
 
-#        comp = IndepVarComp()
-#       comp.add_output('times',
-#                        units='s',
-#                        val=np.linspace(0., step_size * (num_times - 1),
-#                                        num_times))
-#        comp.add_output('external_torques_x_cp', val=np.zeros(num_cp))
-#        comp.add_output('external_torques_y_cp', val=np.zeros(num_cp))
-#        comp.add_output('external_torques_z_cp', val=np.zeros(num_cp))
-#       comp.add_output('initial_angular_velocity_orientation', val=wq0)
-#        comp.add_output('mass_moment_inertia_b_frame_km_m2', val=I)
-#        comp.add_design_var('external_torques_x_cp')
-#        comp.add_design_var('external_torques_y_cp')
-#        comp.add_design_var('external_torques_z_cp')
-#        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        # TODO: Power directed to reaction wheels is not a design
+        # variable, but we keep this code here to use whenever we decide
+        # which power variables are design variables
+        # # Expand external_torques
+        # for var_name in [
+        #         'power_x',
+        #         'power_y',
+        #         'power_z',
+        # ]:
+        #     comp = BsplineComp(
+        #         num_pt=num_times,
+        #         num_cp=num_cp,
+        #         jac=get_bspline_mtx(num_cp, num_times),
+        #         in_name='{}_cp'.format(var_name),
+        #         out_name=var_name,
+        #     )
+        #     self.add_subsystem('{}_comp'.format(var_name),
+        #                        comp,
+        #                        promotes=['*'])
 
-        # Expand external_torques
-        for var_name in [
-                'external_torques_x',
-                'external_torques_y',
-                'external_torques_z',
-        ]:
-            comp = BsplineComp(
-                num_pt=num_times,
-                num_cp=num_cp,
-                jac=get_bspline_mtx(num_cp, num_times),
-                in_name='{}_cp'.format(var_name),
-                out_name=var_name,
-            )
-            self.add_subsystem('{}_comp'.format(var_name),
-                               comp,
-                               promotes=['*'])
+        # Compute Actuator Torques
+        self.add_subsystem(
+            'attitude_actuator',
+            AttitudeActuator(
+                num_times=num_times,
+                step_size=step_size,
+            ),
+            promotes=['*'],
+        )
 
         # Integrate attitude dynamics
         self.add_subsystem(

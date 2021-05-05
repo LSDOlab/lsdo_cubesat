@@ -21,7 +21,7 @@ class DataDownloadComp(RK4Comp):
                        np.zeros((1, n)),
                        desc='Data download rate over time')
 
-        self.add_input('Initial_Data',
+        self.add_input('initial_data',
                        np.zeros((1, )),
                        desc='Initial download data state')
 
@@ -31,7 +31,7 @@ class DataDownloadComp(RK4Comp):
                         desc='Download data state over time')
 
         self.options['state_var'] = 'Data'
-        self.options['init_state_var'] = 'Initial_Data'
+        self.options['init_state_var'] = 'initial_data'
         self.options['external_vars'] = ['KS_Download_rate']
 
         self.dfdy = np.array([[0.]])
@@ -62,10 +62,9 @@ if __name__ == '__main__':
     dd_dt = np.loadtxt('/home/lsdo/Cubesat/lsdo_cubesat/rundata/Bitrate.csv')
     # dd_dt.reshape((1, num_times))
     print(dd_dt.shape)
-    Data0 = 0
     comp.add_output('num_times', val=num_times)
     comp.add_output('Download_rate', val=dd_dt)
-    comp.add_output('Initial_Data', val=Data0)
+    comp.add_output('initial_data', val=0)
 
     group.add_subsystem('Inputcomp', comp, promotes=['*'])
 

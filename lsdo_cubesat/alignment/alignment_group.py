@@ -1,16 +1,16 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+from omtools.api import Group
 
 from lsdo_cubesat.utils.api import CrossProductComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
 from lsdo_cubesat.utils.projection_group import ProjectionGroup
 from lsdo_cubesat.utils.ks_comp import KSComp
-from lsdo_cubesat.orbit.constant_orbit_group import ConstantOrbitGroup
-from lsdo_cubesat.alignment.sun_direction_comp import SunDirectionComp
 from lsdo_cubesat.alignment.mask_vec_comp import MaskVecComp
 from lsdo_cubesat.utils.dot_product_comp import DotProductComp
+
+import omtools.api as ot
 
 
 class AlignmentGroup(Group):
@@ -28,25 +28,24 @@ class AlignmentGroup(Group):
 
         shape = (3, num_times)
 
-        times = np.linspace(0., step_size * (num_times - 1), num_times)
+        d2r = np.pi / 180.
+        times = np.linspace(0., step_size * (num_times - 1),
+                            num_times).reshape(1, num_times)
 
-        comp = IndepVarComp()
-        comp.add_output('times', val=times)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        T = swarm['launch_date'] + times / 3600. / 24.
+        L = d2r * 280.460 + d2r * 0.9856474 * T
+        g = d2r * 357.528 + d2r * 0.9856003 * T
+        Lambda = self.create_indep_var('Lambda',
+                                       val=L + d2r * 1.914666 * np.sin(g) +
+                                       d2r * 0.01999464 * np.sin(2 * g))
+        eps = self.create_indep_var('eps',
+                                    val=d2r * 23.439 - d2r * 3.56e-7 * T)
 
-        comp = SunDirectionComp(
-            num_times=num_times,
-            launch_date=swarm['launch_date'],
-        )
-        self.add_subsystem('sun_direction_comp', comp, promotes=['*'])
+        sun_unit_vec = self.create_output('sun_unit_vec', shape=(3, num_times))
+        sun_unit_vec[0, :] = ot.cos(Lambda)
+        sun_unit_vec[1, :] = ot.sin(Lambda) * ot.cos(eps)
+        sun_unit_vec[2, :] = ot.sin(Lambda) * ot.sin(eps)
 
-        # group = ConstantOrbitGroup(
-        #     num_times=num_times,
-        #     num_cp=num_cp,
-        #     step_size=step_size,
-        #     cubesat=swarm.children[0],
-        # )
-        # self.add_subsystem('constant_orbit_group', group, promotes=['*'])
         comp = CrossProductComp(
             shape_no_3=(num_times, ),
             out_index=0,
@@ -58,6 +57,13 @@ class AlignmentGroup(Group):
         )
         self.add_subsystem('normal_cross_vec_comp', comp, promotes=['*'])
 
+        # observation_cross_vec = np.cross(
+        #     position_unit_vec,
+        #     sun_unit_vec,
+        #     axisa=0,
+        #     axisb=0,
+        #     axisc=0,
+        # )
         comp = CrossProductComp(
             shape_no_3=(num_times, ),
             out_index=0,
@@ -79,6 +85,7 @@ class AlignmentGroup(Group):
                            group,
                            promotes=['*'])
 
+        # TODO: constant, no need for component
         group = DecomposeVectorGroup(
             num_times=num_times,
             vec_name='observation_cross_vec',
@@ -108,13 +115,10 @@ class AlignmentGroup(Group):
         # Separation
 
         separation_constraint_names = [
-            # ('sunshade', 'optics'),
             ('optics', 'detector'),
         ]
 
         for name1, name2 in [
-                # ('sunshade', 'optics'),
-                # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]:
             position_name = 'position_{}_{}_km'.format(name1, name2)
@@ -147,7 +151,6 @@ class AlignmentGroup(Group):
         # Transverse displacement
 
         transverse_constraint_names = [
-            # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]
 

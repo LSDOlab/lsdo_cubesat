@@ -4,7 +4,7 @@ from openmdao.api import ExecComp, Group, IndepVarComp, Problem
 from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
 from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
-from lsdo_cubesat.communication.Comm_Bitrate import BitRateComp
+from lsdo_cubesat.communication.bitrate import BitRate
 from lsdo_cubesat.communication.Comm_distance import \
     StationSatelliteDistanceComp
 from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
@@ -43,7 +43,7 @@ class GSGroup(Group):
         comp.add_output('P_comm_cp', val=np.zeros(num_cp), units='W')
         comp.add_design_var('P_comm_cp', lower=0., upper=100.)
         comp.add_output('gain', val=16.0 * np.ones(num_times))
-        comp.add_output('Initial_Data', val=0.0)
+        comp.add_output('initial_data', val=0.0)
         for var_name in [
                 'lon',
                 'lat',
@@ -96,7 +96,7 @@ class GSGroup(Group):
         )
         self.add_subsystem('P_comm_comp', comp, promotes=['*'])
 
-        comp = BitRateComp(num_times=num_times)
+        comp = BitRate(num_times=num_times)
         self.add_subsystem('Download_rate', comp, promotes=['*'])
 
         comp = DataDownloadComp(
