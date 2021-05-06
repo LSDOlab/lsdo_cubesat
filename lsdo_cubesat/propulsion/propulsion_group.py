@@ -1,6 +1,7 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, ExecComp
+from omtools.api import Group
+import omtools.api as ot
 
 from lsdo_cubesat.utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
 
@@ -29,6 +30,7 @@ class PropulsionGroup(Group):
         Matrix that translates control points (num_cp) to actual points
         (num_times)
     """
+
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('num_cp', types=int)
@@ -50,12 +52,24 @@ class PropulsionGroup(Group):
             np.ones(num_times),
         )
 
-        comp = IndepVarComp()
-        comp.add_output('thrust_unit_vec_b_3xn', val=thrust_unit_vec)
-        comp.add_output('thrust_scalar_mN_cp', val=1.e-3 * np.ones(num_cp))
-        comp.add_output('initial_propellant_mass', 0.17)
-        comp.add_design_var('thrust_scalar_mN_cp', lower=0., upper=20000)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        #comp = IndepVarComp()
+        #comp.add_output('thrust_unit_vec_b_3xn', val=thrust_unit_vec)
+        #comp.add_output('thrust_scalar_mN_cp', val=1.e-3 * np.ones(num_cp))
+        #comp.add_output('initial_propellant_mass', 0.17)
+        #comp.add_design_var('thrust_scalar_mN_cp', lower=0., upper=20000)
+        #self.add_subsystem('inputs_comp', comp, promotes=['*'])
+
+        thrust_unit_vec_b_3xn = self.create_output('thrust_unit_vec_b_3xn',
+                                                   val=thrust_unit_vec,
+                                                   shape=shape)
+
+        thrust_scalar_mN_cp = self.create_output('thrust_scalar_mN_cp',
+                                                 val=1.e-3 * np.ones(num_cp),
+                                                 shape=shape)
+
+        initial_propellant_mass = self.create_output('initial_propellant_mass',
+                                                     val=0.17,
+                                                     shape=shape)
 
         comp = MtxVecComp(
             num_times=num_times,
