@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
+from omtools.api import Group
 
 from lsdo_cubesat.utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
 
@@ -36,12 +36,16 @@ class OrbitGroup(Group):
             np.ones(num_times),
         )
 
-        comp = IndepVarComp()
-        comp.add_output('drag_unit_vec_t_3xn', val=drag_unit_vec)
-        comp.add_output('dry_mass', val=cubesat['dry_mass'], shape=num_times)
-        comp.add_output('radius_earth_km',
-                        val=cubesat['radius_earth_km'],
-                        shape=num_times)
+        drag_unit_vec_t_3xn = self.create_output('drag_unit_vec_t_3xn',
+                                                 val=drag_unit_vec,
+                                                 shape=shape)
+        dry_mass = self.create_output('dry_mass',
+                                      val=cubesat['dry_mass'],
+                                      shape=num_times)
+        radius_earth_km = self.create_output('radius_earth_km',
+                                             val=cubesat['radius_earth_km'],
+                                             shape=num_times)
+
         for var_name in ['initial_orbit_state']:
             comp.add_output(var_name, val=cubesat[var_name])
         self.add_subsystem('input_comp', comp, promotes=['*'])
@@ -68,13 +72,15 @@ class OrbitGroup(Group):
             )
             coupled_group.add_subsystem('force_3xn_comp', comp, promotes=['*'])
 
-            comp = RelativeOrbitRK4Comp(
-                num_times=num_times,
-                step_size=step_size,
-            )
-            coupled_group.add_subsystem('relative_orbit_rk4_comp',
-                                        comp,
-                                        promotes=['*'])
+            # comp = RelativeOrbitRK4Comp(
+            #     num_times=num_times,
+            #     step_size=step_size,
+            # )
+            # coupled_group.add_subsystem('relative_orbit_rk4_comp',
+            #                             comp,
+            #                             promotes=['*'])
+            relative_orbit_rk4_comp = self.create_output(
+                'relative_orbit_rk4_comp', shape=(6, num_times))
 
             comp = LinearCombinationComp(
                 shape=(6, num_times),
@@ -97,10 +103,12 @@ class OrbitGroup(Group):
                                         comp,
                                         promotes=['*'])
 
-            comp = RotMtxTIComp(num_times=num_times)
-            coupled_group.add_subsystem('rot_mtx_t_i_3x3xn_comp',
-                                        comp,
-                                        promotes=['*'])
+            # comp = RotMtxTIComp(num_times=num_times)
+            # coupled_group.add_subsystem('rot_mtx_t_i_3x3xn_comp',
+            #                             comp,
+            #                             promotes=['*'])
+            rot_mtx_t_i_3x3xn_comp = self.create_output(
+                'rot_mtx_t_i_3x3xn_comp', shape=(3, 3, num_times))
 
             comp = ArrayReorderComp(
                 in_shape=(3, 3, num_times),
@@ -110,9 +118,11 @@ class OrbitGroup(Group):
                 in_name='rot_mtx_t_i_3x3xn',
                 out_name='rot_mtx_i_t_3x3xn',
             )
-            coupled_group.add_subsystem('rot_mtx_i_t_3x3xn_comp',
-                                        comp,
-                                        promotes=['*'])
+            # coupled_group.add_subsystem('rot_mtx_i_t_3x3xn_comp',
+            #                             comp,
+            #                             promotes=['*'])
+            rot_mtx_i_t_3x3xn_comp = self.create_output(
+                'rot_mtx_i_t_3x3xn_comp', shape=(3, 3, num_times))
 
             comp = MtxVecComp(
                 num_times=num_times,
