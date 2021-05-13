@@ -59,17 +59,18 @@ class PropulsionGroup(Group):
         #comp.add_design_var('thrust_scalar_mN_cp', lower=0., upper=20000)
         #self.add_subsystem('inputs_comp', comp, promotes=['*'])
 
-        thrust_unit_vec_b_3xn = self.create_output('thrust_unit_vec_b_3xn',
-                                                   val=thrust_unit_vec,
-                                                   shape=shape)
+        thrust_unit_vec_b_3xn = self.create_indep_var('thrust_unit_vec_b_3xn',
+                                                      val=thrust_unit_vec,
+                                                      shape=shape)
 
-        thrust_scalar_mN_cp = self.create_output('thrust_scalar_mN_cp',
-                                                 val=1.e-3 * np.ones(num_cp),
-                                                 shape=shape)
+        thrust_scalar_mN_cp = self.create_indep_var('thrust_scalar_mN_cp',
+                                                    val=1.e-3 *
+                                                    np.ones(num_cp),
+                                                    shape=shape)
 
-        initial_propellant_mass = self.create_output('initial_propellant_mass',
-                                                     val=0.17,
-                                                     shape=shape)
+        initial_propellant_mass = self.create_indep_var('initial_propellant_mass',
+                                                        val=0.17,
+                                                        shape=shape)
 
         comp = MtxVecComp(
             num_times=num_times,
