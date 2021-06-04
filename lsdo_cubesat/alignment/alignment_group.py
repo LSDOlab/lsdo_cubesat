@@ -41,21 +41,24 @@ class AlignmentGroup(Group):
         eps = self.create_indep_var('eps',
                                     val=d2r * 23.439 - d2r * 3.56e-7 * T)
 
-        sun_unit_vec = self.create_output('sun_unit_vec', shape=(3, num_times))
+        sun_unit_vec = self.create_output('sun_unit_vec', shape=shape)
         sun_unit_vec[0, :] = ot.cos(Lambda)
         sun_unit_vec[1, :] = ot.sin(Lambda) * ot.cos(eps)
         sun_unit_vec[2, :] = ot.sin(Lambda) * ot.sin(eps)
 
-        comp = CrossProductComp(
-            shape_no_3=(num_times, ),
-            out_index=0,
-            in1_index=0,
-            in2_index=0,
-            out_name='normal_cross_vec',
-            in1_name='velocity_unit_vec',
-            in2_name='position_unit_vec',
-        )
-        self.add_subsystem('normal_cross_vec_comp', comp, promotes=['*'])
+
+
+    #    comp = CrossProductComp(
+    #         shape_no_3=(num_times, ),
+    #         out_index=0,
+    #         in1_index=0,
+    #         in2_index=0,
+    #         out_name='normal_cross_vec',
+    #         in1_name='velocity_unit_vec',
+    #         in2_name='position_unit_vec',
+    #     )
+        
+        # self.add_subsystem('normal_cross_vec_comp', comp, promotes=['*'])
 
         # observation_cross_vec = np.cross(
         #     position_unit_vec,
@@ -64,16 +67,26 @@ class AlignmentGroup(Group):
         #     axisb=0,
         #     axisc=0,
         # )
-        comp = CrossProductComp(
-            shape_no_3=(num_times, ),
-            out_index=0,
-            in1_index=0,
-            in2_index=0,
-            out_name='observation_cross_vec',
-            in1_name='position_unit_vec',
-            in2_name='sun_unit_vec',
-        )
-        self.add_subsystem('observation_cross_vec_comp', comp, promotes=['*'])
+        # comp = CrossProductComp(
+        #     shape_no_3=(num_times, ),
+        #     out_index=0,
+        #     in1_index=0,
+        #     in2_index=0,
+        #     out_name='observation_cross_vec',
+        #     in1_name='position_unit_vec',
+        #     in2_name='sun_unit_vec',
+        # )
+        # self.add_subsystem('observation_cross_vec_comp', comp, promotes=['*'])
+
+        # conversion of comp gorups to om tools cross products
+        in1 = self.declare_input('velocity_unit_vec', val = num_times)
+        in2 = self.declare_input('position_unit_vec', val = num_times)
+        self.register_output('normal_cross_vec_comp', ot.cross(in1, in2), promotes=['*'])
+        
+        in1 = self.declare_input('position_unit_vec', val = num_times)
+        in2 = self.declare_input('sun_unit_vec', val = num_times)
+        self.register_output('observation_cross_vec_comp', ot.cross(in1, in2), promotes=['*'])
+
 
         group = DecomposeVectorGroup(
             num_times=num_times,
@@ -96,21 +109,27 @@ class AlignmentGroup(Group):
                            group,
                            promotes=['*'])
 
-        comp = DotProductComp(vec_size=3,
-                              length=num_times,
-                              a_name='observation_cross_unit_vec',
-                              b_name='normal_cross_unit_vec',
-                              c_name='observation_dot',
-                              a_units=None,
-                              b_units=None,
-                              c_units=None)
-        self.add_subsystem('observation_dot_comp', comp, promotes=['*'])
+        # comp = DotProductComp(vec_size=3,
+        #                       length=num_times,
+        #                       a_name='observation_cross_unit_vec',
+        #                       b_name='normal_cross_unit_vec',
+        #                       c_name='observation_dot',
+        #                       a_units=None,
+        #                       b_units=None,
+        #                       c_units=None)
+        # self.add_subsystem('observation_dot_comp', comp, promotes=['*'])
+
+        vec_a = self.declare_input('vec_a', val = num_times)
+        vec_b = self.declare_input('vec-b', val = num_times)
+        self.register_output('observation_dot_comp', ot.dot(vec_a, vec_b), promotes=['*'])
 
         comp = MaskVecComp(
             num_times=num_times,
             swarm=swarm,
         )
         self.add_subsystem('mask_vec_comp', comp, promotes=['*'])
+
+        # self.register_output('mask_vec_comp', )
 
         # Separation
 
