@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 
 # Constants
 mu = 398600.44
@@ -19,9 +19,60 @@ C4 = 1.875 * mu * J4 * Re**4
 # area = 0.1 * 0.1 # m**2 cross sectional area
 drag = 1.e-6
 
+# def perifocal_to_cartesian(
+#     r: Concatenation,
+#     v: Concatenation,
+#     rp,
+#     ra,
+#     raan,
+#     i,
+#     arg_peri,
+#     true_anomaly,
+# ):
+#     mu = 1
+#     e = (ra - rp) / (ra + rp)
+#     a = (rp + ra) / 2
+#     p = a * (1 - e**2)
+#     h = csdl.norm(p * mu)
 
-class InitialOrbitComp(ExplicitComponent):
-    def setup(self):
+#     # compute radius
+#     rmag = p / (1 + e * np.cos(true_anomaly))
+
+#     # compute speed
+
+#     # construct position, velocity vectors in perifocal coordinates
+#     r[0] = rmag * np.cos(true_anomaly)
+#     r[1] = rmag * np.cos(true_anomaly)
+#     r[3] = 0
+
+#     v[0] = -mu / h * csdl.sin(true_anomaly)
+#     v[1] = mu / h * (e + np.cos(true_anomaly))
+#     v[3] = 0
+
+#     # construct position, velocity in cartesian coordinates
+#     R = np.zeros((3, 3))
+#     # R[0] =
+
+#     return r, v
+
+
+class InitialOrbit(Model):
+    def define(self):
+        perigee_altitude = self.create_input('perigee_altitude',
+                                             val=cubesat['perigee_altitude'])
+        apogee_altitude = self.create_input('apogee_altitude',
+                                            val=cubesat['apogee_altitude'])
+        RAAN = self.create_input('RAAN', val=cubesat['RAAN'])
+        inclination = self.create_input('inclination',
+                                        val=cubesat['inclination'])
+        argument_of_periapsis = self.create_input(
+            'argument_of_periapsis', val=cubesat['argument_of_periapsis'])
+        true_anomaly = self.create_input('perigee_altitude',
+                                         val=cubesat['true_anomaly'])
+
+
+class InitialOrbitComp(CustomExplicitOperation):
+    def define(self):
         # Inputs
         self.add_input('perigee_altitude', 500.)
         self.add_input('apogee_altitude', 500.)
@@ -37,7 +88,7 @@ class InitialOrbitComp(ExplicitComponent):
             desc='Initial position and velocity vectors from Earth '
             'to satellite in Earth-centered inertial frame')
 
-        self.declare_partials('*', '*')
+        self.declare_derivatives('*', '*')
 
     def compute_rv(self, perigee_altitude, apogee_altitude, RAAN, inclination,
                    argument_of_periapsis, true_anomaly):
@@ -102,7 +153,7 @@ class InitialOrbitComp(ExplicitComponent):
         outputs['initial_orbit_state_km'][:3] = r0_ECI.real
         outputs['initial_orbit_state_km'][3:] = v0_ECI.real
 
-    def compute_partials(self, inputs, J):
+    def compute_derivatives(self, inputs, J):
         """
         Calculate and save derivatives. (i.e., Jacobian).
         """
@@ -158,11 +209,9 @@ if __name__ == '__main__':
     comp.add_output('argument_of_periapsis', val=argument_of_periapsis)
     comp.add_output('true_anomaly', val=true_anomaly)
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add_subsystem('Statecomp_Implicit',
-                        InitialOrbitComp(),
-                        promotes=['*'])
+    group.add('Statecomp_Implicit', InitialOrbitComp(), promotes=['*'])
 
     prob = Problem()
     prob.model = group

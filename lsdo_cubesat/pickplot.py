@@ -180,8 +180,8 @@ print(info['total_propellant_used'])
 #     comp.add_output('Georgia', val=sunshade_Georgia_data)
 #     comp.add_output('Montana', val=sunshade_Montana_data)
 
-#     group.add_subsystem('Inputcomp', comp, promotes=['*'])
-#     group.add_subsystem('KS_Data',
+#     group.add('Inputcomp', comp, promotes=['*'])
+#     group.add('KS_Data',
 #                         ElementwiseMaxComp(shape=shape,
 #                                            in_names=[
 #                                                'UCSD',

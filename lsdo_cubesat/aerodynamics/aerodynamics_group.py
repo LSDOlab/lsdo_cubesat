@@ -1,26 +1,25 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+from csdl import Model
 
 
-class AerodynamicsGroup(Group):
-
+class AerodynamicsGroup(Model):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('num_cp', types=int)
-        self.options.declare('step_size', types=float)
-        self.options.declare('cubesat')
-        self.options.declare('mtx')
+        self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('num_cp', types=int)
+        # self.parameters.declare('step_size', types=float)
+        # self.parameters.declare('cubesat')
+        # self.parameters.declare('mtx')
 
-    def setup(self):
-        num_times = self.options['num_times']
-        num_cp = self.options['num_cp']
-        step_size = self.options['step_size']
-        cubesat = self.options['cubesat']
-        mtx = self.options['mtx']
+    def define(self):
+        num_times = self.parameters['num_times']
+        # num_cp = self.parameters['num_cp']
+        # step_size = self.parameters['step_size']
+        # cubesat = self.parameters['cubesat']
+        # mtx = self.parameters['mtx']
 
-        shape = (3, num_times)
-
-        comp = IndepVarComp()
-        comp.add_output('drag_scalar_3xn', val=1.e-6, shape=shape)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
+        drag_scalar_3xn = self.create_input(
+            'drag_scalar_3xn',
+            val=1.e-6,
+            shape=(3, num_times),
+        )

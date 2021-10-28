@@ -178,10 +178,8 @@ if __name__ == '__main__':
 
     r_e2b_I = np.random.random((6, n))
     comp.add_output('orbit_state_km', val=r_e2b_I)
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
-    group.add_subsystem('att',
-                        RotMtxTIComp(num_times=n),
-                        promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
+    group.add('att', RotMtxTIComp(num_times=n), promotes=['*'])
 
     prob = Problem()
     prob.model = group

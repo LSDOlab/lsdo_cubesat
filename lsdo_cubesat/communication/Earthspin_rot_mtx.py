@@ -115,10 +115,10 @@ if __name__ == '__main__':
     num_times = 3
     comp.add_output('q_E', val=np.ones((4, num_times)))
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
-    group.add_subsystem('Rot_ECI_EF',
-                        EarthspinRotationMtx(num_times=num_times),
-                        promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
+    group.add('Rot_ECI_EF',
+              EarthspinRotationMtx(num_times=num_times),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

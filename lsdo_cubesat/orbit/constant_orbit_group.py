@@ -1,7 +1,5 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
-
 from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp
 
 from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
@@ -42,23 +40,23 @@ class ConstantOrbitGroup(Group):
         #         'true_anomaly',
         # ]:
         #     comp.add_output(var_name, val=cubesat[var_name])
-        # self.add_subsystem('input_comp', comp, promotes=['*'])
+        # self.add('input_comp', comp, promotes=['*'])
 
         # comp = InitialOrbitComp()
-        # self.add_subsystem('initial_orbit_comp', comp, promotes=['*'])
+        # self.add('initial_orbit_comp', comp, promotes=['*'])
 
         comp = LinearCombinationComp(
             shape=(num_times, ),
             out_name='mass',
             coeffs_dict=dict(dry_mass=1.),
         )
-        self.add_subsystem('mass_comp', comp, promotes=['*'])
+        self.add('mass_comp', comp, promotes=['*'])
 
         comp = ReferenceOrbitRK4Comp(
             num_times=num_times,
             step_size=step_size,
         )
-        self.add_subsystem('orbit_rk4_comp', comp, promotes=['*'])
+        self.add('orbit_rk4_comp', comp, promotes=['*'])
 
         comp = OrbitStateDecompositionComp(
             num_times=num_times,
@@ -66,9 +64,7 @@ class ConstantOrbitGroup(Group):
             velocity_name='velocity_km_s',
             orbit_state_name='reference_orbit_state_km',
         )
-        self.add_subsystem('orbit_state_decomposition_comp',
-                           comp,
-                           promotes=['*'])
+        self.add('orbit_state_decomposition_comp', comp, promotes=['*'])
 
         group = DecomposeVectorGroup(
             num_times=num_times,
@@ -76,9 +72,7 @@ class ConstantOrbitGroup(Group):
             norm_name='radius_km',
             unit_vec_name='position_unit_vec',
         )
-        self.add_subsystem('position_decomposition_group',
-                           group,
-                           promotes=['*'])
+        self.add('position_decomposition_group', group, promotes=['*'])
 
         group = DecomposeVectorGroup(
             num_times=num_times,
@@ -86,6 +80,4 @@ class ConstantOrbitGroup(Group):
             norm_name='speed_km_s',
             unit_vec_name='velocity_unit_vec',
         )
-        self.add_subsystem('velocity_decomposition_group',
-                           group,
-                           promotes=['*'])
+        self.add('velocity_decomposition_group', group, promotes=['*'])

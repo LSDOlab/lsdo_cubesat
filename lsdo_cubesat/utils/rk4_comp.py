@@ -8,41 +8,34 @@ from six.moves import range
 import numpy as np
 
 from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 
 
-class RK4Comp(ExplicitComponent):
+class RK4Comp(CustomExplicitOperation):
     """
     Inherit from this component to use.
 
     State variable dimension: (num_states, num_time_points)
     External input dimension: (input width, num_time_points)
     """
-
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('step_size', types=float)
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
 
-    def _declare_options(self):
-        """
-        Declare options before kwargs are processed in the init method.
-        """
-        super(RK4Comp, self)._declare_options()
-
-        opts = self.options
-
-        opts.declare(
+        params = self.parameters
+        params.declare(
             'state_var',
             '',
             desc='Name of the variable to be used for time integration')
-        opts.declare(
+        params.declare(
             'init_state_var',
             '',
             desc='Name of the variable to be used for initial conditions')
-        opts.declare(
+        params.declare(
             'external_vars', [],
             desc='List of names of variables that are external to the system '
             'but DO vary with time.')
-        opts.declare(
+        params.declare(
             'fixed_external_vars', [],
             desc='List of names of variables that are external to the system '
             'but DO NOT vary with time.')
@@ -58,11 +51,11 @@ class RK4Comp(ExplicitComponent):
         outputs : Vector
             unscaled, dimensional output variables read via outputs[key]
         """
-        n = self.options['num_times']
-        state_var = self.options['state_var']
-        init_state_var = self.options['init_state_var']
-        external_vars = self.options['external_vars']
-        fixed_external_vars = self.options['fixed_external_vars']
+        n = self.parameters['num_times']
+        state_var = self.parameters['state_var']
+        init_state_var = self.parameters['init_state_var']
+        external_vars = self.parameters['external_vars']
+        fixed_external_vars = self.parameters['fixed_external_vars']
 
         self.y = outputs[state_var]
         self.y0 = inputs[init_state_var]
@@ -159,12 +152,12 @@ class RK4Comp(ExplicitComponent):
         """
         Calculate outputs.
         """
-        n = self.options['num_times']
+        n = self.parameters['num_times']
         self._init_data(inputs, outputs)
 
         n_state = self.n_states
         n_time = n
-        h = self.options['step_size']
+        h = self.parameters['step_size']
 
         # Copy initial state into state array for t=0
         self.y = self.y.reshape((self.ny, ), order='f')
@@ -199,14 +192,14 @@ class RK4Comp(ExplicitComponent):
         state_var_name = self.name_map['y']
         outputs[state_var_name][:] = self.y.T.reshape((n_time, n_state)).T
 
-    def compute_partials(self, inputs, partials):
+    def compute_derivatives(self, inputs, partials):
         """
         Calculate and save derivatives. (i.e., Jacobian)
         """
-        n = self.options['num_times']
+        n = self.parameters['num_times']
         n_state = self.n_states
         n_time = n
-        h = self.options['step_size']
+        h = self.parameters['step_size']
         I = np.eye(n_state)  # noqa: E741
 
         # Full Jacobian with respect to states
@@ -266,7 +259,7 @@ class RK4Comp(ExplicitComponent):
         if mode == 'fwd':
             result_ext = self._applyJext(d_inputs, d_outputs)
 
-            svar = self.options['state_var']
+            svar = self.parameters['state_var']
             d_outputs[svar] += result_ext
 
         else:
@@ -279,14 +272,14 @@ class RK4Comp(ExplicitComponent):
         """
         Apply derivatives with respect to inputs
         """
-        n = self.options['num_times']
+        n = self.parameters['num_times']
         # Jx --> (n, n_external, n_states)
         n_state = self.n_states
         n_time = n
         result = np.zeros((n_state, n_time))
 
         # Time-varying inputs
-        for name in self.options['external_vars']:
+        for name in self.parameters['external_vars']:
 
             if name not in d_inputs:
                 continue
@@ -309,7 +302,7 @@ class RK4Comp(ExplicitComponent):
                                                    (n_time - j - 1, 1)).T
 
         # Time-invariant inputs
-        for name in self.options['fixed_external_vars']:
+        for name in self.parameters['fixed_external_vars']:
 
             if name not in d_inputs:
                 continue
@@ -330,7 +323,7 @@ class RK4Comp(ExplicitComponent):
                                                    (n_time - j - 1, 1)).T
 
         # Initial State
-        name = self.options['init_state_var']
+        name = self.parameters['init_state_var']
         if name in d_inputs:
 
             # Take advantage of fact that arg is often pretty sparse
@@ -348,12 +341,12 @@ class RK4Comp(ExplicitComponent):
         """
         Apply derivatives with respect to inputs
         """
-        n = self.options['num_times']
+        n = self.parameters['num_times']
         # Jx --> (n, n_external, n_states)
         n_time = n
         result = {}
 
-        argsv = d_outputs[self.options['state_var']].T
+        argsv = d_outputs[self.parameters['state_var']].T
         argsum = np.zeros(argsv.shape)
 
         # Calculate these once, and use for every output
@@ -364,7 +357,7 @@ class RK4Comp(ExplicitComponent):
         nonzero_k = np.unique(argsum.nonzero()[0])
 
         # Time-varying inputs
-        for name in self.options['external_vars']:
+        for name in self.parameters['external_vars']:
 
             if name not in d_inputs:
                 continue
@@ -380,7 +373,7 @@ class RK4Comp(ExplicitComponent):
                 result[name][:, k] += Jsub.dot(argsum[k, :])
 
         # Time-invariant inputs
-        for name in self.options['fixed_external_vars']:
+        for name in self.parameters['fixed_external_vars']:
 
             if name not in d_inputs:
                 continue
@@ -396,7 +389,7 @@ class RK4Comp(ExplicitComponent):
                 result[name] += Jsub.dot(argsum[k, :])
 
         # Initial State
-        name = self.options['init_state_var']
+        name = self.parameters['init_state_var']
         if name in d_inputs:
             fact = -self.Jy[0, :, :].T
             result[name] = argsv[0, :] + fact.dot(argsv[1, :])

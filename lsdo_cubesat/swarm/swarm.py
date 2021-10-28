@@ -1,7 +1,7 @@
-from lsdo_utils.api import OptionsDictionary
+from lsdo_cubesat.utils.options_dictionary import OptionsDictionary
 
 
-class Swarm(OptionsDictionary):
+class SwarmParams(OptionsDictionary):
     def initialize(self):
 
         self.declare('num_times', types=int)

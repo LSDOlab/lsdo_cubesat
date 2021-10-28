@@ -60,10 +60,10 @@ if __name__ == '__main__':
 
     comp.add_output('antAngle', val=1.0, units='rad')
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
-    group.add_subsystem('antenna_angle',
-                        AntRotationComp(num_times=num_times),
-                        promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
+    group.add('antenna_angle',
+              AntRotationComp(num_times=num_times),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

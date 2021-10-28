@@ -25,16 +25,18 @@ C4 = 1.875 * mu * J4 * Re**4
 
 class ReferenceOrbitRK4Comp(RK4Comp):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('step_size', types=float)
+        super().initialize()
+        # super(self, RK4Comp).initialize()
+        # self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('step_size', types=float)
 
-        self.options['state_var'] = 'reference_orbit_state_km'
-        self.options['init_state_var'] = 'initial_orbit_state_km'
-        # self.options['external_vars'] = ['force_3xn', 'mass']
+        self.parameters['state_var'] = 'reference_orbit_state_km'
+        self.parameters['init_state_var'] = 'initial_orbit_state_km'
+        self.parameters['external_vars'] = []
 
-    def setup(self):
-        n = self.options['num_times']
-        h = self.options['step_size']
+    def define(self):
+        n = self.parameters['num_times']
+        h = self.parameters['step_size']
 
         self.add_input(
             'initial_orbit_state_km',
@@ -52,8 +54,8 @@ class ReferenceOrbitRK4Comp(RK4Comp):
         # self.dfdy = np.zeros((6, 6))
 
     def f_dot(self, external, state):
-        n = self.options['num_times']
-        h = self.options['step_size']
+        n = self.parameters['num_times']
+        h = self.parameters['step_size']
         # Px = external[0]
         # Py = external[1]
         # Pz = external[2]
@@ -194,10 +196,10 @@ if __name__ == '__main__':
     comp.add_output('initial_orbit_state_km', val=r_e2b_I0)
     comp.add_output('mass', val=mass)
 
-    group.add_subsystem('inputs_comp', comp, promotes=['*'])
+    group.add('inputs_comp', comp, promotes=['*'])
 
     comp = ReferenceOrbitRK4Comp(num_times=n, step_size=h)
-    group.add_subsystem('comp', comp, promotes=['*'])
+    group.add('comp', comp, promotes=['*'])
 
     prob = Problem()
     prob.model = group

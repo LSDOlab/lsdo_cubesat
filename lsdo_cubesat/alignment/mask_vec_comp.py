@@ -1,23 +1,28 @@
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 
 
-class MaskVecComp(ExplicitComponent):
+class MaskVecComp(CustomExplicitOperation):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('swarm')
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('threshold')
+        self.parameters.declare('in_name')
+        self.parameters.declare('out_name')
 
-    def setup(self):
-        num_times = self.options['num_times']
+    def define(self):
+        num_times = self.parameters['num_times']
+        in_name = self.parameters['in_name']
+        out_name = self.parameters['out_name']
 
-        self.add_input('observation_dot', shape=num_times)
-        self.add_output('mask_vec', shape=num_times)
-        self.declare_partials('mask_vec', 'observation_dot', val=0.)
+        self.add_input(in_name, shape=num_times)
+        self.add_output(out_name, shape=num_times)
+        self.declare_derivatives(out_name, in_name, val=0.)
 
     def compute(self, inputs, outputs):
-        swarm = self.options['swarm']
+        threshold = self.parameters['threshold']
+        in_name = self.parameters['in_name']
+        out_name = self.parameters['out_name']
 
-        outputs['mask_vec'] = 0.
-        outputs['mask_vec'][
-            inputs['observation_dot'] > swarm['cross_threshold']] = 1.
+        outputs[out_name] = 0.
+        outputs[out_name][inputs[in_name] > threshold] = 1.

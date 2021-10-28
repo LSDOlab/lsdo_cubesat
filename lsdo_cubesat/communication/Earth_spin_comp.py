@@ -67,11 +67,11 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('times', val=np.arange(num_times))
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add_subsystem('EarthSpinComp',
-                        EarthSpinComp(num_times=num_times),
-                        promotes=['*'])
+    group.add('EarthSpinComp',
+              EarthSpinComp(num_times=num_times),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

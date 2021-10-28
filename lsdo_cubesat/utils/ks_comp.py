@@ -122,7 +122,7 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('x', val=np.random.rand(*shape, constraint_size))
     # comp.add_output('x', val=np.ones((*shape, constraint_size)))
-    prob.model.add_subsystem('ivc', comp, promotes=['*'])
+    prob.model.add('ivc', comp, promotes=['*'])
 
     comp = KSComp(
         in_name='x',
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         rho=100.,
         bound=0.,
     )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

@@ -1,4 +1,4 @@
-from lsdo_utils.api import OptionsDictionary
+from lsdo_cubesat.utils.options_dictionary import OptionsDictionary
 
 
 class GS_net(OptionsDictionary):

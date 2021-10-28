@@ -61,13 +61,13 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     orbit_state_name = 'orbit_state'
     comp.add_output(orbit_state_name, np.random.rand(6, num_times))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = OrbitStateDecompositionComp(num_times=num_times,
                                        orbit_state_name='orbit_state',
                                        position_name='position',
                                        velocity_name='velocity')
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup(check=True)
     prob.run_model()

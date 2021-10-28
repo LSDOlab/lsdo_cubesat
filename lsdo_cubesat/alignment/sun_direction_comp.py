@@ -1,21 +1,20 @@
 import numpy as np
 import scipy.sparse
+from csdl import CustomExplicitOperation
 
-from openmdao.api import ExplicitComponent
 
-
-class SunDirectionComp(ExplicitComponent):
+class SunDirectionComp(CustomExplicitOperation):
 
     # constants
     d2r = np.pi / 180.
 
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('launch_date', types=float)
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('launch_date', types=float)
 
-    def setup(self):
-        num_times = self.options['num_times']
-        launch_date = self.options['launch_date']
+    def define(self):
+        num_times = self.parameters['num_times']
+        launch_date = self.parameters['launch_date']
 
         self.add_input('times', shape=num_times)
 
@@ -26,8 +25,8 @@ class SunDirectionComp(ExplicitComponent):
         self.Jj = np.zeros(3 * num_times)
 
     def compute(self, inputs, outputs):
-        num_times = self.options['num_times']
-        launch_date = self.options['launch_date']
+        num_times = self.parameters['num_times']
+        launch_date = self.parameters['launch_date']
 
         sun_unit_vec = outputs['sun_unit_vec']
 
@@ -42,9 +41,9 @@ class SunDirectionComp(ExplicitComponent):
             sun_unit_vec[1, i] = np.sin(Lambda) * np.cos(eps)
             sun_unit_vec[2, i] = np.sin(Lambda) * np.sin(eps)
 
-    def compute_partials(self, inputs, partials):
-        num_times = self.options['num_times']
-        launch_date = self.options['launch_date']
+    def compute_derivatives(self, inputs, partials):
+        num_times = self.parameters['num_times']
+        launch_date = self.parameters['launch_date']
 
         T = launch_date + inputs['times'][:] / 3600. / 24.
         dr_dt = np.empty(3)
@@ -78,8 +77,8 @@ class SunDirectionComp(ExplicitComponent):
         self.JT = self.J.transpose()
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
-        num_times = self.options['num_times']
-        launch_date = self.options['launch_date']
+        num_times = self.parameters['num_times']
+        launch_date = self.parameters['launch_date']
 
         dsun_unit_vec = d_outputs['sun_unit_vec']
 
@@ -109,11 +108,11 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('times', val=np.random.random(num_times))
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add_subsystem('Statecomp_Implicit',
-                        SunDirectionComp(num_times=num_times, launch_date=0.),
-                        promotes=['*'])
+    group.add('Statecomp_Implicit',
+              SunDirectionComp(num_times=num_times, launch_date=0.),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

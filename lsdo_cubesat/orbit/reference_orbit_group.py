@@ -1,111 +1,88 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
-
-from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp
-
-from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
-from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
-from lsdo_cubesat.utils.ks_comp import KSComp
-from lsdo_cubesat.orbit.initial_orbit_comp import InitialOrbitComp
+from lsdo_cubesat.utils.decompose_vector_group import compute_norm_unit_vec
+from lsdo_cubesat.orbit.keplerian_to_cartesian import KeplerianToCartesian
 from lsdo_cubesat.orbit.reference_orbit_rk4_comp import ReferenceOrbitRK4Comp
-from lsdo_cubesat.orbit.orbit_state_decomposition_comp import OrbitStateDecompositionComp
-from lsdo_cubesat.orbit.rot_mtx_t_i_comp import RotMtxTIComp
+from csdl import Model
+import csdl
+from lsdo_cubesat.constants import RADII
+
+radius_earth = RADII['Earth']
 
 
-class ReferenceOrbitGroup(Group):
+class ReferenceOrbit(Model):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('num_cp', types=int)
-        self.options.declare('step_size', types=float)
-        self.options.declare('cubesat')
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
 
-    def setup(self):
-        num_times = self.options['num_times']
-        num_cp = self.options['num_cp']
-        step_size = self.options['step_size']
-        cubesat = self.options['cubesat']
+    def define(self):
+        num_times = self.parameters['num_times']
+        step_size = self.parameters['step_size']
 
-        shape = (3, num_times)
+        self.add(
+            KeplerianToCartesian(
+                periapsis=radius_earth + 500.,
+                apoapsis=radius_earth + 500.,
+                longitude=66.279 * np.pi / 180.,
+                inclination=82.072 * np.pi / 180.,
+                argument_of_periapsis=0.,
+                true_anomaly=337.987 * np.pi / 180.,
+                r_name='initial_radius_km',
+                v_name='initial_velocity_km_s',
+            ),
+            name='initial_orbit',
+        )
+        r = self.declare_variable('initial_radius_km', shape=(3, ))
+        v = self.declare_variable('initial_velocity_km_s', shape=(3, ))
 
-        drag_unit_vec = np.outer(
-            np.array([0., 0., 1.]),
-            np.ones(num_times),
+        initial_orbit_state_km = self.create_output('initial_orbit_state_km',
+                                                    shape=(6, ))
+        initial_orbit_state_km[:3] = r
+        initial_orbit_state_km[3:] = v
+
+        # TODO: (nice to have) propagate reference orbit without rk4
+
+        reference_orbit_state_km = csdl.custom(
+            initial_orbit_state_km,
+            op=ReferenceOrbitRK4Comp(
+                num_times=num_times,
+                step_size=step_size,
+            ),
+        )
+        self.register_output(
+            'reference_orbit_state_km',
+            reference_orbit_state_km,
         )
 
-        comp = IndepVarComp()
-        # comp.add_output('force_3xn', val=0., shape=shape)
-        # comp.add_output('dry_mass', val=cubesat['dry_mass'], shape=num_times)
-        comp.add_output('radius_earth_km',
-                        val=cubesat['radius_earth_km'],
-                        shape=num_times)
-        for var_name in [
-                'perigee_altitude',
-                'apogee_altitude',
-                'RAAN',
-                'inclination',
-                'argument_of_periapsis',
-                'true_anomaly',
-        ]:
-            comp.add_output(var_name, val=cubesat[var_name])
-        self.add_subsystem('input_comp', comp, promotes=['*'])
+        position_km = reference_orbit_state_km[:3, :]
+        velocity_km_s = reference_orbit_state_km[3:, :]
+        self.register_output('position_km', position_km)
+        self.register_output('velocity_km_s', velocity_km_s)
 
-        # comp = LinearCombinationComp(
-        #     shape=(num_times,),
-        #     out_name='mass',
-        #     coeffs_dict=dict(dry_mass=1., propellant_mass=1.),
-        # )
-        # self.add_subsystem('mass_comp', comp, promotes=['*'])
+        reference_orbit_state = 1.e3 * reference_orbit_state_km
+        self.register_output('reference_orbit_state', reference_orbit_state)
 
-        comp = InitialOrbitComp()
-        self.add_subsystem('initial_orbit_comp', comp, promotes=['*'])
-
-        comp = ReferenceOrbitRK4Comp(
+        radius_km, position_unit_vec = compute_norm_unit_vec(
+            position_km,
             num_times=num_times,
-            step_size=step_size,
         )
-        self.add_subsystem('orbit_rk4_comp', comp, promotes=['*'])
-
-        comp = OrbitStateDecompositionComp(
+        self.register_output('position_unit_vec', position_unit_vec)
+        _, velocity_unit_vec = compute_norm_unit_vec(
+            velocity_km_s,
             num_times=num_times,
-            position_name='position_km',
-            velocity_name='velocity_km_s',
-            orbit_state_name='reference_orbit_state_km',
         )
-        self.add_subsystem('orbit_state_decomposition_comp',
-                           comp,
-                           promotes=['*'])
 
-        comp = LinearCombinationComp(
-            shape=(6, num_times),
-            out_name='reference_orbit_state',
-            coeffs_dict=dict(reference_orbit_state_km=1.e3),
-        )
-        self.add_subsystem('position_comp', comp, promotes=['*'])
+        self.register_output('velocity_unit_vec', velocity_unit_vec)
+        radius = 1.e3 * radius_km
+        self.register_output('radius', radius)
 
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='position_km',
-            norm_name='radius_km',
-            unit_vec_name='position_unit_vec',
-        )
-        self.add_subsystem('position_decomposition_group',
-                           group,
-                           promotes=['*'])
 
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='velocity_km_s',
-            norm_name='speed_km_s',
-            unit_vec_name='velocity_unit_vec',
-        )
-        self.add_subsystem('velocity_decomposition_group',
-                           group,
-                           promotes=['*'])
+if __name__ == "__main__":
 
-        comp = LinearCombinationComp(
-            shape=(num_times, ),
-            out_name='radius',
-            coeffs_dict=dict(radius_km=1.e3),
-        )
-        self.add_subsystem('radius_comp', comp, promotes=['*'])
+    from csdl_om import Simulator
+
+    sim = Simulator(ReferenceOrbit(
+        num_times=1,
+        step_size=0.1,
+    ))
+    sim.visualize_implementation()

@@ -1,20 +1,19 @@
 import numpy as np
 import scipy.sparse
 
-from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 
 
-class FiniteDifferenceComp(ExplicitComponent):
-
+class FiniteDifferenceComp(CustomExplicitOperation):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('in_name', types=str)
-        self.options.declare('out_name', types=str)
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('in_name', types=str)
+        self.parameters.declare('out_name', types=str)
 
-    def setup(self):
-        num_times = self.options['num_times']
-        in_name = self.options['in_name']
-        out_name = self.options['out_name']
+    def define(self):
+        num_times = self.parameters['num_times']
+        in_name = self.parameters['in_name']
+        out_name = self.parameters['out_name']
 
         self.add_input(in_name, shape=num_times)
         self.add_output(out_name, shape=num_times)
@@ -39,14 +38,18 @@ class FiniteDifferenceComp(ExplicitComponent):
         rows = rows.flatten()
         cols = cols.flatten()
 
-        self.mtx = scipy.sparse.csr_matrix(
-            (data, (rows, cols)), shape=(num_times, num_times))
+        self.mtx = scipy.sparse.csr_matrix((data, (rows, cols)),
+                                           shape=(num_times, num_times))
 
-        self.declare_partials(out_name, in_name, val=data, rows=rows, cols=cols)
+        self.declare_derivatives(out_name,
+                                 in_name,
+                                 val=data,
+                                 rows=rows,
+                                 cols=cols)
 
     def compute(self, inputs, outputs):
-        in_name = self.options['in_name']
-        out_name = self.options['out_name']
+        in_name = self.parameters['in_name']
+        out_name = self.parameters['out_name']
 
         outputs[out_name] = self.mtx.dot(inputs[in_name])
 
@@ -56,21 +59,20 @@ if __name__ == '__main__':
 
     from openmdao.api import Problem, IndepVarComp
 
-
     num_times = 3
 
     prob = Problem()
 
     comp = IndepVarComp()
     comp.add_output('in', val=np.random.rand(num_times))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = FiniteDifferenceComp(
         num_times=num_times,
         in_name='in',
         out_name='out',
     )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

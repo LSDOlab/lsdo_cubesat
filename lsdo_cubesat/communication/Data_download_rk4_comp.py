@@ -1,19 +1,15 @@
 """
 RK4 component for Data Download
 """
-import os
-from six.moves import range
 
 import numpy as np
-import scipy.sparse
 
-from openmdao.api import ExplicitComponent
 from lsdo_cubesat.utils.rk4_comp import RK4Comp
 
 
 class DataDownloadComp(RK4Comp):
-    def setup(self):
-        opts = self.options
+    def define(self):
+        opts = self.parameters
         n = opts['num_times']
         h = opts['step_size']
 
@@ -30,9 +26,9 @@ class DataDownloadComp(RK4Comp):
                         np.zeros((1, n)),
                         desc='Download data state over time')
 
-        self.options['state_var'] = 'Data'
-        self.options['init_state_var'] = 'Initial_Data'
-        self.options['external_vars'] = ['KS_Download_rate']
+        self.parameters['state_var'] = 'Data'
+        self.parameters['init_state_var'] = 'Initial_Data'
+        self.parameters['external_vars'] = ['KS_Download_rate']
 
         self.dfdy = np.array([[0.]])
         self.dfdx = np.array([[1.]])
@@ -67,12 +63,11 @@ if __name__ == '__main__':
     comp.add_output('Download_rate', val=dd_dt)
     comp.add_output('Initial_Data', val=Data0)
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add_subsystem('Statecomp_Implicit',
-                        DataDownloadComp(num_times=num_times,
-                                         step_size=step_size),
-                        promotes=['*'])
+    group.add('Statecomp_Implicit',
+              DataDownloadComp(num_times=num_times, step_size=step_size),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

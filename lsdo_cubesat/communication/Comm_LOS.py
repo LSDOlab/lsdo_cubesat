@@ -6,7 +6,7 @@ from six.moves import range
 
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 from lsdo_cubesat.utils.utils import get_array_indices
 
 
@@ -17,14 +17,14 @@ def LOS(x):
     return x
 
 
-class CommLOSComp(ExplicitComponent):
+class CommLOSComp(CustomExplicitOperation):
     Re = 6378.137
 
     def initialize(self):
-        self.options.declare('num_times', types=int)
+        self.parameters.declare('num_times', types=int)
 
-    def setup(self):
-        num_times = self.options['num_times']
+    def define(self):
+        num_times = self.parameters['num_times']
 
         self.add_input('r_b2g_I',
                        np.zeros((3, num_times)),
@@ -49,17 +49,11 @@ class CommLOSComp(ExplicitComponent):
             np.ones(3, int),
             np.arange(num_times),
         ).flatten()
-        self.declare_partials('CommLOS', 'r_b2g_I', rows=rows, cols=cols)
-        self.declare_partials('CommLOS', 'r_e2g_I', rows=rows, cols=cols)
-
-    def LOS(self, x):
-        b = np.argsort(x)
-        x[b[:50]] = 1
-        x[b[50:]] = 0
-        return x
+        self.declare_derivatives('CommLOS', 'r_b2g_I', rows=rows, cols=cols)
+        self.declare_derivatives('CommLOS', 'r_e2g_I', rows=rows, cols=cols)
 
     def compute(self, inputs, outputs):
-        num_times = self.options['num_times']
+        num_times = self.parameters['num_times']
 
         r_b2g_I = inputs['r_b2g_I']
         r_e2g_I = inputs['r_e2g_I']
@@ -79,7 +73,7 @@ class CommLOSComp(ExplicitComponent):
 
     # def compute_partials(self, inputs, partials):
 
-    #     num_times = self.options['num_times']
+    #     num_times = self.parameters['num_times']
 
     #     r_b2g_I = inputs['r_b2g_I']
     #     r_e2g_I = inputs['r_e2g_I']
@@ -110,10 +104,10 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('r_b2g_I', val=1000 * np.random.random((3, n)))
     comp.add_output('r_e2g_I', val=1000 * np.random.random((3, n)))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = CommLOSComp(num_times=n, )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     print(np.sum(prob['r_b2g_I'] * prob['r_e2g_I'], axis=0) / Re)

@@ -1,20 +1,13 @@
 """
 Determine the Satellite Data Download Rate
 """
-import os
-from six.moves import range
 
 import numpy as np
-import scipy.sparse
-
-from openmdao.api import Group, IndepVarComp, ExecComp, ExplicitComponent
-
-from lsdo_utils.api import ArrayExpansionComp, BsplineComp, PowerCombinationComp, LinearCombinationComp
-
-from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
+from csdl import CustomExplicitOperation
+from six.moves import range
 
 
-class BitRateComp(ExplicitComponent):
+class BitRate(CustomExplicitOperation):
 
     # constants
     pi = 2 * np.arccos(0.)
@@ -28,10 +21,10 @@ class BitRateComp(ExplicitComponent):
     alpha = c**2 * Gr * Ll / 16.0 / pi**2 / f**2 / k / SNR / T / 1e6
 
     def initialize(self):
-        self.options.declare('num_times', types=int)
+        self.parameters.declare('num_times', types=int)
 
-    def setup(self):
-        num_times = self.options['num_times']
+    def define(self):
+        num_times = self.parameters['num_times']
         # Inputs
         self.add_input('P_comm',
                        shape=num_times,
@@ -62,19 +55,27 @@ class BitRateComp(ExplicitComponent):
                         desc='Download rate over time')
 
     def compute(self, inputs, outputs):
-        num_times = self.options['num_times']
+        num_times = self.parameters['num_times']
         P_comm = inputs['P_comm']
         gain = inputs['gain']
         GSdist = inputs['GSdist']
         CommLOS = inputs['CommLOS']
 
-        for i in range(0, num_times):
-            if np.abs(GSdist[i]) > 1e-10:
-                S2 = GSdist[i] * 1e3
-            else:
-                S2 = 1e-10
-            outputs['Download_rate'][i] = self.alpha * P_comm[i] * gain[i] * \
-                CommLOS[i] / S2 ** 2
+        a = np.where(np.abs(GSdist > 1e-10))
+        b = np.where(np.abs(GSdist <= 1e-10))
+        S2 = np.zeros(num_times)
+        S2[a] = GSdist[a] * 1e3
+        S2[b] = 1e-10
+        outputs['Download_rate'] = self.alpha * P_comm * gain * \
+            CommLOS / S2 ** 2
+
+        # for i in range(0, num_times):
+        #     if np.abs(GSdist[i]) > 1e-10:
+        #         S2 = GSdist[i] * 1e3
+        #     else:
+        #         S2 = 1e-10
+        #     outputs['Download_rate'][i] = self.alpha * P_comm[i] * gain[i] * \
+        #         CommLOS[i] / S2 ** 2
 
         # np.savetxt("rundata/GSdist.csv", GSdist, header="GSdist")
         # np.savetxt("rundata/P_comm.csv", P_comm, header="P_comm")
@@ -84,8 +85,8 @@ class BitRateComp(ExplicitComponent):
         # Bitrate = outputs['Download_rate']
         # np.savetxt("rundata/Bitrate.csv", Bitrate, header="Bitrate")
 
-    def compute_partials(self, inputs, partials):
-        num_times = self.options["num_times"]
+    def compute_derivatives(self, inputs, partials):
+        num_times = self.parameters["num_times"]
 
         P_comm = inputs['P_comm']
         gain = inputs['gain']

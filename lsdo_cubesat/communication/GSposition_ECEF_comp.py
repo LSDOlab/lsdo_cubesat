@@ -108,10 +108,10 @@ if __name__ == '__main__':
     comp.add_output('lat', val=42.2708, units='rad')
     comp.add_output('alt', val=0.256, units='km')
 
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = GS_ECEF_Comp(num_times=num_times)
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

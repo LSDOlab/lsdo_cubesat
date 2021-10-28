@@ -72,10 +72,10 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('r_e2g_E', val=10 * np.random.random((3, num_times)))
     comp.add_output('Rot_ECI_EF', val=10 * np.random.random((3, 3, num_times)))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = GS_ECI_Comp(num_times=num_times, )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

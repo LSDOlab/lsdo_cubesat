@@ -7,7 +7,6 @@ from lsdo_cubesat.utils.utils import get_array_indices
 
 
 class MtxVecComp(ExplicitComponent):
-
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('mtx_name', types=str)
@@ -41,14 +40,16 @@ class MtxVecComp(ExplicitComponent):
         vec_name = self.options['vec_name']
         out_name = self.options['out_name']
 
-        outputs[out_name] = np.einsum('ijn,jn->in', inputs[mtx_name], inputs[vec_name])
+        outputs[out_name] = np.einsum('ijn,jn->in', inputs[mtx_name],
+                                      inputs[vec_name])
 
     def compute_partials(self, inputs, partials):
         mtx_name = self.options['mtx_name']
         vec_name = self.options['vec_name']
         out_name = self.options['out_name']
 
-        partials[out_name, mtx_name] = np.einsum('jn,i->ijn', inputs[vec_name], np.ones(3)).flatten()
+        partials[out_name, mtx_name] = np.einsum('jn,i->ijn', inputs[vec_name],
+                                                 np.ones(3)).flatten()
         partials[out_name, vec_name] = inputs[mtx_name].flatten()
 
 
@@ -60,9 +61,9 @@ if __name__ == '__main__':
     prob = Problem()
     comp = IndepVarComp()
     comp.add_output('mtx', np.random.rand(3, 3, num_times))
-    
+
     comp.add_output('vec', np.random.rand(3, num_times))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = MtxVecComp(
         num_times=num_times,
@@ -70,8 +71,8 @@ if __name__ == '__main__':
         vec_name='vec',
         out_name='out',
     )
-    prob.model.add_subsystem('array_expansion', comp, promotes=['*'])
-    
+    prob.model.add('array_expansion', comp, promotes=['*'])
+
     prob.setup()
     prob.run_model()
     prob.check_partials(compact_print=True)

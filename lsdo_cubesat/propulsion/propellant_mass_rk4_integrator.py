@@ -11,9 +11,13 @@ from openmdao.api import ExplicitComponent
 from lsdo_cubesat.utils.rk4_comp import RK4Comp
 
 
-class PropellantMassRK4Comp(RK4Comp):
-    def setup(self):
-        opts = self.options
+class PropellantMassRK4Integrator(RK4Comp):
+    def initialize(self):
+        super().initialize()
+        # super(self, RK4Comp).initialize()
+
+    def define(self):
+        opts = self.parameters
         n = opts['num_times']
         h = opts['step_size']
 
@@ -32,14 +36,15 @@ class PropellantMassRK4Comp(RK4Comp):
                         np.zeros((1, n)),
                         desc='Propellant mass state over time')
 
-        self.options['state_var'] = 'propellant_mass'
-        self.options['init_state_var'] = 'initial_propellant_mass'
-        self.options['external_vars'] = ['mass_flow_rate']
+        self.parameters['state_var'] = 'propellant_mass'
+        self.parameters['init_state_var'] = 'initial_propellant_mass'
+        self.parameters['external_vars'] = ['mass_flow_rate']
 
         self.dfdy = np.array([[0.]])
         self.dfdx = np.array([[1.]])
 
     def f_dot(self, external, state):
+        print('propellant f_dot')
         return external[0]
 
     def df_dy(self, external, state):
@@ -66,11 +71,11 @@ if __name__ == '__main__':
     comp.add_output('mass_flow_rate', val=dm_dt)
     comp.add_output('initial_propellant_mass', val=Mass0)
 
-    group.add_subsystem('Inputcomp', comp, promotes=['*'])
+    group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add_subsystem('Statecomp_Implicit',
-                        PropellantMassComp(num_times=n, step_size=h),
-                        promotes=['*'])
+    group.add('Statecomp_Implicit',
+              PropellantMassComp(num_times=n, step_size=h),
+              promotes=['*'])
 
     prob = Problem()
     prob.model = group

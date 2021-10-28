@@ -1,44 +1,34 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
-
-from lsdo_utils.api import CrossProductComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
-
-from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
-from lsdo_cubesat.utils.projection_group import ProjectionGroup
-from lsdo_cubesat.utils.ks_comp import KSComp
-from lsdo_cubesat.orbit.constant_orbit_group import ConstantOrbitGroup
+from lsdo_cubesat.utils.decompose_vector_group import compute_norm_unit_vec
 from lsdo_cubesat.alignment.sun_direction_comp import SunDirectionComp
 from lsdo_cubesat.alignment.mask_vec_comp import MaskVecComp
-from lsdo_cubesat.utils.dot_product_comp import DotProductComp
+
+from csdl import Model
+import csdl
 
 
-class AlignmentGroup(Group):
+class Alignment(Model):
     def initialize(self):
-        self.options.declare('swarm')
-        self.options.declare('mtx')
+        self.parameters.declare('swarm')
 
-    def setup(self):
-        swarm = self.options['swarm']
-        mtx = self.options['mtx']
-
+    def define(self):
+        swarm = self.parameters['swarm']
         num_times = swarm['num_times']
-        num_cp = swarm['num_cp']
         step_size = swarm['step_size']
 
-        shape = (3, num_times)
-
-        times = np.linspace(0., step_size * (num_times - 1), num_times)
-
-        comp = IndepVarComp()
-        comp.add_output('times', val=times)
-        self.add_subsystem('inputs_comp', comp, promotes=['*'])
-
-        comp = SunDirectionComp(
-            num_times=num_times,
-            launch_date=swarm['launch_date'],
+        times = self.create_input(
+            'times',
+            val=np.linspace(0., step_size * (num_times - 1), num_times),
         )
-        self.add_subsystem('sun_direction_comp', comp, promotes=['*'])
+
+        sun_unit_vec = csdl.custom(
+            times,
+            op=SunDirectionComp(
+                num_times=num_times,
+                launch_date=swarm['launch_date'],
+            ),
+        )
 
         # group = ConstantOrbitGroup(
         #     num_times=num_times,
@@ -46,108 +36,86 @@ class AlignmentGroup(Group):
         #     step_size=step_size,
         #     cubesat=swarm.children[0],
         # )
-        # self.add_subsystem('constant_orbit_group', group, promotes=['*'])
-        comp = CrossProductComp(
-            shape_no_3=(num_times, ),
-            out_index=0,
-            in1_index=0,
-            in2_index=0,
-            out_name='normal_cross_vec',
-            in1_name='velocity_unit_vec',
-            in2_name='position_unit_vec',
+        # self.add('constant_orbit_group', group, promotes=['*'])
+        position_unit_vec = self.declare_variable('position_unit_vec',
+                                                  shape=(3, num_times))
+        velocity_unit_vec = self.declare_variable('velocity_unit_vec',
+                                                  shape=(3, num_times))
+        normal_cross_vec = csdl.cross(
+            velocity_unit_vec,
+            position_unit_vec,
+            axis=0,
         )
-        self.add_subsystem('normal_cross_vec_comp', comp, promotes=['*'])
-
-        comp = CrossProductComp(
-            shape_no_3=(num_times, ),
-            out_index=0,
-            in1_index=0,
-            in2_index=0,
-            out_name='observation_cross_vec',
-            in1_name='position_unit_vec',
-            in2_name='sun_unit_vec',
+        observation_cross_vec = csdl.cross(
+            position_unit_vec,
+            sun_unit_vec,
+            axis=0,
         )
-        self.add_subsystem('observation_cross_vec_comp', comp, promotes=['*'])
+        self.register_output('observation_cross_vec', observation_cross_vec)
 
-        group = DecomposeVectorGroup(
+        normal_cross_norm, normal_cross_unit_vec = compute_norm_unit_vec(
+            normal_cross_vec,
             num_times=num_times,
-            vec_name='normal_cross_vec',
-            norm_name='normal_cross_norm',
-            unit_vec_name='normal_cross_unit_vec',
         )
-        self.add_subsystem('normal_cross_decomposition_group',
-                           group,
-                           promotes=['*'])
 
-        group = DecomposeVectorGroup(
+        observation_cross_norm, observation_cross_unit_vec = compute_norm_unit_vec(
+            observation_cross_vec,
             num_times=num_times,
-            vec_name='observation_cross_vec',
-            norm_name='observation_cross_norm',
-            unit_vec_name='observation_cross_unit_vec',
         )
-        self.add_subsystem('observation_cross_decomposition_group',
-                           group,
-                           promotes=['*'])
 
-        comp = DotProductComp(vec_size=3,
-                              length=num_times,
-                              a_name='observation_cross_unit_vec',
-                              b_name='normal_cross_unit_vec',
-                              c_name='observation_dot',
-                              a_units=None,
-                              b_units=None,
-                              c_units=None)
-        self.add_subsystem('observation_dot_comp', comp, promotes=['*'])
-
-        comp = MaskVecComp(
-            num_times=num_times,
-            swarm=swarm,
+        observation_dot = csdl.dot(
+            observation_cross_unit_vec,
+            normal_cross_unit_vec,
+            axis=0,
         )
-        self.add_subsystem('mask_vec_comp', comp, promotes=['*'])
+        self.register_output('observation_dot', observation_dot)
+
+        mask_vec = csdl.custom(
+            observation_dot,
+            op=MaskVecComp(
+                num_times=num_times,
+                threshold=swarm['cross_threshold'],
+                in_name='observation_dot',
+                out_name='mask_vec',
+            ),
+        )
 
         # Separation
 
         separation_constraint_names = [
-            ('sunshade', 'optics'),
+            # ('sunshade', 'optics'),
             ('optics', 'detector'),
         ]
 
         for name1, name2 in [
-            ('sunshade', 'optics'),
-            ('sunshade', 'detector'),
+                # ('sunshade', 'optics'),
+                # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]:
             position_name = 'position_{}_{}_km'.format(name1, name2)
             distance_name = 'distance_{}_{}_km'.format(name1, name2)
             unit_vec_name = 'unit_vec_{}_{}_km'.format(name1, name2)
 
-            comp = LinearCombinationComp(
-                shape=(3, num_times),
-                out_name=position_name,
-                coeffs_dict={
-                    '{}_cubesat_group_position_km'.format(name1): 1.,
-                    '{}_cubesat_group_position_km'.format(name2): -1.,
-                },
-            )
-            self.add_subsystem('{}_comp'.format(position_name),
-                               comp,
-                               promotes=['*'])
+            a = self.declare_variable(
+                '{}_cubesat_group_position_km'.format(name1),
+                shape=(3, num_times))
+            b = self.declare_variable(
+                '{}_cubesat_group_position_km'.format(name2),
+                shape=(3, num_times))
+            c = a - b
+            self.register_output(position_name, c)
 
-            group = DecomposeVectorGroup(
+            d, pu = compute_norm_unit_vec(
+                c,
                 num_times=num_times,
-                vec_name=position_name,
-                norm_name=distance_name,
-                unit_vec_name=unit_vec_name,
             )
-            self.add_subsystem('{}_{}_decomposition_group'.format(
-                name1, name2),
-                               group,
-                               promotes=['*'])
+            self.register_output(distance_name, d)
+            self.register_output(unit_vec_name, pu)
 
         # Transverse displacement
 
         transverse_constraint_names = [
-            ('sunshade', 'detector'),
+            # ('sunshade', 'detector'),
             ('optics', 'detector'),
         ]
 
@@ -162,38 +130,22 @@ class AlignmentGroup(Group):
             normal_unit_vec_name = 'normal_unit_vec_{}_{}_km'.format(
                 name1, name2)
 
-            group = ProjectionGroup(
-                num_times=num_times,
-                in1_name='sun_unit_vec',
-                in2_name=position_name,
-                out_name=projected_position_name,
-            )
-            self.add_subsystem('{}_group'.format(projected_position_name),
-                               group,
-                               promotes=['*'])
+            pos = self.declare_variable(position_name, shape=(3, num_times))
 
-            comp = LinearCombinationComp(
-                shape=(3, num_times),
-                out_name=normal_position_name,
-                coeffs_dict={
-                    position_name: 1.,
-                    projected_position_name: -1.,
-                },
-            )
-            self.add_subsystem('{}_comp'.format(normal_position_name),
-                               comp,
-                               promotes=['*'])
+            c = sun_unit_vec * pos**2
+            d = csdl.sum(c, axes=(0, ))
+            e = csdl.expand(d, (3, num_times), 'i->ji')
 
-            group = DecomposeVectorGroup(
+            # self.register_output(projected_position_name, e)
+            f = pos - e
+            self.register_output(normal_position_name, f)
+
+            g, h = compute_norm_unit_vec(
+                f,
                 num_times=num_times,
-                vec_name=normal_position_name,
-                norm_name=normal_distance_name,
-                unit_vec_name=normal_unit_vec_name,
             )
-            self.add_subsystem(
-                '{}_decomposition_group'.format(normal_position_name),
-                group,
-                promotes=['*'])
+            self.register_output(normal_distance_name, g)
+            self.register_output(normal_unit_vec_name, h)
 
         for constraint_name in [
                 'normal_distance_{}_{}'.format(name1, name2)
@@ -202,55 +154,17 @@ class AlignmentGroup(Group):
                 'distance_{}_{}'.format(name1, name2)
                 for name1, name2 in separation_constraint_names
         ]:
-            comp = PowerCombinationComp(
+            p = self.declare_variable(
+                '{}_km'.format(constraint_name),
                 shape=(num_times, ),
-                out_name='{}_mm'.format(constraint_name),
-                coeff=1.e6,
-                powers_dict={
-                    '{}_km'.format(constraint_name): 1.,
-                })
-            self.add_subsystem('{}_mm_comp'.format(constraint_name),
-                               comp,
-                               promotes=['*'])
-
-            comp = PowerCombinationComp(
-                shape=(num_times, ),
-                out_name='masked_{}_mm'.format(constraint_name),
-                powers_dict={
-                    'mask_vec': 1.,
-                    '{}_mm'.format(constraint_name): 1.,
-                })
-            self.add_subsystem('masked_{}_mm_comp'.format(constraint_name),
-                               comp,
-                               promotes=['*'])
-
-            comp = KSComp(
-                in_name='masked_{}_mm'.format(constraint_name),
-                out_name='ks_masked_{}_mm'.format(constraint_name),
-                shape=(1, ),
-                constraint_size=num_times,
-                rho=100.,
             )
-            self.add_subsystem('ks_masked_{}_mm_comp'.format(constraint_name),
-                               comp,
-                               promotes=['*'])
+            q = self.register_output('{}_mm'.format(constraint_name), 1.e6 * p)
+            r = self.register_output('masked_{}_mm'.format(constraint_name),
+                                     mask_vec * q)
+            s = csdl.min(r, rho=100.)
+            self.register_output('ks_masked_{}_mm'.format(constraint_name), s)
 
-            comp = PowerCombinationComp(
-                shape=(num_times, ),
-                out_name='masked_{}_mm_sq'.format(constraint_name),
-                powers_dict={
-                    'masked_{}_mm'.format(constraint_name): 2.,
-                })
-            self.add_subsystem('masked_{}_mm_sq_comp'.format(constraint_name),
-                               comp,
-                               promotes=['*'])
-
-            comp = ScalarContractionComp(
-                shape=(num_times, ),
-                out_name='masked_{}_mm_sq_sum'.format(constraint_name),
-                in_name='masked_{}_mm_sq'.format(constraint_name),
-            )
-            self.add_subsystem(
-                'masked_{}_mm_sq_sum_comp'.format(constraint_name),
-                comp,
-                promotes=['*'])
+            t = self.register_output('masked_{}_mm_sq'.format(constraint_name),
+                                     r**2)
+            u = self.register_output(
+                'masked_{}_mm_sq_sum'.format(constraint_name), csdl.sum(t))

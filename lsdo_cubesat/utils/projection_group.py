@@ -4,7 +4,6 @@ from lsdo_utils.api import ArrayExpansionComp, ArrayContractionComp, PowerCombin
 
 
 class ProjectionGroup(Group):
-
     def initialize(self):
         self.options.declare('num_times', types=int)
         self.options.declare('in1_name', types=str)
@@ -19,6 +18,8 @@ class ProjectionGroup(Group):
 
         shape = (3, num_times)
 
+        c = a * b**2
+
         comp = PowerCombinationComp(
             shape=shape,
             out_name='tmp_{}_multiplied'.format(out_name),
@@ -27,7 +28,9 @@ class ProjectionGroup(Group):
                 in2_name: 2.,
             },
         )
-        self.add_subsystem('tmp_{}_multiplied_comp'.format(out_name), comp, promotes=['*'])
+        self.add('tmp_{}_multiplied_comp'.format(out_name),
+                 comp,
+                 promotes=['*'])
 
         comp = ArrayContractionComp(
             shape=shape,
@@ -35,7 +38,7 @@ class ProjectionGroup(Group):
             out_name='tmp_{}_summed'.format(out_name),
             in_name='tmp_{}_multiplied'.format(out_name),
         )
-        self.add_subsystem('{}_summed_comp'.format(out_name), comp, promotes=['*'])
+        self.add('{}_summed_comp'.format(out_name), comp, promotes=['*'])
 
         comp = ArrayExpansionComp(
             shape=shape,
@@ -43,4 +46,4 @@ class ProjectionGroup(Group):
             in_name='tmp_{}_summed'.format(out_name),
             out_name=out_name,
         )
-        self.add_subsystem('{}_comp'.format(out_name), comp, promotes=['*'])
+        self.add('{}_comp'.format(out_name), comp, promotes=['*'])

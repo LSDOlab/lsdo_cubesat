@@ -2,19 +2,17 @@
     Coordinate transformation from the body frame to the inertial frame.
 """
 
-
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+from csdl import CustomExplicitOperation
 
 
-class RotMtxBIComp(ExplicitComponent):
-
+class RotMtxBIComp(CustomExplicitOperation):
     def initialize(self):
-        self.options.declare('num_times', types=int)
+        self.parameters.declare('num_times', types=int)
 
-    def setup(self):
-        num_times = self.options['num_times']
+    def define(self):
+        num_times = self.parameters['num_times']
 
         self.add_input('roll', shape=num_times)
         self.add_input('pitch', shape=num_times)
@@ -25,8 +23,14 @@ class RotMtxBIComp(ExplicitComponent):
             np.ones(9, int),
             np.arange(num_times),
         ).flatten()
-        self.declare_partials('rot_mtx_b_i_3x3xn', 'roll', rows=rows, cols=cols)
-        self.declare_partials('rot_mtx_b_i_3x3xn', 'pitch', rows=rows, cols=cols)
+        self.declare_derivatives('rot_mtx_b_i_3x3xn',
+                                 'roll',
+                                 rows=rows,
+                                 cols=cols)
+        self.declare_derivatives('rot_mtx_b_i_3x3xn',
+                                 'pitch',
+                                 rows=rows,
+                                 cols=cols)
 
     def compute(self, inputs, outputs):
         roll = inputs['roll']
@@ -36,7 +40,7 @@ class RotMtxBIComp(ExplicitComponent):
         sin_roll = np.sin(roll)
         cos_pitch = np.cos(pitch)
         sin_pitch = np.sin(pitch)
-        
+
         outputs['rot_mtx_b_i_3x3xn'][0, 0, :] = cos_roll
         outputs['rot_mtx_b_i_3x3xn'][0, 1, :] = sin_roll * cos_pitch
         outputs['rot_mtx_b_i_3x3xn'][0, 2, :] = sin_roll * sin_pitch
@@ -47,8 +51,8 @@ class RotMtxBIComp(ExplicitComponent):
         outputs['rot_mtx_b_i_3x3xn'][2, 2, :] = cos_pitch
         print(outputs['rot_mtx_b_i_3x3xn'].shape)
 
-    def compute_partials(self, inputs, partials):
-        num_times = self.options['num_times']
+    def compute_derivatives(self, inputs, partials):
+        num_times = self.parameters['num_times']
 
         roll = inputs['roll']
         pitch = inputs['pitch']
@@ -58,8 +62,10 @@ class RotMtxBIComp(ExplicitComponent):
         cos_pitch = np.cos(pitch)
         sin_pitch = np.sin(pitch)
 
-        dmtx_droll = partials['rot_mtx_b_i_3x3xn', 'roll'].reshape((3, 3, num_times))
-        dmtx_dpitch = partials['rot_mtx_b_i_3x3xn', 'pitch'].reshape((3, 3, num_times))
+        dmtx_droll = partials['rot_mtx_b_i_3x3xn', 'roll'].reshape(
+            (3, 3, num_times))
+        dmtx_dpitch = partials['rot_mtx_b_i_3x3xn', 'pitch'].reshape(
+            (3, 3, num_times))
 
         dmtx_droll[0, 0, :] = -sin_roll
         dmtx_droll[0, 1, :] = cos_roll * cos_pitch
@@ -79,7 +85,6 @@ class RotMtxBIComp(ExplicitComponent):
 if __name__ == '__main__':
     from openmdao.api import Problem, IndepVarComp
 
-
     num_times = 3
 
     prob = Problem()
@@ -87,12 +92,10 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('roll', val=np.random.random(num_times))
     comp.add_output('pitch', val=np.random.random(num_times))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
-    comp = RotMtxBIComp(
-        num_times=num_times,
-    )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    comp = RotMtxBIComp(num_times=num_times, )
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

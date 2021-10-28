@@ -73,10 +73,10 @@ if __name__ == '__main__':
     comp = IndepVarComp()
     comp.add_output('r_b2g_B', val=10 * np.random.random((3, num_times)))
     comp.add_output('Rot_AB', val=10 * np.random.random((3, 3, num_times)))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = AntennaBodyComp(num_times=num_times, )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

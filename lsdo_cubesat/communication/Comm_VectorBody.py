@@ -81,10 +81,10 @@ if __name__ == '__main__':
     comp.add_output('r_b2g_I', val=10 * np.random.random((3, num_times)))
     comp.add_output('rot_mtx_i_b_3x3xn',
                     val=10 * np.random.random((3, 3, num_times)))
-    prob.model.add_subsystem('inputs_comp', comp, promotes=['*'])
+    prob.model.add('inputs_comp', comp, promotes=['*'])
 
     comp = VectorBodyComp(num_times=num_times, )
-    prob.model.add_subsystem('comp', comp, promotes=['*'])
+    prob.model.add('comp', comp, promotes=['*'])
 
     prob.setup()
     prob.run_model()

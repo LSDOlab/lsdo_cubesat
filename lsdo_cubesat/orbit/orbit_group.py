@@ -1,232 +1,187 @@
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, NonlinearBlockGS, LinearBlockGS
+from csdl import Model, NonlinearBlockGS, LinearBlockGS
+import csdl
 
-from lsdo_utils.api import ArrayReorderComp, LinearCombinationComp, PowerCombinationComp, ScalarContractionComp
-
-from lsdo_cubesat.utils.decompose_vector_group import DecomposeVectorGroup
-from lsdo_cubesat.utils.mtx_vec_comp import MtxVecComp
-from lsdo_cubesat.utils.ks_comp import KSComp
-from lsdo_cubesat.orbit.initial_orbit_comp import InitialOrbitComp
 from lsdo_cubesat.orbit.relative_orbit_rk4_comp import RelativeOrbitRK4Comp
-from lsdo_cubesat.orbit.orbit_state_decomposition_comp import OrbitStateDecompositionComp
 from lsdo_cubesat.orbit.rot_mtx_t_i_comp import RotMtxTIComp
+from lsdo_cubesat.utils.decompose_vector_group import compute_norm_unit_vec
+from lsdo_cubesat.constants import RADII
+
+radius_earth = RADII['Earth']
 
 
-class OrbitGroup(Group):
+class Drag(Model):
     def initialize(self):
-        self.options.declare('num_times', types=int)
-        self.options.declare('num_cp', types=int)
-        self.options.declare('step_size', types=float)
-        self.options.declare('cubesat')
-        self.options.declare('mtx')
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
+        self.parameters.declare('cubesat')
 
-    def setup(self):
-        num_times = self.options['num_times']
-        num_cp = self.options['num_cp']
-        step_size = self.options['step_size']
-        cubesat = self.options['cubesat']
-        mtx = self.options['mtx']
+    def define(self):
+        num_times = self.parameters['num_times']
+        step_size = self.parameters['step_size']
+        cubesat = self.parameters['cubesat']
 
-        shape = (3, num_times)
-
-        drag_unit_vec = np.outer(
-            np.array([0., 0., 1.]),
-            np.ones(num_times),
+        drag_unit_vec_t_3xn = self.declare_variable(
+            'drag_unit_vec_t_3xn',
+            val=np.outer(
+                np.array([0., 0., 1.]),
+                np.ones(num_times),
+            ),
         )
-
-        comp = IndepVarComp()
-        comp.add_output('drag_unit_vec_t_3xn', val=drag_unit_vec)
-        comp.add_output('dry_mass', val=cubesat['dry_mass'], shape=num_times)
-        comp.add_output('radius_earth_km',
-                        val=cubesat['radius_earth_km'],
-                        shape=num_times)
-        for var_name in ['initial_orbit_state']:
-            comp.add_output(var_name, val=cubesat[var_name])
-        self.add_subsystem('input_comp', comp, promotes=['*'])
-
-        # comp = InitialOrbitComp()
-        # self.add_subsystem('initial_orbit_comp', comp, promotes=['*'])
-
-        comp = LinearCombinationComp(
-            shape=(num_times, ),
-            out_name='mass',
-            coeffs_dict=dict(dry_mass=1., propellant_mass=1.),
+        drag_3xn = self.declare_variable('drag_3xn', shape=(3, num_times))
+        thrust_3xn = self.declare_variable('thrust_3xn', shape=(3, num_times))
+        radius = self.declare_variable('radius', shape=(1, num_times))
+        mass = self.declare_variable('mass', shape=(1, num_times))
+        force_3xn = thrust_3xn + drag_3xn
+        initial_orbit_state = self.declare_variable(
+            'initial_orbit_state',
+            val=cubesat['initial_orbit_state'],
         )
-        self.add_subsystem('mass_comp', comp, promotes=['*'])
+        reference_orbit_state = self.declare_variable('reference_orbit_state',
+                                                      shape=(6, num_times))
 
-        if 1:
-
-            coupled_group = Group()
-
-            comp = LinearCombinationComp(
-                shape=shape,
-                out_name='force_3xn',
-                coeffs_dict=dict(thrust_3xn=1., drag_3xn=1.),
-            )
-            coupled_group.add_subsystem('force_3xn_comp', comp, promotes=['*'])
-
-            comp = RelativeOrbitRK4Comp(
+        drag_scalar_3xn = self.declare_variable('drag_scalar_3xn',
+                                                shape=(3, num_times))
+        self.register_output('force_3xn', force_3xn)
+        relative_orbit_state = csdl.custom(
+            force_3xn,
+            mass,
+            radius,
+            initial_orbit_state,
+            op=RelativeOrbitRK4Comp(
                 num_times=num_times,
                 step_size=step_size,
-            )
-            coupled_group.add_subsystem('relative_orbit_rk4_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = LinearCombinationComp(
-                shape=(6, num_times),
-                out_name='orbit_state',
-                coeffs_dict=dict(
-                    relative_orbit_state=1.,
-                    reference_orbit_state=1.,
-                ),
-            )
-            coupled_group.add_subsystem('orbit_state_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = LinearCombinationComp(
-                shape=(6, num_times),
-                out_name='orbit_state_km',
-                coeffs_dict=dict(orbit_state=1.e-3),
-            )
-            coupled_group.add_subsystem('orbit_state_km_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = RotMtxTIComp(num_times=num_times)
-            coupled_group.add_subsystem('rot_mtx_t_i_3x3xn_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = ArrayReorderComp(
-                in_shape=(3, 3, num_times),
-                out_shape=(3, 3, num_times),
-                in_subscripts='ijn',
-                out_subscripts='jin',
-                in_name='rot_mtx_t_i_3x3xn',
-                out_name='rot_mtx_i_t_3x3xn',
-            )
-            coupled_group.add_subsystem('rot_mtx_i_t_3x3xn_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = MtxVecComp(
-                num_times=num_times,
-                mtx_name='rot_mtx_i_t_3x3xn',
-                vec_name='drag_unit_vec_t_3xn',
-                out_name='drag_unit_vec_3xn',
-            )
-            coupled_group.add_subsystem('drag_unit_vec_3xn_comp',
-                                        comp,
-                                        promotes=['*'])
-
-            comp = PowerCombinationComp(shape=shape,
-                                        out_name='drag_3xn',
-                                        powers_dict=dict(
-                                            drag_unit_vec_3xn=1.,
-                                            drag_scalar_3xn=1.,
-                                        ))
-            coupled_group.add_subsystem('drag_3xn_comp', comp, promotes=['*'])
-
-            coupled_group.nonlinear_solver = NonlinearBlockGS(iprint=0,
-                                                              maxiter=40,
-                                                              atol=1e-14,
-                                                              rtol=1e-12)
-            coupled_group.linear_solver = LinearBlockGS(iprint=0,
-                                                        maxiter=40,
-                                                        atol=1e-14,
-                                                        rtol=1e-12)
-
-            self.add_subsystem('coupled_group', coupled_group, promotes=['*'])
-
-        comp = OrbitStateDecompositionComp(
-            num_times=num_times,
-            position_name='position_km',
-            velocity_name='velocity_km_s',
-            orbit_state_name='orbit_state_km',
-        )
-        self.add_subsystem('orbit_state_decomposition_comp',
-                           comp,
-                           promotes=['*'])
-
-        comp = LinearCombinationComp(
-            shape=shape,
-            out_name='position',
-            coeffs_dict=dict(position_km=1.e3),
-        )
-        self.add_subsystem('position_comp', comp, promotes=['*'])
-
-        comp = LinearCombinationComp(
-            shape=shape,
-            out_name='velocity',
-            coeffs_dict=dict(velocity_km_s=1.e3),
-        )
-        self.add_subsystem('velocity_comp', comp, promotes=['*'])
-
-        #
-
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='position_km',
-            norm_name='radius_km',
-            unit_vec_name='position_unit_vec',
-        )
-        self.add_subsystem('position_decomposition_group',
-                           group,
-                           promotes=['*'])
-
-        group = DecomposeVectorGroup(
-            num_times=num_times,
-            vec_name='velocity_km_s',
-            norm_name='speed_km_s',
-            unit_vec_name='velocity_unit_vec',
-        )
-        self.add_subsystem('velocity_decomposition_group',
-                           group,
-                           promotes=['*'])
-
-        #
-
-        comp = LinearCombinationComp(
-            shape=(num_times, ),
-            out_name='altitude_km',
-            coeffs_dict=dict(radius_km=1., radius_earth_km=-1.),
-        )
-        self.add_subsystem('altitude_km_comp', comp, promotes=['*'])
-
-        comp = KSComp(
-            in_name='altitude_km',
-            out_name='ks_altitude_km',
-            shape=(1, ),
-            constraint_size=num_times,
-            rho=100.,
-            lower_flag=True,
-        )
-        comp.add_constraint('ks_altitude_km', lower=450.)
-        self.add_subsystem('ks_altitude_km_comp', comp, promotes=['*'])
-
-        comp = PowerCombinationComp(shape=(
-            6,
-            num_times,
-        ),
-                                    out_name='relative_orbit_state_sq',
-                                    powers_dict={
-                                        'relative_orbit_state': 2.,
-                                    })
-        self.add_subsystem('relative_orbit_state_sq_comp',
-                           comp,
-                           promotes=['*'])
-
-        comp = ScalarContractionComp(
-            shape=(
-                6,
-                num_times,
             ),
-            out_name='relative_orbit_state_sq_sum',
-            in_name='relative_orbit_state_sq',
         )
-        self.add_subsystem('relative_orbit_state_sq_sum_comp',
-                           comp,
-                           promotes=['*'])
+        relative_orbit_state = self.register_output('relative_orbit_state',
+                                                    relative_orbit_state)
+        orbit_state = relative_orbit_state + reference_orbit_state
+        orbit_state_km = orbit_state * 1.e-3
+        self.register_output('orbit_state_km', orbit_state_km)
+
+        # TODO: Why was Aobo taking the norm of the entire state and not
+        # only the position relative to the reference orbit?
+        relative_orbit_state_sq = relative_orbit_state[:3, :]**2
+
+        relative_orbit_state_sq_sum = csdl.sum(relative_orbit_state_sq)
+        self.register_output('relative_orbit_state_sq_sum',
+                             relative_orbit_state_sq_sum)
+
+        # TODO: restore
+        # comp = RotMtxTIComp(num_times=num_times)
+        # coupled_group.add('rot_mtx_t_i_3x3xn_comp', comp, promotes=['*'])
+        rot_mtx_t_i_3x3xn = self.declare_variable('rot_mtx_t_i_3x3xn',
+                                                  shape=(3, 3, num_times))
+
+        rot_mtx_i_t_3x3xn = csdl.reorder_axes(
+            rot_mtx_t_i_3x3xn,
+            'ijn->jin',
+        )
+
+        drag_unit_vec_3xn = csdl.einsum(
+            rot_mtx_i_t_3x3xn,
+            drag_unit_vec_t_3xn,
+            subscripts='ijk,jk->ik',
+        )
+
+        r = drag_3xn - drag_unit_vec_3xn * drag_scalar_3xn
+        self.register_output('r', r)
+
+        # coupled_group.nonlinear_solver = NonlinearBlockGS(iprint=0,
+        #                                                   maxiter=40,
+        #                                                   atol=1e-14,
+        #                                                   rtol=1e-12)
+        # coupled_group.linear_solver = LinearBlockGS(iprint=0,
+        #                                             maxiter=40,
+        #                                             atol=1e-14,
+        #                                             rtol=1e-12)
+
+        # self.add('coupled_group', coupled_group, promotes=['*'])
+
+
+class OrbitGroup(Model):
+    def initialize(self):
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
+        self.parameters.declare('cubesat')
+
+    def define(self):
+        num_times = self.parameters['num_times']
+        step_size = self.parameters['step_size']
+        cubesat = self.parameters['cubesat']
+
+        dry_mass = self.create_input('dry_mass',
+                                     val=cubesat['dry_mass'],
+                                     shape=num_times)
+        initial_orbit_state = self.create_input(
+            'initial_orbit_state',
+            val=cubesat['initial_orbit_state'],
+        )
+
+        propellant_mass = self.declare_variable(
+            'propellant_mass',
+            shape=num_times,
+        )
+
+        mass = csdl.expand(dry_mass + propellant_mass, (1, num_times),
+                           indices='i->ji')
+        self.register_output('mass', mass)
+
+        # will need nested implicit operations because attitude requires
+        # mean motion, and drag requires attitude
+        orbit_op = self.create_implicit_operation(
+            Drag(
+                num_times=num_times,
+                step_size=step_size,
+                cubesat=cubesat,
+            ))
+        orbit_op.declare_state('drag_3xn', residual='r')
+
+        radius = self.declare_variable('radius', shape=(1, num_times))
+        thrust_3xn = self.declare_variable(
+            'thrust_3xn',
+            shape=(3, num_times),
+        )
+        reference_orbit_state = self.declare_variable(
+            'reference_orbit_state',
+            shape=(6, num_times),
+        )
+        drag_scalar_3xn = self.declare_variable(
+            'drag_scalar_3xn',
+            shape=(3, num_times),
+        )
+
+        # NOTE: edges are saved
+        # drag_3xn, orbit_state_km, relative_orbit_state =
+        drag_3xn = orbit_op(
+            mass,
+            initial_orbit_state,
+            thrust_3xn,
+            reference_orbit_state,
+            drag_scalar_3xn,
+            radius,
+            expose=['orbit_state_km', 'relative_orbit_state'],
+        )
+
+        orbit_state_km = self.declare_variable('orbit_state_km',
+                                               shape=(6, num_times))
+        position_km = orbit_state_km[:3, :]
+        velocity_km_s = orbit_state_km[3:, :]
+
+        position = position_km * 1.e3
+        velocity = velocity_km_s * 1.e3
+
+        radius_km, position_unit_vec = compute_norm_unit_vec(
+            position_km, num_times=num_times)
+        speed_km_s, velocity_unit_vec = compute_norm_unit_vec(
+            velocity_km_s, num_times=num_times)
+
+        altitude_km = radius_km - radius_earth
+        ks_altitude_km = csdl.min(
+            altitude_km,
+            rho=100.,
+        )
+
+        self.register_output('ks_altitude_km', ks_altitude_km)
+        self.add_constraint('ks_altitude_km', lower=450.)

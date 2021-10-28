@@ -1,9 +1,9 @@
 import numpy as np
 
-from lsdo_utils.api import OptionsDictionary
+from lsdo_cubesat.utils.options_dictionary import OptionsDictionary
 
 
-class Cubesat(OptionsDictionary):
+class CubesatParams(OptionsDictionary):
     def initialize(self):
         self.declare('name', types=str)
         self.declare('dry_mass', types=float)
