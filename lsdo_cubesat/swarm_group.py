@@ -38,7 +38,7 @@ class Swarm(Model):
                     # mtx=get_bspline_mtx(num_cp, num_times, order=4),
                 ),
                 name='{}_cubesat_group'.format(name),
-                promotes=[],
+                promotes=['reference_orbit_state', 'radius'],
             )
 
         self.add(

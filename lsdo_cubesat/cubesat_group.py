@@ -3,13 +3,10 @@ import numpy as np
 from csdl import Model
 import csdl
 
-from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
-from lsdo_cubesat.propulsion.propulsion_group import Propulsion
-from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
-from lsdo_cubesat.orbit.orbit_group import OrbitGroup
 from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.dynamics.vehicle_dynamics import VehicleDynamics
 
 
 class Cubesat(Model):
@@ -30,39 +27,13 @@ class Cubesat(Model):
         times = self.create_input('times', units='s', val=times)
 
         self.add(
-            AttitudeGroup(
-                num_times=num_times,
-                num_cp=num_cp,
-            ),
-            name='attitude_group',
-        )
-
-        self.add(
-            Propulsion(
+            VehicleDynamics(
                 num_times=num_times,
                 num_cp=num_cp,
                 step_size=step_size,
                 cubesat=cubesat,
             ),
-            name='propulsion_group',
-        )
-
-        self.add(
-            AerodynamicsGroup(
-                num_times=num_times,
-                # num_cp=num_cp,
-                # step_size=step_size,
-                # cubesat=cubesat,
-            ),
-            name='aerodynamics')
-
-        self.add(
-            OrbitGroup(
-                num_times=num_times,
-                step_size=step_size,
-                cubesat=cubesat,
-            ),
-            name='orbit_group',
+            name='vehicle_dynamics',
         )
 
         for ground_station in cubesat.children:
@@ -76,7 +47,7 @@ class Cubesat(Model):
                     ground_station=ground_station,
                 ),
                 name='{}_comm_group'.format(name),
-                promotes=[],
+                promotes=['orbit_state_km', 'radius'],
             )
 
         dl_rates = []

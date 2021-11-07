@@ -22,14 +22,18 @@ class Drag(Model):
         step_size = self.parameters['step_size']
         cubesat = self.parameters['cubesat']
 
-        drag_unit_vec_t_3xn = self.declare_variable(
-            'drag_unit_vec_t_3xn',
-            val=np.outer(
-                np.array([0., 0., 1.]),
-                np.ones(num_times),
-            ),
+        # drag_unit_vec_t_3xn = self.declare_variable(
+        #     'drag_unit_vec_t_3xn',
+        #     val=np.outer(
+        #         np.array([0., 0., 1.]),
+        #         np.ones(num_times),
+        #     ),
+        # )
+        drag_3xn = self.declare_variable(
+            'drag_3xn',
+            shape=(3, num_times),
+            val=0,
         )
-        drag_3xn = self.declare_variable('drag_3xn', shape=(3, num_times))
         thrust_3xn = self.declare_variable('thrust_3xn', shape=(3, num_times))
         radius = self.declare_variable('radius', shape=(1, num_times))
         mass = self.declare_variable('mass', shape=(1, num_times))
@@ -41,8 +45,8 @@ class Drag(Model):
         reference_orbit_state = self.declare_variable('reference_orbit_state',
                                                       shape=(6, num_times))
 
-        drag_scalar_3xn = self.declare_variable('drag_scalar_3xn',
-                                                shape=(3, num_times))
+        # drag_scalar_3xn = self.declare_variable('drag_scalar_3xn',
+        #                                         shape=(3, num_times))
         self.register_output('force_3xn', force_3xn)
         relative_orbit_state = csdl.custom(
             force_3xn,
@@ -79,14 +83,14 @@ class Drag(Model):
             'ijn->jin',
         )
 
-        drag_unit_vec_3xn = csdl.einsum(
-            rot_mtx_i_t_3x3xn,
-            drag_unit_vec_t_3xn,
-            subscripts='ijk,jk->ik',
-        )
+        # drag_unit_vec_3xn = csdl.einsum(
+        #     rot_mtx_i_t_3x3xn,
+        #     drag_unit_vec_t_3xn,
+        #     subscripts='ijk,jk->ik',
+        # )
 
-        r = drag_3xn - drag_unit_vec_3xn * drag_scalar_3xn
-        self.register_output('r', r)
+        # r = drag_3xn - drag_unit_vec_3xn * drag_scalar_3xn
+        # self.register_output('r', r)
 
         # coupled_group.nonlinear_solver = NonlinearBlockGS(iprint=0,
         #                                                   maxiter=40,
@@ -127,16 +131,22 @@ class OrbitGroup(Model):
         mass = csdl.expand(dry_mass + propellant_mass, (1, num_times),
                            indices='i->ji')
         self.register_output('mass', mass)
-
-        # will need nested implicit operations because attitude requires
-        # mean motion, and drag requires attitude
-        orbit_op = self.create_implicit_operation(
+        self.add(
             Drag(
                 num_times=num_times,
                 step_size=step_size,
                 cubesat=cubesat,
-            ))
-        orbit_op.declare_state('drag_3xn', residual='r')
+            ), )
+
+        # will need nested implicit operations because attitude requires
+        # mean motion, and drag requires attitude
+        # orbit_op = self.create_implicit_operation(
+        #     Drag(
+        #         num_times=num_times,
+        #         step_size=step_size,
+        #         cubesat=cubesat,
+        #     ))
+        # orbit_op.declare_state('drag_3xn', residual='r')
 
         radius = self.declare_variable('radius', shape=(1, num_times))
         thrust_3xn = self.declare_variable(
@@ -147,22 +157,24 @@ class OrbitGroup(Model):
             'reference_orbit_state',
             shape=(6, num_times),
         )
-        drag_scalar_3xn = self.declare_variable(
-            'drag_scalar_3xn',
-            shape=(3, num_times),
-        )
+
+        # drag_scalar_3xn = self.declare_variable(
+        #     'drag_scalar_3xn',
+        #     shape=(3, num_times),
+        #     val=0,
+        # )
 
         # NOTE: edges are saved
         # drag_3xn, orbit_state_km, relative_orbit_state =
-        drag_3xn = orbit_op(
-            mass,
-            initial_orbit_state,
-            thrust_3xn,
-            reference_orbit_state,
-            drag_scalar_3xn,
-            radius,
-            expose=['orbit_state_km', 'relative_orbit_state'],
-        )
+        # drag_3xn = orbit_op(
+        #     mass,
+        #     initial_orbit_state,
+        #     thrust_3xn,
+        #     reference_orbit_state,
+        #     drag_scalar_3xn,
+        #     radius,
+        #     expose=['orbit_state_km', 'relative_orbit_state'],
+        # )
 
         orbit_state_km = self.declare_variable('orbit_state_km',
                                                shape=(6, num_times))
