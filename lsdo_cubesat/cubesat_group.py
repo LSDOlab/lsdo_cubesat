@@ -47,7 +47,7 @@ class Cubesat(Model):
                     ground_station=ground_station,
                 ),
                 name='{}_comm_group'.format(name),
-                promotes=['orbit_state_km', 'radius'],
+                promotes=['orbit_state_km'],
             )
 
         dl_rates = []
@@ -88,3 +88,24 @@ class Cubesat(Model):
 
         total_data = Data[0, -1] - Data[0, 0]
         self.register_output('total_data', total_data)
+
+
+if __name__ == "__main__":
+    from csdl_om import Simulator
+    from lsdo_cubesat.api import CubesatParams
+    initial_orbit_state_magnitude = np.array([1e-3] * 3 + [1e-3] * 3)
+    sim = Simulator(
+        Cubesat(num_times=10,
+                num_cp=3,
+                step_size=0.1,
+                cubesat=CubesatParams(
+                    name='detector',
+                    dry_mass=1.3,
+                    initial_orbit_state=initial_orbit_state_magnitude *
+                    np.random.rand(6),
+                    approx_altitude_km=500.,
+                    specific_impulse=47.,
+                    perigee_altitude=500.002,
+                    apogee_altitude=499.98,
+                )))
+    sim.visualize_implementation()

@@ -10,31 +10,38 @@ import numpy as np
 from csdl import CustomExplicitOperation
 
 
-class RK4Comp(CustomExplicitOperation):
+class RK4(CustomExplicitOperation):
     """
     Inherit from this component to use.
 
     State variable dimension: (num_states, num_time_points)
     External input dimension: (input width, num_time_points)
     """
-    def initialize(self):
-        self.parameters.declare('num_times', types=int)
-        self.parameters.declare('step_size', types=float)
+    def __init__(self, n=2, h=.01, **kwargs):
+        super(RK4, self).__init__(**kwargs)
 
-        params = self.parameters
-        params.declare(
+        self.h = h
+
+    def initialize(self):
+        """
+        Declare parameters before kwargs are processed in the init method.
+        """
+
+        opts = self.parameters
+
+        opts.declare(
             'state_var',
             '',
             desc='Name of the variable to be used for time integration')
-        params.declare(
+        opts.declare(
             'init_state_var',
             '',
             desc='Name of the variable to be used for initial conditions')
-        params.declare(
+        opts.declare(
             'external_vars', [],
             desc='List of names of variables that are external to the system '
             'but DO vary with time.')
-        params.declare(
+        opts.declare(
             'fixed_external_vars', [],
             desc='List of names of variables that are external to the system '
             'but DO NOT vary with time.')
@@ -50,7 +57,6 @@ class RK4Comp(CustomExplicitOperation):
         outputs : Vector
             unscaled, dimensional output variables read via outputs[key]
         """
-        n = self.parameters['num_times']
         state_var = self.parameters['state_var']
         init_state_var = self.parameters['init_state_var']
         external_vars = self.parameters['external_vars']
@@ -59,9 +65,9 @@ class RK4Comp(CustomExplicitOperation):
         self.y = outputs[state_var]
         self.y0 = inputs[init_state_var]
 
-        self.n_states, n = self.y.shape
-        self.ny = self.n_states * n
-        self.nJ = self.n_states * (n + self.n_states * (n - 1))
+        self.n_states, self.n = self.y.shape
+        self.ny = self.n_states * self.n
+        self.nJ = self.n_states * (self.n + self.n_states * (self.n - 1))
 
         ext = []
         self.ext_index_map = {}
@@ -69,8 +75,8 @@ class RK4Comp(CustomExplicitOperation):
             var = inputs[name]
             self.ext_index_map[name] = len(ext)
 
-            # TODO: Check that shape[-1]==n
-            ext.extend(var.reshape(-1, n))
+            # TODO: Check that shape[-1]==self.n
+            ext.extend(var.reshape(-1, self.n))
 
         for name in fixed_external_vars:
             var = inputs[name]
@@ -78,7 +84,7 @@ class RK4Comp(CustomExplicitOperation):
 
             flat_var = var.flatten()
             # create n copies of the var
-            ext.extend(np.tile(flat_var, (n, 1)).T)
+            ext.extend(np.tile(flat_var, (self.n, 1)).T)
 
         self.external = np.array(ext)
 
@@ -94,7 +100,7 @@ class RK4Comp(CustomExplicitOperation):
                               for k, v in self.reverse_name_map.items()])
 
         # TODO
-        #  check that all ext arrays of of shape (n, )
+        #  check that all ext arrays of of shape (self.n, )
 
         # TODO
         # check that length of state var and external vars are the same length
@@ -151,19 +157,18 @@ class RK4Comp(CustomExplicitOperation):
         """
         Calculate outputs.
         """
-        n = self.parameters['num_times']
         self._init_data(inputs, outputs)
 
         n_state = self.n_states
-        n_time = n
-        h = self.parameters['step_size']
+        n_time = self.n
+        h = self.h
 
         # Copy initial state into state array for t=0
         self.y = self.y.reshape((self.ny, ), order='f')
         self.y[0:n_state] = self.y0
 
         # Cache f_dot for use in linearize()
-        size = (n_state, n)
+        size = (n_state, self.n)
         self.a = np.zeros(size)
         self.b = np.zeros(size)
         self.c = np.zeros(size)
@@ -191,21 +196,20 @@ class RK4Comp(CustomExplicitOperation):
         state_var_name = self.name_map['y']
         outputs[state_var_name][:] = self.y.T.reshape((n_time, n_state)).T
 
-    def compute_derivatives(self, inputs, partials):
+    def compute_derivatives(self, inputs, derivatives):
         """
         Calculate and save derivatives. (i.e., Jacobian)
         """
-        n = self.parameters['num_times']
         n_state = self.n_states
-        n_time = n
-        h = self.parameters['step_size']
+        n_time = self.n
+        h = self.h
         I = np.eye(n_state)  # noqa: E741
 
         # Full Jacobian with respect to states
-        self.Jy = np.zeros((n, self.n_states, self.n_states))
+        self.Jy = np.zeros((self.n, self.n_states, self.n_states))
 
         # Full Jacobian with respect to inputs
-        self.Jx = np.zeros((n, self.n_external, self.n_states))
+        self.Jx = np.zeros((self.n, self.n_external, self.n_states))
 
         for k in range(0, n_time - 1):
 
@@ -271,10 +275,9 @@ class RK4Comp(CustomExplicitOperation):
         """
         Apply derivatives with respect to inputs
         """
-        n = self.parameters['num_times']
-        # Jx --> (n, n_external, n_states)
+        # Jx --> (n_times, n_external, n_states)
         n_state = self.n_states
-        n_time = n
+        n_time = self.n
         result = np.zeros((n_state, n_time))
 
         # Time-varying inputs
@@ -340,9 +343,8 @@ class RK4Comp(CustomExplicitOperation):
         """
         Apply derivatives with respect to inputs
         """
-        n = self.parameters['num_times']
-        # Jx --> (n, n_external, n_states)
-        n_time = n
+        # Jx --> (n_times, n_external, n_states)
+        n_time = self.n
         result = {}
 
         argsv = d_outputs[self.parameters['state_var']].T

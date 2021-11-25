@@ -1,4 +1,4 @@
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4 import RK4
 import numpy as np
 
 # Constants
@@ -14,7 +14,7 @@ def skew(a, b, c):
     ])
 
 
-class AttitudeRK4GravityComp(RK4Comp):
+class AttitudeRK4GravityComp(RK4):
     """
     Attitude dynamics model for spacecraft in orbit about point mass.
     The dynamics are integrated using the Runge-Kutta 4 method.
@@ -58,26 +58,24 @@ class AttitudeRK4GravityComp(RK4Comp):
         elements correspond to vector part of unit quaternion.
     """
     def initialize(self):
-        super().initialize()
-        self.parameters.declare('num_times', types=int)
-        self.parameters.declare('step_size', types=float)
-        self.parameters.declare('moment_inertia_ratios')
+        self.options.declare('num_times', types=int)
+        self.options.declare('step_size', types=float)
+        self.options.declare('moment_inertia_ratios')
 
-        self.parameters['state_var'] = 'angular_velocity_orientation'
-        self.parameters[
-            'init_state_var'] = 'initial_angular_velocity_orientation'
+        self.options['state_var'] = 'angular_velocity_orientation'
+        self.options['init_state_var'] = 'initial_angular_velocity_orientation'
 
         # Mass moment of inertia in body frame coordinates (i.e. nonzero
         # values only on diagonal of inertia matrix)
-        self.parameters['external_vars'] = [
+        self.options['external_vars'] = [
             'external_torques_x',
             'external_torques_y',
             'external_torques_z',
             'osculating_orbit_angular_speed',
         ]
 
-    def define(self):
-        n = self.parameters['num_times']
+    def setup(self):
+        n = self.options['num_times']
 
         self.add_input(
             'external_torques_x',
@@ -116,7 +114,7 @@ class AttitudeRK4GravityComp(RK4Comp):
     def f_dot(self, external, state):
         state_dot = np.zeros(12)
         # K = external[3:6]
-        K = self.parameters['moment_inertia_ratios']
+        K = self.options['moment_inertia_ratios']
         Omega = external[-1]
         omega = state[:3]
         C0 = state[3:6]
@@ -155,7 +153,7 @@ class AttitudeRK4GravityComp(RK4Comp):
     def df_dy(self, external, state):
         omega = state[:3]
         # K = external[3:6]
-        K = self.parameters['moment_inertia_ratios']
+        K = self.options['moment_inertia_ratios']
         osculating_orbit_angular_speed = external[-1]
         C0 = state[3:6]
         C1 = state[6:9]
@@ -223,7 +221,7 @@ class AttitudeRK4GravityComp(RK4Comp):
     def df_dx(self, external, state):
         omega = state[:3]
         # K = external[3:6]
-        K = self.parameters['moment_inertia_ratios']
+        K = self.options['moment_inertia_ratios']
         Omega = external[-1]
         dfdx = np.zeros((12, 4))
         C0 = state[3:6]
@@ -269,11 +267,10 @@ C[1, :] = C1
 C[2, :] = C2
 
 if __name__ == "__main__":
-    from csdl_om import Simulator
-    from csdl import Model
-    import csdl
-
+    from lsdo_cubesat.utils.make_random_bounded_array import make_random_bounded_array
     from lsdo_cubesat.constants import RADII, GRAVITATIONAL_PARAMTERS
+
+    from openmdao.api import Group, Problem, IndepVarComp
 
     step_size = 0.1
     num_times = 1250
@@ -284,106 +281,89 @@ if __name__ == "__main__":
     # 0.0012394474623254955
     # Omega = np.sqrt(GRAVITATIONAL_PARAMTERS['Earth'] /
     #                 (1000 * RADII['Earth'])**3)
-    Omega = 1  #0.0011023132117858924
+    Omega = 10.0  #0.0011023132117858924
 
-    class M(Model):
-        def initialize(self):
-            self.parameters.declare('Omega')
+    w12 = 0.1 * Omega
+    w3 = 1.1 * Omega
 
-        def define(self):
-            Omega = self.parameters['Omega']
-            w12 = 0.1 * Omega
-            w3 = 1.1 * Omega
+    C0 = np.array([0.9924, -0.0868, 0.0872])
+    C2 = np.array([-0.0789, 0.0944, 0.9924])
+    C1 = np.sqrt(1 - C0**2 - C2**2)
+    C1[2] = -C1[2]
+    C = np.zeros((3, 3))
+    C[0, :] = C0
+    C[1, :] = C1
+    C[2, :] = C2
 
-            C0 = np.array([0.9924, -0.0868, 0.0872])
-            C2 = np.array([-0.0789, 0.0944, 0.9924])
-            C1 = np.sqrt(1 - C0**2 - C2**2)
-            C1[2] = -C1[2]
-            C = np.zeros((3, 3))
-            C[0, :] = C0
-            C[1, :] = C1
-            C[2, :] = C2
+    test = np.matmul(C, C.T)
+    np.testing.assert_almost_equal(test, np.eye(3), decimal=4)
 
-            test = np.matmul(C, C.T)
-            np.testing.assert_almost_equal(test, np.eye(3), decimal=4)
+    # stable motion (constant nutation angle)
+    # w12 = 0.1 * Omega
+    # w3 = 1.1 * Omega
+    # C1 = np.array([1, 0, 0])
+    # C3 = np.array([0, 0, 1])
 
-            # stable motion (constant nutation angle)
-            # w12 = 0.1 * Omega
-            # w3 = 1.1 * Omega
-            # C1 = np.array([1, 0, 0])
-            # C3 = np.array([0, 0, 1])
+    indeps = IndepVarComp()
+    indeps.add_output(
+        'external_torques_x',
+        val=make_random_bounded_array(num_times, bound=1),
+        # val=0,
+        shape=num_times,
+        desc='External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
-            external_torques_x = self.declare_variable(
-                'external_torques_x',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
-                shape=num_times,
-                desc=
-                'External torques applied to spacecraft, e.g. ctrl inputs, drag'
-            )
+    indeps.add_output(
+        'external_torques_y',
+        val=make_random_bounded_array(num_times, bound=1),
+        # val=0,
+        shape=num_times,
+        desc='External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
-            external_torques_y = self.declare_variable(
-                'external_torques_y',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
-                shape=num_times,
-                desc=
-                'External torques applied to spacecraft, e.g. ctrl inputs, drag'
-            )
+    indeps.add_output(
+        'external_torques_z',
+        val=make_random_bounded_array(num_times, bound=1),
+        # val=0,
+        shape=num_times,
+        desc='External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
-            external_torques_z = self.declare_variable(
-                'external_torques_z',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
-                shape=num_times,
-                desc=
-                'External torques applied to spacecraft, e.g. ctrl inputs, drag'
-            )
+    indeps.add_output('osculating_orbit_angular_speed',
+                      shape=(1, num_times),
+                      val=Omega,
+                      desc='Angular speed of oscullating orbit')
 
-            osculating_orbit_angular_speed = self.declare_variable(
-                'osculating_orbit_angular_speed',
-                shape=(1, num_times),
-                val=Omega,
-                desc='Angular speed of oscullating orbit')
+    v = np.concatenate((np.array([w12, w12, w3]), np.concatenate(
+        (C0, C1, C2)))).flatten()
+    indeps.add_output('initial_angular_velocity_orientation',
+                      shape=(12, ),
+                      val=v,
+                      desc='Initial angular velocity in body frame')
 
-            v = np.concatenate((np.array([w12, w12,
-                                          w3]), np.concatenate(
-                                              (C0, C1, C2)))).flatten()
-            initial_angular_velocity_orientation = self.declare_variable(
-                'initial_angular_velocity_orientation',
-                shape=12,
-                val=v,
-                desc='Initial angular velocity in body frame')
+    prob = Problem()
+    prob.model.add_subsystem('indeps', indeps, promotes=['*'])
 
-            K1 = -0.5
-            K2 = 0.9
-            K3 = -(K1 + K2) / (1 + K1 * K2)
+    K1 = -0.5
+    K2 = 0.9
+    K3 = -(K1 + K2) / (1 + K1 * K2)
 
-            angular_velocity_orientation = csdl.custom(
-                external_torques_x,
-                external_torques_y,
-                external_torques_z,
-                osculating_orbit_angular_speed,
-                initial_angular_velocity_orientation,
-                op=AttitudeRK4GravityComp(
-                    num_times=num_times,
-                    step_size=step_size,
-                    moment_inertia_ratios=np.array([K1, K2, K3]),
-                ),
-            )
-            self.register_output(
-                'angular_velocity_orientation',
-                angular_velocity_orientation,
-            )
+    a = AttitudeRK4GravityComp(
+        num_times=num_times,
+        step_size=step_size,
+        moment_inertia_ratios=np.array([K1, K2, K3]),
+    )
+    prob.model.add_subsystem(
+        'attitude',
+        a,
+        promotes=['*'],
+    )
 
-    sim = Simulator(M(Omega=Omega, ))
-    sim.run()
-    if num_times < 15:
-        sim.check_partials(compact_print=True, method='cs')
+    prob.setup()
+    prob.run_model()
+    if num_times < 150:
+        prob.check_partials(compact_print=True, method='fd')
         exit()
 
     import matplotlib.pyplot as plt
-    state = sim['angular_velocity_orientation']
+    state = prob['angular_velocity_orientation']
     omega = state[:3, :]
 
     # NOTE: can't get precession or roll from only first and third row of C

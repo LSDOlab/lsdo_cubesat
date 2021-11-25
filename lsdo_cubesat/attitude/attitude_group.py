@@ -7,53 +7,65 @@ from csdl.utils.get_bspline_mtx import get_bspline_mtx
 
 from lsdo_cubesat.utils.finite_difference_comp import FiniteDifferenceComp
 from lsdo_cubesat.attitude.attitude_rk4_gravity_2 import AttitudeRK4GravityComp
+from lsdo_cubesat.operations.rw_speed_rk4 import RWSpeedRK4
 
 
 class AttitudeGroup(Model):
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
+        self.parameters.declare('max_torque', default=0.007)
 
     def define(self):
         num_times = self.parameters['num_times']
         step_size = self.parameters['step_size']
+        max_torque = self.parameters['max_torque']
 
-        w12 = 0.1
-        w3 = 1.1
-
-        C0 = np.array([0.9924, -0.0868, 0.0872])
-        C2 = np.array([-0.0789, 0.0944, 0.9924])
-        C1 = np.sqrt(1 - C0**2 - C2**2)
-        C1[2] = -C1[2]
-        C = np.zeros((3, 3))
-        C[0, :] = C0
-        C[1, :] = C1
-        C[2, :] = C2
-
-        test = np.matmul(C, C.T)
-        np.testing.assert_almost_equal(test, np.eye(3), decimal=4)
-
-        # TODO: add reaction wheels
-        external_torques_x = self.declare_variable(
+        external_torques_x = self.create_input(
             'external_torques_x',
             val=0,
             shape=num_times,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
-        external_torques_y = self.declare_variable(
+        external_torques_y = self.create_input(
             'external_torques_y',
             val=0,
             shape=num_times,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
-        external_torques_z = self.declare_variable(
+        external_torques_z = self.create_input(
             'external_torques_z',
             val=0,
             shape=num_times,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
+
+        self.add_design_variable('external_torques_x',
+                                 lower=-max_torque,
+                                 upper=max_torque)
+        self.add_design_variable('external_torques_y',
+                                 lower=-max_torque,
+                                 upper=max_torque)
+        self.add_design_variable('external_torques_z',
+                                 lower=-max_torque,
+                                 upper=max_torque)
+        initial_rw_speed = self.declare_variable('initial_rw_speed',
+                                                 shape=(3, ),
+                                                 val=0)
+        rw_speed = csdl.custom(external_torques_x,
+                               external_torques_y,
+                               external_torques_z,
+                               initial_rw_speed,
+                               op=RWSpeedRK4(
+                                   num_times=num_times,
+                                   step_size=step_size,
+                               ))
+        self.register_output('rw_speed', rw_speed)
+
+        # rate limits
+        # self.add_constraint('rw_speed', lower=-1, upper=1)
 
         # TODO: get angular speed from orbit
         # TODO: change variable of integration to nondimensionalized time
@@ -63,9 +75,8 @@ class AttitudeGroup(Model):
             val=1,
             desc='Angular speed of oscullating orbit')
 
-        v = np.concatenate((np.array([w12, w12,
-                                      w3]), np.concatenate(
-                                          (C0, C1, C2)))).flatten()
+        v = np.concatenate((np.array([0, 0,
+                                      1]), np.eye(3).flatten())).flatten()
         initial_angular_velocity_orientation = self.declare_variable(
             'initial_angular_velocity_orientation',
             shape=12,
@@ -152,3 +163,9 @@ class AttitudeGroup(Model):
         #                         upper=10. * rad_deg,
         #                         linear=True)
         #     self.add('{}_rate_comp'.format(var_name), comp, promotes=['*'])
+
+
+if __name__ == "__main__":
+    from csdl_om import Simulator
+    sim = Simulator(AttitudeGroup(num_times=1, step_size=0.1))
+    sim.visualize_implementation()

@@ -3,13 +3,6 @@ import numpy as np
 from lsdo_cubesat.api import SwarmParams, CubesatParams, Swarm
 from lsdo_cubesat.communication.ground_station import GroundStationParams
 
-
-def make_swarm(swarm):
-    from csdl_om import Simulator
-    swarm_group = Swarm(swarm=swarm)
-    return Simulator(swarm_group)
-
-
 num_times = 1501
 num_cp = 300
 step_size = 95 * 60 / (num_times - 1)
@@ -157,7 +150,14 @@ cubesats['optics'].add(
 for v in cubesats.values():
     swarm.add(v)
 
+
 # compile
+def make_swarm(swarm):
+    from csdl_om import Simulator
+    swarm_group = Swarm(swarm=swarm)
+    return Simulator(swarm_group)
+
+
 sim = make_swarm(swarm)
 sim.visualize_implementation()
 exit()

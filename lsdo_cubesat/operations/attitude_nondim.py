@@ -1,4 +1,4 @@
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4_op import RK4
 import numpy as np
 
 # Constants
@@ -14,7 +14,7 @@ def skew(a, b, c):
     ])
 
 
-class AttitudeRK4GravityComp(RK4Comp):
+class AttitudeRK4GravityComp(RK4):
     """
     Attitude dynamics model for spacecraft in orbit about point mass.
     The dynamics are integrated using the Runge-Kutta 4 method.
@@ -81,21 +81,24 @@ class AttitudeRK4GravityComp(RK4Comp):
 
         self.add_input(
             'external_torques_x',
-            val=0,
+            val=make_random_bounded_array(n, bound=1),
+            # val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
         self.add_input(
             'external_torques_y',
-            val=0,
+            val=make_random_bounded_array(n, bound=1),
+            # val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
 
         self.add_input(
             'external_torques_z',
-            val=0,
+            val=make_random_bounded_array(n, bound=1),
+            # val=0,
             shape=n,
             desc=
             'External torques applied to spacecraft, e.g. ctrl inputs, drag')
@@ -269,54 +272,54 @@ C[1, :] = C1
 C[2, :] = C2
 
 if __name__ == "__main__":
-    from csdl_om import Simulator
+    from lsdo_cubesat.utils.make_random_bounded_array import make_random_bounded_array
     from csdl import Model
     import csdl
+    from csdl_om import Simulator
 
     from lsdo_cubesat.constants import RADII, GRAVITATIONAL_PARAMTERS
 
     step_size = 0.1
-    num_times = 1250
-    num_times = 10
+    num_times = 12500
+    # num_times = 10
     # 25 time steps/orbit
     time = num_times * step_size
 
     # 0.0012394474623254955
     # Omega = np.sqrt(GRAVITATIONAL_PARAMTERS['Earth'] /
     #                 (1000 * RADII['Earth'])**3)
-    Omega = 1  #0.0011023132117858924
+    # Omega = 10.0  #0.0011023132117858924
+
+    # stable motion (constant nutation angle)
+    # w12 = 0.1 * Omega
+    # w3 = 1.1 * Omega
+    # C = np.eye(3)
+
+    w12 = 0.1 * Omega
+    w3 = 1.1 * Omega
+
+    C0 = np.array([0.9924, -0.0868, 0.0872])
+    C2 = np.array([-0.0789, 0.0944, 0.9924])
+    C1 = np.sqrt(1 - C0**2 - C2**2)
+    C1[2] = -C1[2]
+    C = np.zeros((3, 3))
+    C[0, :] = C0
+    C[1, :] = C1
+    C[2, :] = C2
+
+    test = np.matmul(C, C.T)
+    np.testing.assert_almost_equal(test, np.eye(3), decimal=4)
 
     class M(Model):
         def initialize(self):
             self.parameters.declare('Omega')
 
         def define(self):
-            Omega = self.parameters['Omega']
-            w12 = 0.1 * Omega
-            w3 = 1.1 * Omega
-
-            C0 = np.array([0.9924, -0.0868, 0.0872])
-            C2 = np.array([-0.0789, 0.0944, 0.9924])
-            C1 = np.sqrt(1 - C0**2 - C2**2)
-            C1[2] = -C1[2]
-            C = np.zeros((3, 3))
-            C[0, :] = C0
-            C[1, :] = C1
-            C[2, :] = C2
-
-            test = np.matmul(C, C.T)
-            np.testing.assert_almost_equal(test, np.eye(3), decimal=4)
-
-            # stable motion (constant nutation angle)
-            # w12 = 0.1 * Omega
-            # w3 = 1.1 * Omega
-            # C1 = np.array([1, 0, 0])
-            # C3 = np.array([0, 0, 1])
 
             external_torques_x = self.declare_variable(
                 'external_torques_x',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
+                val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
                 shape=num_times,
                 desc=
                 'External torques applied to spacecraft, e.g. ctrl inputs, drag'
@@ -324,8 +327,8 @@ if __name__ == "__main__":
 
             external_torques_y = self.declare_variable(
                 'external_torques_y',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
+                val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
                 shape=num_times,
                 desc=
                 'External torques applied to spacecraft, e.g. ctrl inputs, drag'
@@ -333,8 +336,8 @@ if __name__ == "__main__":
 
             external_torques_z = self.declare_variable(
                 'external_torques_z',
-                # val=np.random.rand(num_times) - 0.5 if num_times < 15 else 0,
-                val=0,
+                val=make_random_bounded_array(num_times, bound=1),
+                # val=0,
                 shape=num_times,
                 desc=
                 'External torques applied to spacecraft, e.g. ctrl inputs, drag'
@@ -379,7 +382,7 @@ if __name__ == "__main__":
     sim = Simulator(M(Omega=Omega, ))
     sim.run()
     if num_times < 15:
-        sim.check_partials(compact_print=True, method='cs')
+        sim.check_partials(compact_print=True, method='fd')
         exit()
 
     import matplotlib.pyplot as plt

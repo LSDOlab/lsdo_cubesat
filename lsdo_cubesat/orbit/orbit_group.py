@@ -45,8 +45,8 @@ class Drag(Model):
         reference_orbit_state = self.declare_variable('reference_orbit_state',
                                                       shape=(6, num_times))
 
-        # drag_scalar_3xn = self.declare_variable('drag_scalar_3xn',
-        #                                         shape=(3, num_times))
+        drag_scalar_3xn = self.declare_variable('drag_scalar_3xn',
+                                                shape=(3, num_times))
         self.register_output('force_3xn', force_3xn)
         relative_orbit_state = csdl.custom(
             force_3xn,
@@ -158,15 +158,14 @@ class OrbitGroup(Model):
             shape=(6, num_times),
         )
 
-        # drag_scalar_3xn = self.declare_variable(
-        #     'drag_scalar_3xn',
-        #     shape=(3, num_times),
-        #     val=0,
-        # )
+        drag_scalar_3xn = self.declare_variable(
+            'drag_scalar_3xn',
+            shape=(3, num_times),
+            val=0,
+        )
 
         # NOTE: edges are saved
-        # drag_3xn, orbit_state_km, relative_orbit_state =
-        # drag_3xn = orbit_op(
+        # drag_3xn, orbit_state_km, relative_orbit_state = orbit_op(
         #     mass,
         #     initial_orbit_state,
         #     thrust_3xn,
@@ -195,5 +194,6 @@ class OrbitGroup(Model):
             rho=100.,
         )
 
+        self.register_output('position_km', position_km)
         self.register_output('ks_altitude_km', ks_altitude_km)
         self.add_constraint('ks_altitude_km', lower=450.)

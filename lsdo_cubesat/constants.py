@@ -29,3 +29,6 @@ GRAVITATIONAL_PARAMTERS = dict(
 # Eris= 	1.108(9) 	*1e12,
 # )
 RADII = dict(Earth=6378.137, )
+# charge_of_electron=1.60217657
+charge_of_electron = 1.602176634e-19  # C
+boltzman = 1.380649e-23  # J/K

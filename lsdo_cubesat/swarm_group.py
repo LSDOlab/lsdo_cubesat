@@ -46,13 +46,6 @@ class Swarm(Model):
             name='alignment',
         )
 
-        sunshade_cubesat_group_total_Data = self.declare_variable(
-            'sunshade_cubesat_group_total_data')
-        optics_cubesat_group_total_data = self.declare_variable(
-            'optics_cubesat_group_total_data')
-        detector_cubesat_group_total_data = self.declare_variable(
-            'detector_cubesat_group_total_data')
-
         # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
         # '+5.e-14*ks_masked_distance_sunshade_optics_km' +
         # '+5.e-14 *ks_masked_distance_optics_detector_km'
@@ -80,6 +73,7 @@ class Swarm(Model):
             'optics_cubesat_group_total_data')
         detector_cubesat_group_total_data = self.declare_variable(
             'detector_cubesat_group_total_data')
+
         # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
         total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
         # +5.e-14*ks_masked_distance_sunshade_optics_km
@@ -89,10 +83,10 @@ class Swarm(Model):
         for cubesat in swarm.children:
             name = cubesat['name']
 
-            # self.connect(
-            #     '{}_cubesat_group.position_km'.format(name),
-            #     '{}_cubesat_group_position_km'.format(name),
-            # )
+            self.connect(
+                '{}_cubesat_group.position_km'.format(name),
+                '{}_cubesat_group_position_km'.format(name),
+            )
 
             self.connect(
                 '{}_cubesat_group.total_propellant_used'.format(name),
