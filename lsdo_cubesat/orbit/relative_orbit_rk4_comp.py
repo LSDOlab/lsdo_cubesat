@@ -4,7 +4,7 @@ RK4 component for orbit compute
 
 import numpy as np
 
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4_op import RK4
 
 # Constants
 mu = 398600.44
@@ -24,7 +24,7 @@ C4 = 1.875 * mu * J4 * Re**4
 drag = 1.e-6
 
 
-class RelativeOrbitRK4Comp(RK4Comp):
+class RelativeOrbitRK4Comp(RK4):
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)

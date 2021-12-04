@@ -33,62 +33,91 @@ class Propulsion(Model):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('num_cp', types=int)
         self.parameters.declare('step_size', types=float)
+        self.parameters.declare('omnidirectional', types=bool, default=True)
         self.parameters.declare('cubesat')
+        self.parameters.declare('max_thrust', types=float, default=20000.)
 
     def define(self):
         num_times = self.parameters['num_times']
         num_cp = self.parameters['num_cp']
         step_size = self.parameters['step_size']
         cubesat = self.parameters['cubesat']
-
-        # TODO: implement matvec for numpy vectors, make this a compile
-        # time constant
-        thrust_unit_vec = np.outer(
-            np.array([1., 0., 0.]),
-            np.ones(num_times),
-        )
-
-        thrust_unit_vec_b_3xn = self.declare_variable(
-            'thrust_unit_vec_b_3xn',
-            val=thrust_unit_vec,
-        )
+        omnidirectional = self.parameters['omnidirectional']
+        max_thrust = self.parameters['max_thrust']
 
         initial_propellant_mass = self.create_input(
             'initial_propellant_mass',
             val=0.17,
         )
-        thrust_scalar_mN_cp = self.create_input(
-            'thrust_scalar_mN_cp',
-            val=1.e-3 * np.ones(num_cp),
-        )
-        self.add_design_variable('thrust_scalar_mN_cp', lower=0., upper=20000)
 
-        rot_mtx_i_b_3x3xn = self.declare_variable(
-            'rot_mtx_i_b_3x3xn',
-            shape=(3, 3, num_times),
-        )
-        # TODO: implement matvec for numpy vectors
-        thrust_unit_vec_3xn = csdl.einsum(
-            rot_mtx_i_b_3x3xn,
-            thrust_unit_vec_b_3xn,
-            subscripts='ijk, jk->ik',
-        )
-        self.register_output('thrust_unit_vec_3xn', thrust_unit_vec_3xn)
+        self.add_design_variable('initial_propellant_mass',
+                                 lower=0.,
+                                 upper=20000)
 
-        thrust_scalar_cp = 1.e-3 * thrust_scalar_mN_cp
-        thrust_scalar = csdl.matvec(get_bspline_mtx(num_cp, num_times),
-                                    thrust_scalar_cp)
-        thrust_scalar_3xn = csdl.expand(thrust_scalar,
-                                        shape=(3, num_times),
-                                        indices='i->ji')
-        thrust_3xn = thrust_unit_vec_3xn * thrust_scalar_3xn
+        if omnidirectional is True:
+            thrust_cp = self.create_input('thrust_cp',
+                                          val=0,
+                                          shape=(3, num_cp))
+            self.add_design_variable(
+                'thrust_cp',
+                lower=-max_thrust,
+                upper=max_thrust,
+            )
+            v = get_bspline_mtx(num_cp, num_times).toarray()
+            bspline_mtx = self.declare_variable(
+                'bspline_mtx',
+                val=v,
+                shape=v.shape,
+            )
+            thrust_3xn = csdl.einsum(thrust_cp,
+                                     bspline_mtx,
+                                     subscripts='ij,kj->ik')
+            thrust_scalar = csdl.pnorm(thrust_3xn, axis=0)
+
+        else:
+            thrust_unit_vec = np.outer(
+                np.array([1., 0., 0.]),
+                np.ones(num_times),
+            )
+
+            thrust_unit_vec_b_3xn = self.declare_variable(
+                'thrust_unit_vec_b_3xn',
+                val=thrust_unit_vec,
+            )
+
+            thrust_scalar_mN_cp = self.create_input(
+                'thrust_scalar_mN_cp',
+                val=1.e-3 * np.ones(num_cp),
+            )
+            self.add_design_variable('thrust_scalar_mN_cp',
+                                     lower=0.,
+                                     upper=max_thrust)
+
+            rot_mtx_i_b_3x3xn = self.declare_variable(
+                'rot_mtx_i_b_3x3xn',
+                shape=(3, 3, num_times),
+            )
+            thrust_unit_vec_3xn = csdl.einsum(
+                rot_mtx_i_b_3x3xn,
+                thrust_unit_vec_b_3xn,
+                subscripts='ijk, jk->ik',
+            )
+            self.register_output('thrust_unit_vec_3xn', thrust_unit_vec_3xn)
+
+            thrust_scalar_cp = 1.e-3 * thrust_scalar_mN_cp
+            thrust_scalar = csdl.matvec(get_bspline_mtx(num_cp, num_times),
+                                        thrust_scalar_cp)
+            thrust_scalar_3xn = csdl.expand(thrust_scalar,
+                                            shape=(3, num_times),
+                                            indices='i->ji')
+            thrust_3xn = thrust_unit_vec_3xn * thrust_scalar_3xn
+
         self.register_output('thrust_3xn', thrust_3xn)
 
-        mass_flow_rate = csdl.expand(
+        mass_flow_rate = csdl.reshape(
             -1. / (cubesat['acceleration_due_to_gravity'] *
                    cubesat['specific_impulse']) * thrust_scalar,
             (1, num_times),
-            indices='i->ji',
         )
 
         self.register_output('mass_flow_rate', mass_flow_rate)

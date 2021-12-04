@@ -11,9 +11,11 @@ from lsdo_cubesat.cubesat_group import Cubesat
 class Swarm(Model):
     def initialize(self):
         self.parameters.declare('swarm', types=SwarmParams)
+        self.parameters.declare('comm', types=bool, default=False)
 
     def define(self):
         swarm = self.parameters['swarm']
+        comm = self.parameters['comm']
 
         num_times = swarm['num_times']
         num_cp = swarm['num_cp']
@@ -69,16 +71,17 @@ class Swarm(Model):
 
         # sunshade_cubesat_group_total_Data = self.declare_variable(
         #     'sunshade_cubesat_group_total_Data')
-        optics_cubesat_group_total_data = self.declare_variable(
-            'optics_cubesat_group_total_data')
-        detector_cubesat_group_total_data = self.declare_variable(
-            'detector_cubesat_group_total_data')
+        if comm is True:
+            optics_cubesat_group_total_data = self.declare_variable(
+                'optics_cubesat_group_total_data')
+            detector_cubesat_group_total_data = self.declare_variable(
+                'detector_cubesat_group_total_data')
 
         # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
-        total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
+        # total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
         # +5.e-14*ks_masked_distance_sunshade_optics_km
         # +5.e-14 *ks_masked_distance_optics_detector_km
-        self.register_output('total_data_downloaded', total_data_downloaded)
+        # self.register_output('total_data_downloaded', total_data_downloaded)
 
         for cubesat in swarm.children:
             name = cubesat['name']
@@ -93,10 +96,11 @@ class Swarm(Model):
                 '{}_cubesat_group_total_propellant_used'.format(name),
             )
 
-            self.connect(
-                '{}_cubesat_group.total_data'.format(name),
-                '{}_cubesat_group_total_data'.format(name),
-            )
+            if comm is True:
+                self.connect(
+                    '{}_cubesat_group.total_data'.format(name),
+                    '{}_cubesat_group_total_data'.format(name),
+                )
 
             # for var_name in [
             #         'radius',

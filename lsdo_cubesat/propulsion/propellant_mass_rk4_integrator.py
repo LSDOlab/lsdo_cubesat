@@ -1,20 +1,16 @@
 """
 RK4 component for propellant state
 """
-import os
-from six.moves import range
-
 import numpy as np
-import scipy.sparse
 
-from openmdao.api import ExplicitComponent
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4_op import RK4
 
 
-class PropellantMassRK4Integrator(RK4Comp):
+class PropellantMassRK4Integrator(RK4):
     def initialize(self):
         super().initialize()
-        # super(self, RK4Comp).initialize()
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
 
     def define(self):
         opts = self.parameters
@@ -44,7 +40,6 @@ class PropellantMassRK4Integrator(RK4Comp):
         self.dfdx = np.array([[1.]])
 
     def f_dot(self, external, state):
-        print('propellant f_dot')
         return external[0]
 
     def df_dy(self, external, state):
@@ -73,9 +68,10 @@ if __name__ == '__main__':
 
     group.add('Inputcomp', comp, promotes=['*'])
 
-    group.add('Statecomp_Implicit',
-              PropellantMassComp(num_times=n, step_size=h),
-              promotes=['*'])
+    group.add(
+        'Statecomp_Implicit',
+        PropellantMassRK4Integrator(num_times=n, step_size=h),
+    )
 
     prob = Problem()
     prob.model = group

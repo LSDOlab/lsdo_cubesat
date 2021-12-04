@@ -3,15 +3,9 @@ import numpy as np
 from lsdo_cubesat.api import SwarmParams, CubesatParams, Swarm
 from lsdo_cubesat.communication.ground_station import GroundStationParams
 
-num_times = 1501
-num_cp = 300
+num_times = 15
+num_cp = 3
 step_size = 95 * 60 / (num_times - 1)
-
-if 1:
-    num_times = 30
-    num_cp = 3
-    # step_size = 50.
-    step_size = 95 * 60 / (num_times - 1)
 
 swarm = SwarmParams(
     num_times=num_times,
@@ -161,6 +155,13 @@ def make_swarm(swarm):
 sim = make_swarm(swarm)
 sim.visualize_implementation()
 exit()
+
+sim.run()
+import matplotlib.pyplot as plt
+
+plt.plot(sim['optics_cubesat_group.soc'])
+plt.plot(sim['detector_cubesat_group.soc'])
+plt.show()
 # TODO: use ModOpt
 # rely on OpenMDAO to solve optimization problem
 prob = sim.prob

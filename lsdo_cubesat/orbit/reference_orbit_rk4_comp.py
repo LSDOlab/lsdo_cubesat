@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse
 
 from openmdao.api import ExplicitComponent
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4_op import RK4
 
 # Constants
 mu = 398600.44
@@ -23,12 +23,11 @@ C3 = -2.5 * mu * J3 * Re**3
 C4 = 1.875 * mu * J4 * Re**4
 
 
-class ReferenceOrbitRK4Comp(RK4Comp):
+class ReferenceOrbitRK4Comp(RK4):
     def initialize(self):
         super().initialize()
-        # super(self, RK4Comp).initialize()
-        # self.parameters.declare('num_times', types=int)
-        # self.parameters.declare('step_size', types=float)
+        self.parameters.declare('num_times', types=int)
+        self.parameters.declare('step_size', types=float)
 
         self.parameters['state_var'] = 'reference_orbit_state_km'
         self.parameters['init_state_var'] = 'initial_orbit_state_km'
