@@ -17,10 +17,10 @@ class RK4(CustomExplicitOperation):
     State variable dimension: (num_states, num_time_points)
     External input dimension: (input width, num_time_points)
     """
-    def __init__(self, n=2, h=.01, **kwargs):
+    def __init__(self, step_size=.01, **kwargs):
         super(RK4, self).__init__(**kwargs)
 
-        self.h = h
+        self.h = step_size
 
     def initialize(self):
         """

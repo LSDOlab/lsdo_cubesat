@@ -6,7 +6,8 @@ import numpy as np
 from lsdo_cubesat.attitude.attitude_cadre_style import Attitude
 from lsdo_cubesat.propulsion.propulsion_group import Propulsion
 # from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
-from lsdo_cubesat.orbit.orbit_group import OrbitGroup
+from lsdo_cubesat.orbit.relative_orbit import RelativeOrbit
+from lsdo_cubesat.utils.compute_norm_unit_vec import compute_norm_unit_vec
 
 
 class VehicleDynamics(Model):
@@ -43,7 +44,7 @@ class VehicleDynamics(Model):
         # )
 
         self.add(
-            OrbitGroup(
+            RelativeOrbit(
                 num_times=num_times,
                 step_size=step_size,
                 cubesat=cubesat,
@@ -77,21 +78,21 @@ class VehicleDynamics(Model):
         )
         a1 = csdl.cross(a2, a0, axis=0)
 
-        ECI_to_RTN = self.create_output(
-            'ECI_to_RTN',
+        RTN_from_ECI = self.create_output(
+            'RTN_from_ECI',
             shape=(3, 3, num_times),
         )
-        ECI_to_RTN[0, :, :] = csdl.expand(
+        RTN_from_ECI[0, :, :] = csdl.expand(
             a0,
             (1, 3, num_times),
             indices='jk->ijk',
         )
-        ECI_to_RTN[1, :, :] = csdl.expand(
+        RTN_from_ECI[1, :, :] = csdl.expand(
             a1,
             (1, 3, num_times),
             indices='jk->ijk',
         )
-        ECI_to_RTN[2, :, :] = csdl.expand(
+        RTN_from_ECI[2, :, :] = csdl.expand(
             a2,
             (1, 3, num_times),
             indices='jk->ijk',
@@ -107,6 +108,7 @@ class VehicleDynamics(Model):
         self.add(
             Attitude(
                 num_times=num_times,
+                num_cp=num_cp,
                 step_size=step_size,
                 sc_mmoi=np.array([18, 18, 6]) * 1e-3,
                 rw_mmoi=28 * np.ones(3) * 1e-6,

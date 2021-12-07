@@ -49,7 +49,7 @@ class SunLOS(CustomExplicitOperation):
             np.cross(position_km, sun_direction, axis=0),
             axis=0,
         )
-        mask += np.where(ds > R, 1., 0.)
+        mask *= np.where(ds > R, 1., 0.)
 
         # capture penumbra effect between light and shadow
         eta = (ds - alfa * R) / (R - alfa * R)

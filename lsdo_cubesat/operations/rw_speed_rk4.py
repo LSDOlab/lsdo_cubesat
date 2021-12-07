@@ -20,12 +20,6 @@ from lsdo_cubesat.operations.rk4_op import RK4
 
 
 class RWSpeedRK4(RK4):
-    """
-    Inherit from this component to use.
-​
-    State variable dimension: (num_states, num_time_points)
-    External input dimension: (input width, num_time_points)
-    """
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)

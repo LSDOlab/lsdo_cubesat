@@ -8,12 +8,18 @@ class ElectricalPowerSystem(Model):
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
+        self.parameters.declare(
+            'baseline_power_draw',
+            types=float,
+            default=0.2,
+        )
         self.parameters.declare('comm', types=bool, default=False)
 
     def define(self):
         num_times = self.parameters['num_times']
         step_size = self.parameters['step_size']
         comm = self.parameters['comm']
+        P0 = self.parameters['baseline_power_draw']
 
         # solar power
         self.add(IVT(num_times=num_times), name='solar_panels')
@@ -30,7 +36,7 @@ class ElectricalPowerSystem(Model):
 
         rw_power = self.declare_variable(
             'rw_power',
-            shape=(3, num_times),
+            shape=(num_times, ),
         )
 
         if comm is True:
@@ -38,18 +44,14 @@ class ElectricalPowerSystem(Model):
                 'comm_power',
                 shape=(num_times, ),
             )
-            # TODO: sign?
             battery_power = csdl.reshape(
-                csdl.sum(rw_power, axes=(0, )),
-                (1, num_times)) + comm_power - solar_power,
+                solar_power, (num_times, )) - rw_power - comm_power - P0
         else:
-            pass
-            # TODO: sign?
-            battery_power = csdl.reshape(csdl.sum(rw_power, axes=(0, )),
-                                         (1, num_times)) - solar_power
+            battery_power = csdl.reshape(solar_power,
+                                         (num_times, )) - rw_power - P0
         self.register_output('battery_power', battery_power)
 
-        self.add(
-            BatteryPack(num_times=num_times, step_size=step_size),
-            name='battery_pack',
-        )
+        # self.add(
+        #     BatteryPack(num_times=num_times, step_size=step_size),
+        #     name='battery_pack',
+        # )

@@ -2,6 +2,7 @@
 RK4 component for orbit compute
 """
 
+from re import S
 import numpy as np
 
 from lsdo_cubesat.operations.rk4_op import RK4
@@ -24,25 +25,23 @@ C4 = 1.875 * mu * J4 * Re**4
 drag = 1.e-6
 
 
-class RelativeOrbitRK4Comp(RK4):
+class RelativeOrbitIntegrator(RK4):
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
-        self.parameters.declare('step_size', types=float)
 
-        self.parameters['state_var'] = 'relative_orbit_state'
+        self.parameters['state_var'] = 'relative_orbit_state_m'
         self.parameters['init_state_var'] = 'initial_orbit_state'
-        self.parameters['external_vars'] = ['force_3xn', 'mass', 'radius']
+        self.parameters['external_vars'] = ['force_3xn', 'mass', 'radius_m']
 
     def define(self):
         n = self.parameters['num_times']
-        h = self.parameters['step_size']
 
         self.add_input('force_3xn', shape=(3, n), desc='Thrust on the cubesat')
 
         self.add_input('mass', shape=(1, n), desc='mass of Cubesat')
 
-        self.add_input('radius', shape=(1, n))
+        self.add_input('radius_m', shape=(1, n))
 
         self.add_input(
             'initial_orbit_state',
@@ -51,7 +50,7 @@ class RelativeOrbitRK4Comp(RK4):
             'satellite in Earth-centered inertial frame')
 
         self.add_output(
-            'relative_orbit_state',
+            'relative_orbit_state_m',
             shape=(6, n),
             desc='Position and velocity vectors from earth to satellite '
             'in Earth-centered inertial frame over time')
@@ -61,7 +60,6 @@ class RelativeOrbitRK4Comp(RK4):
 
     def f_dot(self, external, state):
         n = self.parameters['num_times']
-        h = self.parameters['step_size']
         # Px = external[0]
         # Py = external[1]
         # Pz = external[2]
@@ -103,8 +101,6 @@ class RelativeOrbitRK4Comp(RK4):
 
     def df_dy(self, external, state):
 
-        x = state[0]
-        y = state[1]
         z = state[2] if abs(state[2]) > 1e-15 else 1e-5
 
         z2 = z * z
@@ -182,8 +178,6 @@ class RelativeOrbitRK4Comp(RK4):
 
     def df_dx(self, external, state):
 
-        x = state[0]
-        y = state[1]
         z = state[2] if abs(state[2]) > 1e-15 else 1e-5
 
         z2 = z * z
@@ -280,42 +274,64 @@ class RelativeOrbitRK4Comp(RK4):
 
 if __name__ == '__main__':
 
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
+    from csdl import Model
+    import csdl
+    import numpy as np
     import matplotlib.pyplot as plt
 
-    np.random.seed(0)
+    class M(Model):
+        def initialize(self):
+            self.parameters.declare('num_times')
+            self.parameters.declare('step_size')
 
-    group = Group()
+        def define(self):
+            num_times = self.parameters['num_times']
+            step_size = self.parameters['step_size']
 
-    n = 30
-    m = 1
-    npts = 1
-    h = 1.5e-4
+            np.random.seed(0)
 
-    r_e2b_I0 = np.empty(6)
-    r_e2b_I0[:3] = 1. * np.random.rand(3)
-    r_e2b_I0[3:] = 1. * np.random.rand(3)
+            r_e2b_I0 = np.empty(6)
+            r_e2b_I0[:3] = 1. * np.random.rand(3)
+            r_e2b_I0[3:] = 1. * np.random.rand(3)
 
-    comp = IndepVarComp()
-    comp.add_output('force_3xn', val=np.random.rand(3, n))
-    comp.add_output('initial_orbit_state', val=r_e2b_I0)
-    comp.add_output('radius', val=6400e3 + np.random.rand(1, n))
-    comp.add_output('mass', val=1.e-2, shape=(1, n))
-    group.add('inputs_comp', comp, promotes=['*'])
+            force_3xn = self.declare_variable('force_3xn',
+                                              val=np.random.rand(3, num_times))
+            initial_orbit_state = self.declare_variable('initial_orbit_state',
+                                                        val=r_e2b_I0)
+            radius_m = self.declare_variable('radius_m',
+                                             val=6400e3 +
+                                             np.random.rand(1, num_times))
+            mass = self.declare_variable('mass',
+                                         val=1.e-2,
+                                         shape=(1, num_times))
 
-    comp = RelativeOrbitRK4Comp(num_times=n, step_size=h)
-    group.add('comp', comp, promotes=['*'])
+            relative_orbit_state_m = csdl.custom(
+                force_3xn,
+                mass,
+                radius_m,
+                initial_orbit_state,
+                op=RelativeOrbitIntegrator(
+                    num_times=num_times,
+                    step_size=step_size,
+                ),
+            )
+            self.register_output(
+                'relative_orbit_state_m',
+                relative_orbit_state_m,
+            )
 
-    prob = Problem()
-    prob.model = group
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
-
-    orbit_X = prob['relative_orbit_state_km'][0, :]
-    orbit_Y = prob['relative_orbit_state_km'][1, :]
+    from csdl_om import Simulator
+    num_times = 100
+    step_size = 0.1
+    sim = Simulator(M(
+        num_times=num_times,
+        step_size=step_size,
+    ))
+    sim.run()
+    orbit_X = sim['relative_orbit_state_m'][0, :]
+    orbit_Y = sim['relative_orbit_state_m'][1, :]
     plt.plot(orbit_X, orbit_Y)
-    prob.check_partials()
+    plt.show()
+
+    sim.prob.model.list_outputs()
+    sim.check_partials(compact_print=True)

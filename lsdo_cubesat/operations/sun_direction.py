@@ -3,7 +3,7 @@ import scipy.sparse
 from csdl import CustomExplicitOperation
 
 
-class SunDirectionComp(CustomExplicitOperation):
+class SunDirection(CustomExplicitOperation):
 
     # constants
     d2r = np.pi / 180.
@@ -18,7 +18,7 @@ class SunDirectionComp(CustomExplicitOperation):
 
         self.add_input('times', shape=num_times)
 
-        self.add_output('sun_unit_vec', shape=(3, num_times))
+        self.add_output('sun_direction', shape=(3, num_times))
 
         self.Ja = np.zeros(3 * num_times)
         self.Ji = np.zeros(3 * num_times)
@@ -28,7 +28,7 @@ class SunDirectionComp(CustomExplicitOperation):
         num_times = self.parameters['num_times']
         launch_date = self.parameters['launch_date']
 
-        sun_unit_vec = outputs['sun_unit_vec']
+        sun_direction = outputs['sun_direction']
 
         T = launch_date + inputs['times'][:] / 3600. / 24.
         for i in range(0, num_times):
@@ -37,9 +37,9 @@ class SunDirectionComp(CustomExplicitOperation):
             Lambda = L + self.d2r * 1.914666 * np.sin(
                 g) + self.d2r * 0.01999464 * np.sin(2 * g)
             eps = self.d2r * 23.439 - self.d2r * 3.56e-7 * T[i]
-            sun_unit_vec[0, i] = np.cos(Lambda)
-            sun_unit_vec[1, i] = np.sin(Lambda) * np.cos(eps)
-            sun_unit_vec[2, i] = np.sin(Lambda) * np.sin(eps)
+            sun_direction[0, i] = np.cos(Lambda)
+            sun_direction[1, i] = np.sin(Lambda) * np.cos(eps)
+            sun_direction[2, i] = np.sin(Lambda) * np.sin(eps)
 
     def compute_derivatives(self, inputs, partials):
         num_times = self.parameters['num_times']
@@ -80,7 +80,7 @@ class SunDirectionComp(CustomExplicitOperation):
         num_times = self.parameters['num_times']
         launch_date = self.parameters['launch_date']
 
-        dsun_unit_vec = d_outputs['sun_unit_vec']
+        dsun_unit_vec = d_outputs['sun_direction']
 
         if mode == 'fwd':
             if 'times' in d_inputs:
@@ -89,9 +89,10 @@ class SunDirectionComp(CustomExplicitOperation):
                                                 24.).reshape((3, num_times),
                                                              order='F'))
         else:
-            sun_unit_vec = dsun_unit_vec[:].reshape((3 * num_times), order='F')
+            sun_direction = dsun_unit_vec[:].reshape((3 * num_times),
+                                                     order='F')
             if 'times' in d_inputs:
-                d_inputs['times'] += self.JT.dot(sun_unit_vec) / 3600.0 / 24.0
+                d_inputs['times'] += self.JT.dot(sun_direction) / 3600.0 / 24.0
 
 
 if __name__ == '__main__':
@@ -111,7 +112,7 @@ if __name__ == '__main__':
     group.add('Inputcomp', comp, promotes=['*'])
 
     group.add('Statecomp_Implicit',
-              SunDirectionComp(num_times=num_times, launch_date=0.),
+              SunDirection(num_times=num_times, launch_date=0.),
               promotes=['*'])
 
     prob = Problem()

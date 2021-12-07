@@ -10,12 +10,10 @@ class PropellantMassRK4Integrator(RK4):
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
-        self.parameters.declare('step_size', types=float)
 
     def define(self):
         opts = self.parameters
         n = opts['num_times']
-        h = opts['step_size']
 
         # Inputs
         self.add_input('mass_flow_rate',

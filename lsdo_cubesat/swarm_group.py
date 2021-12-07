@@ -1,11 +1,12 @@
 from csdl import Model
+import csdl
+import numpy as np
 
 # from lsdo_cubesat.cubesat_group import Cubesat
-from lsdo_cubesat.alignment.alignment_group import Alignment
-from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbit
-from lsdo_cubesat.communication.ground_station import GroundStationParams
-from lsdo_cubesat.swarm.swarm import SwarmParams
+from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
+from lsdo_cubesat.parameters.swarm import SwarmParams
 from lsdo_cubesat.cubesat_group import Cubesat
+from lsdo_cubesat.operations.sun_direction import SunDirection
 
 
 class Swarm(Model):
@@ -21,16 +22,25 @@ class Swarm(Model):
         num_cp = swarm['num_cp']
         step_size = swarm['step_size']
 
-        self.add(
-            ReferenceOrbit(
-                num_times=num_times,
-                step_size=step_size,
-            ),
-            name='reference_orbit',
+        times = self.create_input(
+            'times',
+            val=np.linspace(0., step_size * (num_times - 1), num_times),
         )
+        # TODO: what reference frame is this?
+        # TODO: transform so that sun_direction is in ECI, pointing
+        # towards sun
+        sun_direction = csdl.custom(
+            times,
+            op=SunDirection(
+                num_times=num_times,
+                launch_date=swarm['launch_date'],
+            ),
+        )
+        self.register_output('sun_direction', sun_direction)
 
         for cubesat in swarm.children:
-            name = cubesat['name']
+            cubesat_name = cubesat['name']
+            submodel_name = '{}_cubesat_group'.format(cubesat_name)
             self.add(
                 Cubesat(
                     num_times=num_times,
@@ -39,106 +49,122 @@ class Swarm(Model):
                     cubesat=cubesat,
                     # mtx=get_bspline_mtx(num_cp, num_times, order=4),
                 ),
-                name='{}_cubesat_group'.format(name),
-                promotes=['reference_orbit_state', 'radius'],
+                name='{}_cubesat_group'.format(cubesat_name),
+                promotes=['reference_orbit_state_km'],
             )
+            self.connect('sun_direction',
+                         '{}.sun_direction'.format(submodel_name))
 
         self.add(
-            Alignment(swarm=swarm),
-            name='alignment',
+            TelescopeConfiguration(swarm=swarm),
+            name='telescope_config',
         )
+        # # self.connect(
+        # #     'optics_cubesat_group.sun_LOS',
+        # #     'optics_sun_LOS',
+        # # )
+        # # self.connect(
+        # #     'detector_cubesat_group.sun_LOS',
+        # #     'detector_sun_LOS',
+        # # )
+        self.connect(
+            'optics_cubesat_group.relative_orbit_state_m',
+            'optics_relative_orbit_state_m',
+        )
+        self.connect(
+            'detector_cubesat_group.relative_orbit_state_m',
+            'detector_relative_orbit_state_m',
+        )
+        self.connect(
+            'optics_cubesat_group.orbit_state_km',
+            'optics_orbit_state_km',
+        )
+        self.connect(
+            'detector_cubesat_group.orbit_state_km',
+            'detector_orbit_state_km',
+        )
+        self.connect(
+            'optics_cubesat_group.B_from_ECI',
+            'optics_B_from_ECI',
+        )
+        self.connect(
+            'detector_cubesat_group.B_from_ECI',
+            'detector_B_from_ECI',
+        )
+        # # self.connect(
+        # #     'optics_cubesat_group.sun_pointing_constraint',
+        # #     'optics_sun_pointing_constraint',
+        # # )
+        # # self.connect(
+        # #     'detector_cubesat_group.sun_pointing_constraint',
+        # #     'detector_sun_pointing_constraint',
+        # # )
 
-        # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
-        # '+5.e-14*ks_masked_distance_sunshade_optics_km' +
-        # '+5.e-14 *ks_masked_distance_optics_detector_km'
+        optics_total_propellant_used = self.declare_variable(
+            'optics_total_propellant_used')
+        detector_total_propellant_used = self.declare_variable(
+            'detector_total_propellant_used')
 
-        # sunshade_cubesat_group_total_propellant_used = self.declare_variable(
-        #     'sunshade_cubesat_group_total_propellant_used')
-        optics_cubesat_group_total_propellant_used = self.declare_variable(
-            'optics_cubesat_group_total_propellant_used')
-        detector_cubesat_group_total_propellant_used = self.declare_variable(
-            'detector_cubesat_group_total_propellant_used')
-        ks_masked_distance_sunshade_optics_km = self.declare_variable(
-            'ks_masked_distance_sunshade_optics_km')
-        ks_masked_distance_optics_detector_km = self.declare_variable(
-            'ks_masked_distance_optics_detector_km')
-
-        # total_propellant_used = sunshade_cubesat_group_total_propellant_used + optics_cubesat_group_total_propellant_used + detector_cubesat_group_total_propellant_used
-        total_propellant_used = optics_cubesat_group_total_propellant_used + detector_cubesat_group_total_propellant_used
-        # +5.e-14*ks_masked_distance_sunshade_optics_km
-        # +5.e-14 *ks_masked_distance_optics_detector_km
+        total_propellant_used = optics_total_propellant_used + detector_total_propellant_used
         self.register_output('total_propellant_used', total_propellant_used)
 
-        # sunshade_cubesat_group_total_Data = self.declare_variable(
-        #     'sunshade_cubesat_group_total_Data')
-        if comm is True:
-            optics_cubesat_group_total_data = self.declare_variable(
-                'optics_cubesat_group_total_data')
-            detector_cubesat_group_total_data = self.declare_variable(
-                'detector_cubesat_group_total_data')
+        self.connect(
+            'optics_cubesat_group.total_propellant_used',
+            'optics_total_propellant_used',
+        )
+        self.connect(
+            'detector_cubesat_group.total_propellant_used',
+            'detector_total_propellant_used',
+        )
+        # if comm is True:
+        #     optics_cubesat_group_total_data = self.declare_variable(
+        #         'optics_cubesat_group_total_data')
+        #     detector_cubesat_group_total_data = self.declare_variable(
+        #         'detector_cubesat_group_total_data')
 
-        # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
-        # total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
-        # +5.e-14*ks_masked_distance_sunshade_optics_km
-        # +5.e-14 *ks_masked_distance_optics_detector_km
-        # self.register_output('total_data_downloaded', total_data_downloaded)
+        # # FOR FUTURE DEVELOPERS:
+        # # THIS USED TO BE HERE FOR THE COMMUNCATION DISCIPLINES
+        # # IT WASN'T CHECKED TO MAKE SURE EVERYTHING WORKS WHEN comm is True
+        # # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
+        # # total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
+        # # +5.e-14*ks_masked_distance_sunshade_optics_km
+        # # +5.e-14 *ks_masked_distance_optics_detector_km
+        # # self.register_output('total_data_downloaded', total_data_downloaded)
 
-        for cubesat in swarm.children:
-            name = cubesat['name']
+        # # for cubesat in swarm.children:
+        # #     name = cubesat['name']
 
-            self.connect(
-                '{}_cubesat_group.position_km'.format(name),
-                '{}_cubesat_group_position_km'.format(name),
-            )
+        # #     # self.connect(
+        # #     #     '{}_cubesat_group.position_km'.format(name),
+        # #     #     '{}_cubesat_group_position_km'.format(name),
+        # #     # )
 
-            self.connect(
-                '{}_cubesat_group.total_propellant_used'.format(name),
-                '{}_cubesat_group_total_propellant_used'.format(name),
-            )
+        # #     self.connect(
+        # #         '{}_cubesat_group.total_propellant_used'.format(name),
+        # #         '{}_cubesat_group_total_propellant_used'.format(name),
+        # #     )
 
-            if comm is True:
-                self.connect(
-                    '{}_cubesat_group.total_data'.format(name),
-                    '{}_cubesat_group_total_data'.format(name),
-                )
+        # #     if comm is True:
+        # #         self.connect(
+        # #             '{}_cubesat_group.total_data'.format(name),
+        # #             '{}_cubesat_group_total_data'.format(name),
+        # #         )
 
-            # for var_name in [
-            #         'radius',
-            #         'reference_orbit_state',
-            # ]:
-            #     self.connect(
-            #         var_name,
-            #         '{}_cubesat_group.{}'.format(name, var_name),
-            #     )
+        # Objective with regularizaiton term
+        optics_relative_orbit_state_m = self.declare_variable(
+            'optics_relative_orbit_state_m', shape=(6, num_times))
+        detector_relative_orbit_state_m = self.declare_variable(
+            'detector_relative_orbit_state_m', shape=(6, num_times))
+        x = csdl.pnorm(optics_relative_orbit_state_m[:3, :], axis=0)
 
-        for cubesat in swarm.children:
-            cubesat_name = cubesat['name']
-            # for ground_station in cubesat.children:
-            #     ground_station_name = ground_station['name']
-
-            #     for var_name in ['orbit_state_km', 'rot_mtx_i_b_3x3xn']:
-            #         self.connect(
-            #             '{}_cubesat_group.{}'.format(cubesat_name, var_name),
-            #             '{}_cubesat_group.{}_comm_group.{}'.format(
-            #                 cubesat_name, ground_station_name, var_name))
-
-            #     # self.connect(
-            #     #     'times', '{}_cubesat_group.attitude_group.times'.format(
-            #     #         cubesat_name))
-            # self.connect(
-            #     '{}_cubesat_group.relative_orbit_state_sq_sum'.format(
-            #         cubesat_name),
-            #     '{}_cubesat_group_relative_orbit_state_sq_sum'.format(
-            #         cubesat_name),
-            # )
-        # TODO: define these variables
-        # obj = 0.01 * total_propellant_used - 1e-5 * total_data_downloaded + 1e-4 * (
-        #     0 + masked_normal_distance_sunshade_detector_mm_sq_sum +
-        #     masked_normal_distance_optics_detector_mm_sq_sum +
-        #     masked_distance_sunshade_optics_mm_sq_sum +
-        #     masked_distance_optics_detector_mm_sq_sum) / num_times + 1e-3 * (
-        #         sunshade_cubesat_group_relative_orbit_state_sq_sum +
-        #         optics_cubesat_group_relative_orbit_state_sq_sum +
-        #         detector_cubesat_group_relative_orbit_state_sq_sum) / num_times
-        # self.register_output('obj', obj)
-        # self.add_objective('obj', scaler=1.e-3)
+        # # TODO: get reasonable coefficients for regularization term
+        regularization_term = csdl.max(csdl.reshape(
+            csdl.pnorm(optics_relative_orbit_state_m[:3, :], axis=0) +
+            csdl.pnorm(detector_relative_orbit_state_m[:3, :], axis=0),
+            (1, num_times)),
+                                       axis=1)
+        # # propellant on the order of kg
+        # # relative distance to reference orbit on the order of m
+        obj = total_propellant_used + 1e-2 * regularization_term
+        self.register_output('obj', obj)
+        self.add_objective('obj', scaler=1.e-3)

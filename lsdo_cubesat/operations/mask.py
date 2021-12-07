@@ -3,7 +3,7 @@ import numpy as np
 from csdl import CustomExplicitOperation
 
 
-class MaskVecComp(CustomExplicitOperation):
+class Mask(CustomExplicitOperation):
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('threshold')

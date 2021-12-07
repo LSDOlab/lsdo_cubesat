@@ -1,4 +1,5 @@
 import csdl
+from csdl.core.output import Output
 
 
 def compute_norm_unit_vec(vec, *, num_times):

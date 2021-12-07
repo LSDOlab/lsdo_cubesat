@@ -45,16 +45,21 @@ def keplerian_to_perifocal(
 ):
     eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis)
     semimajor_axis = (periapsis + apoapsis) / 2
-    semilatus_rectum = semimajor_axis * (1 - eccentricity)**2
+    semilatus_rectum = semimajor_axis * (1 - eccentricity**2)
 
-    h = csdl.pnorm(mu * semilatus_rectum)
     rmag = semilatus_rectum / (1 + eccentricity * csdl.cos(true_anomaly))
 
     r[0] = rmag * csdl.cos(true_anomaly)
-    r[1] = rmag * csdl.cos(true_anomaly)
+    r[1] = rmag * csdl.sin(true_anomaly)
 
-    v[0] = mu / h * (eccentricity + csdl.cos(true_anomaly))
-    v[1] = -mu / h * csdl.sin(true_anomaly)
+    # h = csdl.pnorm(mu * semilatus_rectum)
+    # v[0] = -mu / h * csdl.sin(true_anomaly)
+    # v[1] = mu / h * (eccentricity + csdl.cos(true_anomaly))
+
+    vmag = csdl.pnorm(mu * (2 / rmag - 1 / semimajor_axis))
+
+    v[0] = -vmag * csdl.sin(true_anomaly) / 10
+    v[1] = vmag * (eccentricity + csdl.cos(true_anomaly)) / 10
 
 
 class KeplerianToCartesian(Model):
@@ -132,7 +137,7 @@ class KeplerianToCartesian(Model):
 
     def define(self):
         central_body = self.parameters['central_body']
-        mu = GRAVITATIONAL_PARAMTERS[central_body]
+        mu = GRAVITATIONAL_PARAMTERS[central_body] / 1e3**3
 
         periapsis_name = self.parameters['periapsis_name']
         apoapsis_name = self.parameters['apoapsis_name']
@@ -184,6 +189,8 @@ class KeplerianToCartesian(Model):
                  longitude_of_ascending_node)
 
         r = csdl.matvec(csdl.transpose(R), r)
+        # r = csdl.matvec(R, r)
         self.register_output(r_name, r)
         v = csdl.matvec(csdl.transpose(R), v)
+        # v = csdl.matvec(R, v)
         self.register_output(v_name, v)

@@ -7,7 +7,6 @@ from six.moves import range
 import numpy as np
 import scipy.sparse
 
-from openmdao.api import ExplicitComponent
 from lsdo_cubesat.operations.rk4_op import RK4
 
 # Constants
@@ -23,11 +22,10 @@ C3 = -2.5 * mu * J3 * Re**3
 C4 = 1.875 * mu * J4 * Re**4
 
 
-class ReferenceOrbitRK4Comp(RK4):
+class ReferenceOrbitIntegrator(RK4):
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
-        self.parameters.declare('step_size', types=float)
 
         self.parameters['state_var'] = 'reference_orbit_state_km'
         self.parameters['init_state_var'] = 'initial_orbit_state_km'
@@ -35,7 +33,6 @@ class ReferenceOrbitRK4Comp(RK4):
 
     def define(self):
         n = self.parameters['num_times']
-        h = self.parameters['step_size']
 
         self.add_input(
             'initial_orbit_state_km',
@@ -53,8 +50,6 @@ class ReferenceOrbitRK4Comp(RK4):
         # self.dfdy = np.zeros((6, 6))
 
     def f_dot(self, external, state):
-        n = self.parameters['num_times']
-        h = self.parameters['step_size']
         # Px = external[0]
         # Py = external[1]
         # Pz = external[2]
@@ -170,15 +165,13 @@ class ReferenceOrbitRK4Comp(RK4):
 
 if __name__ == '__main__':
 
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
+    from csdl import Model
+    import csdl
     import matplotlib.pyplot as plt
+    from csdl_om import Simulator
 
     np.random.seed(0)
 
-    group = Group()
-
-    comp = IndepVarComp()
     n = 1500
     m = 1
     npts = 1
@@ -188,42 +181,71 @@ if __name__ == '__main__':
     r_e2b_I0[:3] = 1000. * np.random.rand(3)
     r_e2b_I0[3:] = 1. * np.random.rand(3)
 
-    thrust_ECI = np.random.rand(3, n)
-    mass = np.random.rand(1, n)
+    class ReferenceOrbit(Model):
+        def initialize(self):
+            self.parameters.declare('num_times', types=int)
+            self.parameters.declare('step_size', types=float)
 
-    comp.add_output('force_3xn', val=thrust_ECI)
-    comp.add_output('initial_orbit_state_km', val=r_e2b_I0)
-    comp.add_output('mass', val=mass)
+        def define(self):
+            num_times = self.parameters['num_times']
+            step_size = self.parameters['step_size']
 
-    group.add('inputs_comp', comp, promotes=['*'])
+            initial_orbit_state_km = self.declare_variable(
+                'initial_orbit_state_km',
+                val=np.array([
+                    Re + 500.,
+                    0.,
+                    0.,
+                    0.,
+                    7.5,
+                    0.,
+                    # 1.76002146e+03,
+                    # 6.19179823e+03,
+                    # 6.31576531e+03,
+                    # 4.73422022e-05,
+                    # 1.26425269e-04,
+                    # 5.39731211e-05,
+                ]))
 
-    comp = ReferenceOrbitRK4Comp(num_times=n, step_size=h)
-    group.add('comp', comp, promotes=['*'])
+            reference_orbit_state_km = csdl.custom(
+                initial_orbit_state_km,
+                op=ReferenceOrbitIntegrator(
+                    num_times=num_times,
+                    step_size=step_size,
+                ),
+            )
+            self.register_output(
+                'reference_orbit_state_km',
+                reference_orbit_state_km,
+            )
 
-    prob = Problem()
-    prob.model = group
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
+    num_times = 1501
+    step_size = 95. * 60. / (num_times - 1)
+    t = np.arange(num_times) * step_size
+    print('SIMULATING TIME: {} min'.format(t[-1] / 60.))
 
-    prob.check_partials(compact_print=True)
+    sim = Simulator(ReferenceOrbit(
+        num_times=num_times,
+        step_size=step_size,
+    ))
+    sim.check_partials(compact_print=True)
+    exit()
+    sim.run(time_run=True)
 
-    # X = np.arange(n)
-
-    orbit_X = prob['reference_orbit_state_km'][3, :]
-    orbit_Y = prob['reference_orbit_state_km'][4, :]
-    # orbit_Z = prob['reference_orbit_state_km'][2, :]
-    # state_X = prob['reference_orbit_state_km'][3, :]
-    # state_Y = prob['reference_orbit_state_km'][4, :]
-    # state_Z = prob['reference_orbit_state_km'][5, :]
-
-    # plt.plot(X, orbit_X, label='orbit_x')
-    # plt.plot(X, orbit_Y, label='orbit_y')
-    # plt.plot(X, orbit_Z, label='orbit_z')
-    # # plt.plot(X, state_X, label='state_x')
-    # # plt.plot(X, state_Y, label='state_y')
-    # # plt.plot(X, state_Z, label='state_z')
-
-    plt.plot(orbit_X, orbit_Y)
+    print(sim['initial_orbit_state_km'])
+    plt.plot(t, sim['reference_orbit_state_km'][0, :])
     plt.show()
-    prob.check_partials()
+    plt.plot(t, sim['reference_orbit_state_km'][1, :])
+    plt.show()
+    plt.plot(t, sim['reference_orbit_state_km'][2, :])
+    plt.show()
+
+    plt.plot(sim['reference_orbit_state_km'][0, :],
+             sim['reference_orbit_state_km'][1, :])
+    plt.show()
+    plt.plot(sim['reference_orbit_state_km'][0, :],
+             sim['reference_orbit_state_km'][2, :])
+    plt.show()
+    plt.plot(sim['reference_orbit_state_km'][1, :],
+             sim['reference_orbit_state_km'][2, :])
+    plt.show()

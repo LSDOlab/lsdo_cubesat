@@ -45,7 +45,7 @@ class IVT(Model):
                                          val=saturation_current,
                                          shape=(1, num_times))
         self.add_design_variable('load_current',
-                                 lower=0,
+                                 lower=saturation_current,
                                  upper=max_short_circuit_current)
         # r_I = load_current - (short_circuit_current - saturation_current *
         #   (csdl.exp(load_voltage / VT) - 1) -

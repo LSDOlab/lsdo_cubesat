@@ -1,3 +1,5 @@
+import numpy as np
+
 GRAVITATIONAL_PARAMTERS = dict(
     Sun=1.32712440018 * 1e20,
     Mercury=2.2032 * 1e13,
@@ -32,3 +34,7 @@ RADII = dict(Earth=6378.137, )
 # charge_of_electron=1.60217657
 charge_of_electron = 1.602176634e-19  # C
 boltzman = 1.380649e-23  # J/K
+deg2rad = np.pi / 180.
+rad2deg = 180. / np.pi
+deg2arcsec = 3600.
+arcsec2deg = 1 / 3600.
