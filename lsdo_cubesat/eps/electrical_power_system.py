@@ -1,5 +1,4 @@
 from lsdo_cubesat.solar.ivt import IVT
-# from lsdo_battery.battery_pack import BatteryPack
 from lsdo_cubesat.eps.cadre_battery import BatteryPack
 from csdl import Model
 import csdl

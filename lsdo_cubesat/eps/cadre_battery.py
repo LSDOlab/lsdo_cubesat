@@ -1,7 +1,7 @@
 import numpy as np
-from csdl import Model, NewtonSolver, ScipyKrylov, NonlinearBlockGS, LinearBlockGS
+from csdl import Model, ScipyKrylov, NonlinearBlockGS
 import csdl
-from lsdo_battery.operations.soc_integrator import SOC_Integrator
+from lsdo_cubesat.operations.soc_integrator import SOC_Integrator
 
 
 class Voltage(Model):
@@ -166,12 +166,12 @@ class BatteryPack(Model):
         # when computing cell power during optimization
         num_series = self.create_input(
             'num_series',
-            val=10 if optimize_plant is True else 2,
+            val=100 if optimize_plant is True else 2,
             shape=(1, ),
         )
         num_parallel = self.create_input(
             'num_parallel',
-            val=10 if optimize_plant is True else 3,
+            val=100 if optimize_plant is True else 3,
             shape=(1, ),
         )
         if optimize_plant is True:
