@@ -1,3 +1,4 @@
+from csdl.std.pnorm import pnorm
 from lsdo_cubesat.constants import GRAVITATIONAL_PARAMTERS
 
 from csdl import Model
@@ -56,10 +57,11 @@ def keplerian_to_perifocal(
     # v[0] = -mu / h * csdl.sin(true_anomaly)
     # v[1] = mu / h * (eccentricity + csdl.cos(true_anomaly))
 
-    vmag = csdl.pnorm(mu * (2 / rmag - 1 / semimajor_axis))
+    speed = (mu * (2. / rmag - 1. / semimajor_axis))**0.5
 
-    v[0] = -vmag * csdl.sin(true_anomaly) / 10
-    v[1] = vmag * (eccentricity + csdl.cos(true_anomaly)) / 10
+    v[0] = -speed * csdl.sin(true_anomaly)
+    v[1] = speed * (eccentricity + csdl.cos(true_anomaly))
+    return eccentricity, semimajor_axis, speed
 
 
 class KeplerianToCartesian(Model):
@@ -137,7 +139,7 @@ class KeplerianToCartesian(Model):
 
     def define(self):
         central_body = self.parameters['central_body']
-        mu = GRAVITATIONAL_PARAMTERS[central_body] / 1e3**3
+        mu = GRAVITATIONAL_PARAMTERS[central_body] * 1e-9
 
         periapsis_name = self.parameters['periapsis_name']
         apoapsis_name = self.parameters['apoapsis_name']
@@ -182,15 +184,19 @@ class KeplerianToCartesian(Model):
 
         r = self.create_output(r_name + '_perifocal', shape=(3, ), val=0)
         v = self.create_output(v_name + '_perifocal', shape=(3, ), val=0)
-        keplerian_to_perifocal(r, v, mu, apoapsis, periapsis, true_anomaly)
+        eccentricity, semimajor_axis, speed = keplerian_to_perifocal(
+            r, v, mu, apoapsis, periapsis, true_anomaly)
+        self.register_output('eccentricity', eccentricity)
+        self.register_output('semimajor_axis', semimajor_axis)
+        self.register_output('speed', speed)
 
         R = self.create_output('R', shape=(3, 3))
         body_313(R, argument_of_periapsis, inclination,
                  longitude_of_ascending_node)
 
-        r = csdl.matvec(csdl.transpose(R), r)
-        # r = csdl.matvec(R, r)
+        # r = csdl.matvec(csdl.transpose(R), r)
+        r = csdl.matvec(R, r)
         self.register_output(r_name, r)
-        v = csdl.matvec(csdl.transpose(R), v)
-        # v = csdl.matvec(R, v)
+        # v = csdl.matvec(csdl.transpose(R), v)
+        v = csdl.matvec(R, v)
         self.register_output(v_name, v)

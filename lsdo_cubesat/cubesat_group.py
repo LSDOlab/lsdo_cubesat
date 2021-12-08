@@ -112,6 +112,20 @@ class Cubesat(Model):
             name='EPS',
         )
 
+        total_propellant_volume = self.declare_variable(
+            'total_propellant_volume',
+            shape=(1, 1),
+        )
+        battery_volume = self.declare_variable('battery_volume')
+        battery_and_propellant_volume = csdl.reshape(total_propellant_volume,
+                                                     (1, )) + battery_volume
+        self.register_output('battery_and_propellant_volume',
+                             battery_and_propellant_volume)
+
+        # volume of half of 1U
+        self.add_constraint('battery_and_propellant_volume',
+                            upper=10**3 / (10**3) / 2)
+
         if comm is True:
             self.add_download_rate_model()
 

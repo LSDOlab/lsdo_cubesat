@@ -1,5 +1,6 @@
 from lsdo_cubesat.solar.ivt import IVT
-from lsdo_battery.battery_pack import BatteryPack
+# from lsdo_battery.battery_pack import BatteryPack
+from lsdo_cubesat.eps.cadre_battery import BatteryPack
 from csdl import Model
 import csdl
 
@@ -51,7 +52,10 @@ class ElectricalPowerSystem(Model):
                                          (num_times, )) - rw_power - P0
         self.register_output('battery_power', battery_power)
 
-        # self.add(
-        #     BatteryPack(num_times=num_times, step_size=step_size),
-        #     name='battery_pack',
-        # )
+        self.add(
+            BatteryPack(
+                num_times=num_times,
+                step_size=step_size,
+            ),
+            name='battery_pack',
+        )

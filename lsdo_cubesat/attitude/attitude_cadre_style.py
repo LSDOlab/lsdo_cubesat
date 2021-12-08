@@ -95,10 +95,13 @@ class Attitude(Model):
         self.parameters.declare('step_size', types=float)
         self.parameters.declare('max_rw_torque', default=0.004, types=float)
         self.parameters.declare('max_rw_power', default=1., types=float)
-        # TODO: value for max RW speed
-        self.parameters.declare('max_rw_speed', default=0.007, types=float)
-        self.parameters.declare('sc_mmoi', types=np.ndarray)
-        self.parameters.declare('rw_mmoi', types=np.ndarray)
+        # 6U mmoi based on CADRE 3U cubesat
+        self.parameters.declare('sc_mmoi',
+                                default=6 * np.array([2, 1, 3]) * 1e-3,
+                                types=np.ndarray)
+        self.parameters.declare('rw_mmoi',
+                                default=6 * np.ones(3) * 1e-5,
+                                types=np.ndarray)
         self.parameters.declare('gravity_gradient', types=bool)
 
     def define(self):
@@ -106,7 +109,8 @@ class Attitude(Model):
         num_cp = self.parameters['num_cp']
         step_size = self.parameters['step_size']
         max_rw_torque = self.parameters['max_rw_torque']
-        max_rw_speed = self.parameters['max_rw_speed']
+        max_rw_power = self.parameters['max_rw_torque']
+        max_rw_speed = max_rw_power / max_rw_torque
         gravity_gradient = self.parameters['gravity_gradient']
         sc_mmoi = self.parameters['sc_mmoi']
         rw_mmoi = self.parameters['rw_mmoi']
@@ -133,17 +137,20 @@ class Attitude(Model):
         yaw_cp = self.create_input(
             'yaw_cp',
             shape=(num_cp, ),
-            val=np.random.rand(num_cp),
+            val=0,
+            # val=np.random.rand(num_cp),
         )
         pitch_cp = self.create_input(
             'pitch_cp',
             shape=(num_cp, ),
-            val=np.random.rand(num_cp),
+            val=0,
+            # val=np.random.rand(num_cp),
         )
         roll_cp = self.create_input(
             'roll_cp',
             shape=(num_cp, ),
-            val=np.random.rand(num_cp),
+            val=0,
+            # val=np.random.rand(num_cp),
         )
         self.add_design_variable('yaw_cp')
         self.add_design_variable('pitch_cp')
@@ -295,6 +302,11 @@ class Attitude(Model):
             'initial_rw_speed',
             shape=(3, ),
             val=0,
+        )
+        self.add_design_variable(
+            'initial_rw_speed',
+            lower=-max_rw_speed,
+            upper=max_rw_speed,
         )
         rw_speed = csdl.custom(
             body_torque,

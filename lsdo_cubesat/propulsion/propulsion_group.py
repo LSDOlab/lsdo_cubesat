@@ -45,14 +45,16 @@ class Propulsion(Model):
         omnidirectional = self.parameters['omnidirectional']
         max_thrust = self.parameters['max_thrust']
 
+        # kg
         initial_propellant_mass = self.create_input(
             'initial_propellant_mass',
             val=0.17,
         )
 
-        self.add_design_variable('initial_propellant_mass',
-                                 lower=0.,
-                                 upper=20000)
+        self.add_design_variable(
+            'initial_propellant_mass',
+            lower=0.,
+        )
 
         if omnidirectional is True:
             thrust_cp = self.create_input('thrust_cp',
@@ -148,6 +150,7 @@ class Propulsion(Model):
         temperature = 273.15 + 56
         # (273.15+25)*1.380649*6.02214076/(152.05/1000)/(100*6895)
         total_propellant_volume = temperature * boltzmann_avogadro / r236fa_molecular_mass_kg / pressure * total_propellant_used
+
         self.register_output(
             'total_propellant_volume',
             total_propellant_volume,

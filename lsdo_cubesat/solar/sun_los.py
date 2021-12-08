@@ -41,23 +41,25 @@ class SunLOS(CustomExplicitOperation):
 
         # component of position in direction of sun
         dot = np.sum(position_km * sun_direction, axis=(0, ))
-        mask = np.where(dot >= 0., 1., 0.)
-
-        # distance from earth projected onto plane normal to sun
+        # distance from earth center projected onto plane normal to sun
         # direction
         ds = np.linalg.norm(
             np.cross(position_km, sun_direction, axis=0),
             axis=0,
         )
-        mask *= np.where(ds > R, 1., 0.)
 
         # capture penumbra effect between light and shadow
         eta = (ds - alfa * R) / (R - alfa * R)
-        mask += np.where(
-            np.any(ds < R) and np.any(ds > alfa * R), 3 * eta**2 - 2 * eta**2,
-            0)
 
-        outputs['sun_LOS'] = mask
+        outputs['sun_LOS'] = np.where(
+            dot < 0.,
+            np.where(
+                ds > R,
+                1.,
+                np.where(ds > alfa * R, 3 * eta**2 - 2 * eta**2, 0),
+            ),
+            1.,
+        )
 
     # def compute_derivatives(self, inputs, derivatives):
     #     position_km = inputs['position_km']

@@ -12,11 +12,13 @@ class RelativeOrbit(Model):
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
+        self.parameters.declare('min_alt', default=450., types=float)
         self.parameters.declare('cubesat')
 
     def define(self):
         num_times = self.parameters['num_times']
         step_size = self.parameters['step_size']
+        min_alt = self.parameters['min_alt']
         cubesat = self.parameters['cubesat']
 
         dry_mass = self.create_input('dry_mass',
@@ -90,4 +92,4 @@ class RelativeOrbit(Model):
         self.register_output('position_km', position_km)
         self.register_output('velocity_km_s', velocity_km_s)
         self.register_output('ks_altitude_km', ks_altitude_km)
-        self.add_constraint('ks_altitude_km', lower=450.)
+        self.add_constraint('ks_altitude_km', lower=min_alt)

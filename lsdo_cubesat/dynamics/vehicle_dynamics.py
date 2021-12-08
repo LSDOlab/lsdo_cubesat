@@ -110,8 +110,6 @@ class VehicleDynamics(Model):
                 num_times=num_times,
                 num_cp=num_cp,
                 step_size=step_size,
-                sc_mmoi=np.array([18, 18, 6]) * 1e-3,
-                rw_mmoi=28 * np.ones(3) * 1e-6,
                 gravity_gradient=True,
             ),
             name='attitude',

@@ -32,7 +32,20 @@ class ReferenceOrbit(Model):
             ),
             name='initial_orbit',
         )
-
+        # self.add(
+        #     KeplerianToCartesian(
+        #         central_body='Earth',
+        #         periapsis=radius_earth + 500,
+        #         apoapsis=radius_earth + 500.,
+        #         longitude=0.,
+        #         inclination=0.,
+        #         argument_of_periapsis=0.,
+        #         true_anomaly=0.,
+        #         r_name='initial_radius_km',
+        #         v_name='initial_velocity_km_s',
+        #     ),
+        #     name='initial_orbit',
+        # )
         r = self.declare_variable('initial_radius_km', shape=(3, ))
         v = self.declare_variable('initial_velocity_km_s', shape=(3, ))
 
@@ -53,29 +66,6 @@ class ReferenceOrbit(Model):
             reference_orbit_state_km,
         )
 
-        position_km = reference_orbit_state_km[:3, :]
-        velocity_km_s = reference_orbit_state_km[3:, :]
-        # self.register_output('position_km', position_km)
-        # self.register_output('velocity_km_s', velocity_km_s)
-
-        reference_orbit_state = 1.e3 * reference_orbit_state_km
-        self.register_output('reference_orbit_state', reference_orbit_state)
-
-        radius_km, position_unit_vec = compute_norm_unit_vec(
-            position_km,
-            num_times=num_times,
-        )
-        self.register_output('position_unit_vec', position_unit_vec)
-        _, velocity_unit_vec = compute_norm_unit_vec(
-            velocity_km_s,
-            num_times=num_times,
-        )
-
-        self.register_output('velocity_unit_vec', velocity_unit_vec)
-        radius_m = 1.e3 * radius_km
-        self.register_output('radius_km', radius_km)
-        self.register_output('radius_m', radius_m)
-
 
 if __name__ == "__main__":
 
@@ -90,17 +80,29 @@ if __name__ == "__main__":
         ))
     print(sim['initial_radius_km'])
     sim.run()
-    print('initial_velocity_km_s_perifocal',
-          sim['initial_velocity_km_s_perifocal'])
+    print('eccentricity', sim['eccentricity'])
+    print('semimajor_axis', sim['semimajor_axis'])
+    print('periapsis', sim['periapsis'])
+    print('apoapsis', sim['apoapsis'])
+    print('speed', sim['speed'])
     print('initial_orbit_state_km', sim['initial_orbit_state_km'])
-    print(sim['initial_radius_km'])
-
+    print('initial_radius_km', sim['initial_radius_km'])
+    plt.plot(sim['reference_orbit_state_km'][0, 0],
+             sim['reference_orbit_state_km'][1, 0], 'o')
     plt.plot(sim['reference_orbit_state_km'][0, :],
              sim['reference_orbit_state_km'][1, :])
     plt.show()
-    plt.plot(sim['reference_orbit_state_km'][2, :],
-             sim['reference_orbit_state_km'][1, :])
-    plt.show()
-    plt.plot(sim['reference_orbit_state_km'][2, :],
-             sim['reference_orbit_state_km'][0, :])
+    # plt.plot(sim['reference_orbit_state_km'][2, :],
+    #          sim['reference_orbit_state_km'][1, :])
+    # plt.show()
+    # plt.plot(sim['reference_orbit_state_km'][2, :],
+    #          sim['reference_orbit_state_km'][0, :])
+    # plt.show()
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot(
+        sim['reference_orbit_state_km'][0, :],
+        sim['reference_orbit_state_km'][1, :],
+        sim['reference_orbit_state_km'][2, :],
+    )
     plt.show()

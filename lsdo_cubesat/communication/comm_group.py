@@ -4,7 +4,6 @@ from csdl import Model
 import csdl
 from csdl.utils.get_bspline_mtx import get_bspline_mtx
 
-# from lsdo_cubesat.api import GS_net, Ground_station
 from lsdo_cubesat.swarm.ground_station import Ground_station
 from lsdo_cubesat.swarm.GS_net import GS_net
 from lsdo_cubesat.ground_station_group import GSGroup
