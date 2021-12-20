@@ -2,12 +2,9 @@ from csdl import Model
 import csdl
 import numpy as np
 
-# from lsdo_cubesat.attitude.attitude_group import AttitudeGroup
 from lsdo_cubesat.attitude.attitude_cadre_style import Attitude
 from lsdo_cubesat.propulsion.propulsion_group import Propulsion
-# from lsdo_cubesat.aerodynamics.aerodynamics_group import AerodynamicsGroup
 from lsdo_cubesat.orbit.relative_orbit import RelativeOrbit
-from lsdo_cubesat.utils.compute_norm_unit_vec import compute_norm_unit_vec
 
 
 class VehicleDynamics(Model):
@@ -32,16 +29,6 @@ class VehicleDynamics(Model):
             ),
             name='propulsion',
         )
-
-        # self.add(
-        #     AerodynamicsGroup(
-        #         num_times=num_times,
-        #         # num_cp=num_cp,
-        #         # step_size=step_size,
-        #         # cubesat=cubesat,
-        #     ),
-        #     name='aerodynamics',
-        # )
 
         self.add(
             RelativeOrbit(
