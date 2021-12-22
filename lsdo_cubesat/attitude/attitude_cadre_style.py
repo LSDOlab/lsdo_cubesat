@@ -328,12 +328,24 @@ class Attitude(Model):
         rw_torque[2, :] = rw_mmoi[2] * rw_accel[2, :]
 
         # RW torque saturation
+        rw_torque_min = csdl.min(rw_torque, axis=1, rho=20)
+        rw_torque_max = csdl.max(rw_torque, axis=1, rho=20)
+        self.register_output(
+            'rw_torque_min',
+            rw_torque_min,
+        )
+        self.register_output(
+            'rw_torque_max',
+            rw_torque_max,
+        )
         self.add_constraint(
-            'rw_torque',
+            'rw_torque_min',
             lower=-max_rw_torque,
+        )
+        self.add_constraint(
+            'rw_torque_max',
             upper=max_rw_torque,
         )
-
         # RW rate saturation
         rw_speed_ks_min = csdl.min(rw_speed, axis=1, rho=20)
         rw_speed_ks_max = csdl.max(rw_speed, axis=1, rho=20)
