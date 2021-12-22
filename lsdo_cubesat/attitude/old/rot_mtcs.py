@@ -11,6 +11,25 @@ class RotationMatrices(Model):
     def define(self):
         num_times = self.parameters['num_times']
         step_size = self.parameters['step_size']
+        earth_spin_rate = 2 * np.pi / 24 / 3600  # rad/s
+        t = self.declare_variable('t', val=np.arange(num_times) * step_size)
+
+        # Earth Centered Inertial to Earth Sun Frame
+        v = np.zeros((3, 3, num_times))
+        v[2, 2, :] = 1
+        ECI_to_ESF = self.create_output('ECI_to_ESF', val=v)
+        et = -earth_spin_rate * t
+        ECI_to_ESF[0, 0, :] = csdl.cos(csdl.reshape(et, (1, 1, num_times)))
+        ECI_to_ESF[0, 1, :] = csdl.sin(csdl.reshape(et, (1, 1, num_times)))
+        ECI_to_ESF[1, 0, :] = csdl.cos(csdl.reshape(et, (1, 1, num_times)))
+        ECI_to_ESF[1, 1, :] = -csdl.sin(csdl.reshape(et, (1, 1, num_times)))
+
+        # Body to Earth Sun Frame
+        B_to_ESF = csdl.einsum(B_to_ECI, ECI_to_ESF, subscripts='ijm,klm->ilm')
+
+        # Earth Sun Frame to Body
+        ESF_to_B = csdl.einsum(B_to_ESF, subscripts='ijk->jik')
+        sun_direction = csdl.reshape(ESF_to_B[:, 0, :], (3, num_times))
 
         # orbit state given in ECI frame
         # TODO: connect orbit state
