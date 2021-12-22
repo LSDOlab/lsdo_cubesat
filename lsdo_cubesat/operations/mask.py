@@ -17,7 +17,6 @@ class Mask(CustomExplicitOperation):
 
         self.add_input(in_name, shape=num_times)
         self.add_output(out_name, shape=num_times)
-        self.declare_derivatives(out_name, in_name, val=0.)
 
     def compute(self, inputs, outputs):
         threshold = self.parameters['threshold']
