@@ -1,6 +1,6 @@
-from lsdo_cubesat.swarm.swarm import SwarmParams
-from lsdo_cubesat.swarm.cubesat import CubesatParams
-from lsdo_cubesat.communication.ground_station import GroundStationParams
+from lsdo_cubesat.parameters.swarm import SwarmParams
+from lsdo_cubesat.parameters.cubesat import CubesatParams
+from lsdo_cubesat.parameters.ground_station import GroundStationParams
 import numpy as np
 
 num_times = 30
