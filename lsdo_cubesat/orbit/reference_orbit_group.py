@@ -1,6 +1,5 @@
 import numpy as np
 
-from lsdo_cubesat.utils.compute_norm_unit_vec import compute_norm_unit_vec
 from lsdo_cubesat.orbit.keplerian_to_cartesian import KeplerianToCartesian
 from lsdo_cubesat.operations.reference_orbit_integrator import ReferenceOrbitIntegrator
 from csdl import Model
