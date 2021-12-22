@@ -86,7 +86,7 @@ class Cell(Model):
                 step_size=step_size,
             ))
         compute_voltage.linear_solver = ScipyKrylov()
-        compute_voltage.nonlinear_solver = NonlinearBlockGS()
+        compute_voltage.nonlinear_solver = NonlinearBlockGS(iprint=0)
 
         power = self.declare_variable('power', shape=(1, num_times))
         compute_voltage.declare_state('voltage', residual='r_V', val=3.3)
@@ -166,12 +166,12 @@ class BatteryPack(Model):
         # when computing cell power during optimization
         num_series = self.create_input(
             'num_series',
-            val=100 if optimize_plant is True else 2,
+            val=2,
             shape=(1, ),
         )
         num_parallel = self.create_input(
             'num_parallel',
-            val=100 if optimize_plant is True else 3,
+            val=3,
             shape=(1, ),
         )
         if optimize_plant is True:
