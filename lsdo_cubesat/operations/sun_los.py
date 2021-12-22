@@ -1,5 +1,8 @@
 from csdl import CustomExplicitOperation
 import numpy as np
+from lsdo_cubesat.constants import RADII
+
+R = RADII['Earth']
 
 
 class SunLOS(CustomExplicitOperation):
@@ -7,7 +10,7 @@ class SunLOS(CustomExplicitOperation):
         super().initialize()
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('alfa', types=float, default=0.9)
-        self.parameters.declare('R', types=float, default=0.5)
+        self.parameters.declare('R', types=float, default=R)
 
     def define(self):
         num_times = self.parameters['num_times']
@@ -62,8 +65,6 @@ class SunLOS(CustomExplicitOperation):
         )
 
     # def compute_derivatives(self, inputs, derivatives):
-    #     position_km = inputs['position_km']
-    #     sun_direction = inputs['sun_direction']
     #     mask = np.where(self.dot >= 0, 0, 1)
     #     derivatives['sun_LOS', 'position_km'] = 0
     #     derivatives['sun_LOS', 'sun_direction'] = 0
