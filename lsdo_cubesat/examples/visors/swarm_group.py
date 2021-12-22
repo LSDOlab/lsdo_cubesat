@@ -5,7 +5,7 @@ import numpy as np
 # from lsdo_cubesat.cubesat_group import Cubesat
 from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
 from lsdo_cubesat.parameters.swarm import SwarmParams
-from lsdo_cubesat.cubesat_group import Cubesat
+from lsdo_cubesat.examples.visors.cubesat_group import Cubesat
 from lsdo_cubesat.operations.sun_direction import SunDirection
 
 
@@ -91,14 +91,14 @@ class Swarm(Model):
             'detector_cubesat_group.B_from_ECI',
             'detector_B_from_ECI',
         )
-        # # self.connect(
-        # #     'optics_cubesat_group.sun_pointing_constraint',
-        # #     'optics_sun_pointing_constraint',
-        # # )
-        # # self.connect(
-        # #     'detector_cubesat_group.sun_pointing_constraint',
-        # #     'detector_sun_pointing_constraint',
-        # # )
+        # self.connect(
+        #     'optics_cubesat_group.sun_pointing_constraint',
+        #     'optics_sun_pointing_constraint',
+        # )
+        # self.connect(
+        #     'detector_cubesat_group.sun_pointing_constraint',
+        #     'detector_sun_pointing_constraint',
+        # )
 
         optics_total_propellant_used = self.declare_variable(
             'optics_total_propellant_used')

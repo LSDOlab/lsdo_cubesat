@@ -5,14 +5,13 @@ from csdl import Model
 import csdl
 
 from lsdo_cubesat.parameters.cubesat import CubesatParams
-from lsdo_cubesat.communication.comm_group import CommGroup
+# from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.dynamics.vehicle_dynamics import VehicleDynamics
-from lsdo_cubesat.solar.sun_los import SunLOS
+from lsdo_cubesat.operations.sun_los import SunLOS
 from lsdo_cubesat.eps.electrical_power_system import ElectricalPowerSystem
 from lsdo_cubesat.solar.solar_exposure import SolarExposure
-from lsdo_cubesat.utils.rot_seq import rot_seq
 
 
 class Cubesat(Model):
@@ -63,8 +62,8 @@ class Cubesat(Model):
         rw_power = rw_current * rw_voltage
         self.register_output('rw_power', rw_power)
 
-        if comm is True:
-            self.add_comm()
+        # if comm is True:
+        #     self.add_comm()
 
         sun_direction = self.declare_variable('sun_direction',
                                               shape=(3, num_times))
@@ -129,37 +128,37 @@ class Cubesat(Model):
         if comm is True:
             self.add_download_rate_model()
 
-    def add_comm(self):
-        num_times = self.parameters['num_times']
-        num_cp = self.parameters['num_cp']
-        step_size = self.parameters['step_size']
-        cubesat = self.parameters['cubesat']
+    # def add_comm(self):
+    #     num_times = self.parameters['num_times']
+    #     num_cp = self.parameters['num_cp']
+    #     step_size = self.parameters['step_size']
+    #     cubesat = self.parameters['cubesat']
 
-        comm_powers = []
-        for ground_station in cubesat.children:
-            name = ground_station['name']
+    #     comm_powers = []
+    #     for ground_station in cubesat.children:
+    #         name = ground_station['name']
 
-            self.add(
-                CommGroup(
-                    num_times=num_times,
-                    num_cp=num_cp,
-                    step_size=step_size,
-                    ground_station=ground_station,
-                ),
-                name='{}_comm_group'.format(name),
-                promotes=['orbit_state_km'],
-            )
-            comm_powers.append(
-                self.declare_variable(
-                    '{}_P_comm'.format(name),
-                    shape=(num_times, ),
-                ))
-            self.connect(
-                '{}_comm_group.P_comm'.format(name),
-                '{}_P_comm'.format(name),
-            )
-        comm_power = csdl.sum(*comm_powers)
-        self.register_output('comm_power', comm_power)
+    #         self.add(
+    #             CommGroup(
+    #                 num_times=num_times,
+    #                 num_cp=num_cp,
+    #                 step_size=step_size,
+    #                 ground_station=ground_station,
+    #             ),
+    #             name='{}_comm_group'.format(name),
+    #             promotes=['orbit_state_km'],
+    #         )
+    #         comm_powers.append(
+    #             self.declare_variable(
+    #                 '{}_P_comm'.format(name),
+    #                 shape=(num_times, ),
+    #             ))
+    #         self.connect(
+    #             '{}_comm_group.P_comm'.format(name),
+    #             '{}_P_comm'.format(name),
+    #         )
+    #     comm_power = csdl.sum(*comm_powers)
+    #     self.register_output('comm_power', comm_power)
 
     def add_download_rate_model(self):
         num_times = self.parameters['num_times']
