@@ -57,14 +57,15 @@ class Propulsion(Model):
         )
 
         if omnidirectional is True:
-            thrust_cp = self.create_input('thrust_cp',
-                                          val=0,
-                                          shape=(3, num_cp))
-            self.add_design_variable(
+            thrust_cp = self.create_input(
                 'thrust_cp',
-                lower=-max_thrust,
-                upper=max_thrust,
+                val=0.0001,
+                shape=(3, num_cp),
             )
+            self.add_design_variable('thrust_cp',
+                                     # lower=-max_thrust,
+                                     # upper=max_thrust,
+                                     )
             v = get_bspline_mtx(num_cp, num_times).toarray()
             bspline_mtx = self.declare_variable(
                 'bspline_mtx',
@@ -74,7 +75,7 @@ class Propulsion(Model):
             thrust_3xn = csdl.einsum(thrust_cp,
                                      bspline_mtx,
                                      subscripts='ij,kj->ik')
-            thrust_scalar = csdl.pnorm(thrust_3xn, axis=0)
+            thrust_scalar = csdl.sum(thrust_3xn, axes=(0, ))
 
         else:
             thrust_unit_vec = np.outer(
