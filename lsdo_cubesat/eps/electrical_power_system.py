@@ -55,6 +55,7 @@ class ElectricalPowerSystem(Model):
             BatteryPack(
                 num_times=num_times,
                 step_size=step_size,
+                optimize_plant=False,
             ),
             name='battery_pack',
         )
