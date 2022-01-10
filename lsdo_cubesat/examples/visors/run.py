@@ -55,6 +55,7 @@ def make_swarm(swarm):
     return sim
 
 
+duration = 95.
 # if True:
 if False:
     num_times = 1501
@@ -67,8 +68,7 @@ else:
     num_times = 4
     num_cp = 3
 
-step_size = 95 * 60 / (num_times - 1)
-
+step_size = duration * 60 / (num_times - 1)
 plot_reference_orbit = True
 plot_initial_outputs = True
 optimize = False
@@ -80,6 +80,7 @@ ref_orbit, ax = generate_reference_orbit(
 sim = make_swarm(
     SwarmParams(
         num_times=num_times,
+        duration=duration,
         num_cp=num_cp,
         step_size=step_size,
         cross_threshold=0.882,

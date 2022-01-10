@@ -10,9 +10,11 @@ from lsdo_cubesat.operations.sun_direction import SunDirection
 
 
 class Swarm(Model):
+
     def initialize(self):
         self.parameters.declare('swarm', types=SwarmParams)
         self.parameters.declare('comm', types=bool, default=False)
+        self.parameters.declare('duration', types=float)
 
     def define(self):
         swarm = self.parameters['swarm']
@@ -21,23 +23,20 @@ class Swarm(Model):
         num_times = swarm['num_times']
         num_cp = swarm['num_cp']
         step_size = swarm['step_size']
+        duration = swarm['duration']
 
-        times = self.create_input(
-            'times',
-            val=np.linspace(0., step_size * (num_times - 1), num_times),
+        earth_orbit_angular_speed_rad_min = 2 * np.pi / 365 * 1 / 24 * 1 / 60
+        step_size_min = duration / num_times
+        earth_orbit_angular_position = earth_orbit_angular_speed_rad_min * step_size_min * np.arange(
+            num_times)
+        v = np.zeros((3, num_times))
+        v[0, :] = np.cos(earth_orbit_angular_position)
+        v[1, :] = np.sin(earth_orbit_angular_position)
+        sun_direction = self.create_input(
+            'sun_direction',
+            shape=(3, num_times),
+            val=v,
         )
-        # TODO: what reference frame is this?
-        # TODO: transform so that sun_direction is in ECI, pointing
-        # towards sun
-        sun_direction = csdl.custom(
-            times,
-            op=SunDirection(
-                num_times=num_times,
-                launch_date=swarm['launch_date'],
-            ),
-        )
-        self.register_output('sun_direction', sun_direction)
-
         for cubesat in swarm.children:
             cubesat_name = cubesat['name']
             submodel_name = '{}_cubesat_group'.format(cubesat_name)
