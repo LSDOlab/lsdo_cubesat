@@ -2,31 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_initial(sim, threeD=False):
-    if threeD:
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        x = sim['reference_orbit_state_km'][0, :]
-        y = sim['reference_orbit_state_km'][1, :]
-        z = sim['reference_orbit_state_km'][2, :]
-        l = min(np.min(x), np.min(y), np.min(z))
-        u = max(np.max(x), np.max(y), np.max(z))
-        ax.set_xlim(l, u)
-        ax.set_ylim(l, u)
-        ax.set_zlim(l, u)
-        ax.plot(x, y, z)
-
-        sd = sim['sun_direction']
-        ax.plot(
-            sd[0, :] * 6000,
-            sd[1, :] * 6000,
-            sd[2, :] * 6000,
-        )
-        plt.show()
-
+def plot_initial(sim):
+    if sim.iter == 0:
+        print('Need to run simulation before generating plots!')
     else:
-        sim.run()
-
         plt.plot(sim['optics_cubesat_group.relative_orbit_state_m'][0, :])
         plt.plot(sim['optics_cubesat_group.relative_orbit_state_m'][1, :])
         plt.plot(sim['optics_cubesat_group.relative_orbit_state_m'][2, :])
@@ -48,6 +27,7 @@ def plot_initial(sim, threeD=False):
         plt.plot(sim['detector_cubesat_group.sun_LOS'][0, :])
         plt.show()
 
+        # zero when sun_LOS == 0
         plt.plot(sim['optics_cubesat_group.percent_exposed_area'][0, :])
         plt.plot(sim['detector_cubesat_group.percent_exposed_area'][0, :])
         plt.show()
@@ -69,11 +49,25 @@ def plot_initial(sim, threeD=False):
         plt.plot(sim['optics_cubesat_group.body_torque'][2, :])
         plt.show()
 
+        plt.plot(sim['optics_cubesat_group.rw_torque'][0, :] -
+                 sim['optics_cubesat_group.body_torque'][0, :])
+        plt.plot(sim['optics_cubesat_group.rw_torque'][1, :] -
+                 sim['optics_cubesat_group.body_torque'][1, :])
+        plt.plot(sim['optics_cubesat_group.rw_torque'][2, :] -
+                 sim['optics_cubesat_group.body_torque'][2, :])
+        plt.plot(sim['detector_cubesat_group.rw_torque'][0, :] -
+                 sim['detector_cubesat_group.body_torque'][0, :])
+        plt.plot(sim['detector_cubesat_group.rw_torque'][1, :] -
+                 sim['detector_cubesat_group.body_torque'][1, :])
+        plt.plot(sim['detector_cubesat_group.rw_torque'][2, :] -
+                 sim['detector_cubesat_group.body_torque'][2, :])
+        plt.show()
+
         # # should NOT be constant
         plt.plot(sim['optics_cubesat_group.soc'].flatten())
         plt.show()
 
-        # should be 3 when soc <= 0
+        # should be 2.4180232931306733 when soc << 0
         plt.plot(sim['optics_cubesat_group.voltage'].flatten())
         plt.plot(3 + (np.exp(sim['optics_cubesat_group.soc'].flatten()) - 1) /
                  (np.exp(1) - 1))
@@ -99,4 +93,3 @@ def plot_initial(sim, threeD=False):
         # plt.show()
         # plt.plot(sim['detector_view_angle_error'].flatten())
         # plt.show()
-        exit()
