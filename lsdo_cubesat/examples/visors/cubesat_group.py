@@ -15,6 +15,7 @@ from lsdo_cubesat.solar.solar_exposure import SolarExposure
 
 
 class Cubesat(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('num_cp', types=int)
@@ -93,13 +94,13 @@ class Cubesat(Model):
             sun_component,
         )
 
-        percent_exposed_area = csdl.custom(
+        percent_facing_sun = csdl.custom(
             sun_component,
             op=SolarExposure(num_times=num_times),
         )
         self.register_output(
             'percent_exposed_area',
-            percent_exposed_area,
+            percent_facing_sun * sun_LOS,
         )
 
         self.add(

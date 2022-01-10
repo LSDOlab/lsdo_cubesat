@@ -5,15 +5,16 @@ import numpy as np
 
 
 class SolarExposure(CustomExplicitOperation):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
 
     def define(self):
         num_times = self.parameters['num_times']
         self.add_input('sun_component', shape=(1, num_times))
-        self.add_output('percent_exposed_area', shape=(1, num_times))
+        self.add_output('percent_facing_sun', shape=(1, num_times))
         r = np.arange(num_times)
-        self.declare_derivatives('percent_exposed_area',
+        self.declare_derivatives('percent_facing_sun',
                                  'sun_component',
                                  rows=r,
                                  cols=r)
@@ -32,11 +33,11 @@ class SolarExposure(CustomExplicitOperation):
 
     def compute(self, inputs, outputs):
         c = inputs['sun_component'].reshape(-1, 1)
-        outputs['percent_exposed_area'] = self.sm.predict_values(c)
+        outputs['percent_facing_sun'] = self.sm.predict_values(c)
 
     def compute_derivatives(self, inputs, derivatives):
         c = inputs['sun_component'].reshape(-1, 1)
-        derivatives['percent_exposed_area',
+        derivatives['percent_facing_sun',
                     'sun_component'] = self.sm.predict_derivatives(
                         c, 0).flatten()
 
@@ -47,6 +48,7 @@ if __name__ == "__main__":
     from csdl_om import Simulator
 
     class M(Model):
+
         def define(self):
             num_times = 5
             sun_component = self.declare_variable(
@@ -54,11 +56,11 @@ if __name__ == "__main__":
                 shape=(1, num_times),
                 val=np.random.rand(num_times).reshape((1, num_times)) - 0.5,
             )
-            percent_exposed_area = csdl.custom(
+            percent_facing_sun = csdl.custom(
                 sun_component,
                 op=SolarExposure(num_times=num_times),
             )
-            self.register_output('percent_exposed_area', percent_exposed_area)
+            self.register_output('percent_facing_sun', percent_facing_sun)
 
     sim = Simulator(M())
     sim.check_partials(compact_print=True)
