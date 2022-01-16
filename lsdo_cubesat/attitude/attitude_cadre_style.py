@@ -27,6 +27,7 @@ def skew_array(a):
 
 
 class RWSpeed(RK4):
+
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
@@ -63,9 +64,9 @@ class RWSpeed(RK4):
             shape=(3, num_times),
         )
         self.dfdx = np.zeros((3, 6))
-        self.dfdx[:, :3] = -np.eye(3)
         self.rw_mmoi = np.diag(rw_mmoi)
         self.rw_mmoi_inv = np.diag(1 / rw_mmoi)
+        self.dfdx[:, :3] = -self.rw_mmoi_inv
 
     def f_dot(self, external, state):
         J = self.parameters['rw_mmoi']
@@ -82,13 +83,13 @@ class RWSpeed(RK4):
 
     # ODE wrt external inputs
     def df_dx(self, external, state):
-        body_rates = external[3:6]
-        Jw = np.matmul(self.rw_mmoi, body_rates)
+        Jw = np.matmul(self.rw_mmoi, state)
         self.dfdx[:, 3:] = np.matmul(self.rw_mmoi_inv, skew_array(Jw))
         return self.dfdx
 
 
 class Attitude(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('num_cp', types=int)
@@ -138,19 +139,22 @@ class Attitude(Model):
             'yaw_cp',
             shape=(num_cp, ),
             val=0,
-            # val=np.random.rand(num_cp),
+            # val=np.pi / 4,
+            # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         pitch_cp = self.create_input(
             'pitch_cp',
             shape=(num_cp, ),
             val=0,
-            # val=np.random.rand(num_cp),
+            # val=np.pi / 4,
+            # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         roll_cp = self.create_input(
             'roll_cp',
             shape=(num_cp, ),
             val=0,
-            # val=np.random.rand(num_cp),
+            # val=np.pi / 4,
+            # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         self.add_design_variable('yaw_cp')
         self.add_design_variable('pitch_cp')
@@ -328,8 +332,8 @@ class Attitude(Model):
         rw_torque[2, :] = rw_mmoi[2] * rw_accel[2, :]
 
         # RW torque saturation
-        rw_torque_min = csdl.min(rw_torque, axis=1, rho=20)
-        rw_torque_max = csdl.max(rw_torque, axis=1, rho=20)
+        rw_torque_min = csdl.min(rw_torque, axis=1, rho=10. / 1e7)
+        rw_torque_max = csdl.max(rw_torque, axis=1, rho=10. / 1e7)
         self.register_output(
             'rw_torque_min',
             rw_torque_min,
@@ -346,20 +350,22 @@ class Attitude(Model):
             'rw_torque_max',
             upper=max_rw_torque,
         )
+
         # RW rate saturation
-        rw_speed_ks_min = csdl.min(rw_speed, axis=1, rho=20)
-        rw_speed_ks_max = csdl.max(rw_speed, axis=1, rho=20)
-        self.register_output('rw_speed_ks_min', rw_speed_ks_min)
-        self.register_output('rw_speed_ks_max', rw_speed_ks_max)
-        self.add_constraint('rw_speed_ks_min', lower=-max_rw_speed)
-        self.add_constraint('rw_speed_ks_max', lower=max_rw_speed)
+        rw_speed_min = csdl.min(rw_speed, axis=1, rho=10. / 1e13)
+        rw_speed_max = csdl.max(rw_speed, axis=1, rho=10. / 1e14)
+        self.register_output('rw_speed_min', rw_speed_min)
+        self.register_output('rw_speed_max', rw_speed_max)
+        self.add_constraint('rw_speed_min', lower=-max_rw_speed)
+        self.add_constraint('rw_speed_max', upper=max_rw_speed)
 
 
 if __name__ == "__main__":
     from csdl_om import Simulator
     sim = Simulator(
         Attitude(
-            num_times=3,
+            num_times=80,
+            num_cp=5,
             step_size=0.1,
             sc_mmoi=np.array([18, 18, 6]) * 1e-3,
             rw_mmoi=28 * np.ones(3) * 1e-6,
