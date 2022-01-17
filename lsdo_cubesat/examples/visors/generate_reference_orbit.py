@@ -10,7 +10,6 @@ def generate_reference_orbit(num_times, step_size, plot=False):
         step_size=step_size,
     ))
     sim.run()
-    print(sim['R'])
     if plot is True:
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -27,7 +26,6 @@ def generate_reference_orbit(num_times, step_size, plot=False):
 
         # plot initial state
         r0 = sim['initial_radius_km']
-        print('initial_radius_km', r0)
         rx = r0[0]
         ry = r0[1]
         rz = r0[2]
