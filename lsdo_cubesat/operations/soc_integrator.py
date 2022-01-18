@@ -4,6 +4,7 @@ from lsdo_cubesat.operations.rk4_op import RK4
 
 
 class SOC_Integrator(RK4):
+
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
@@ -85,18 +86,18 @@ if __name__ == '__main__':
 
     num_times = 200
     step_size = 0.1
+    np.random.seed(0)
 
     class Example(Model):
+
         def define(self):
             power = self.declare_variable(
                 'power',
                 shape=(1, num_times),
-                val=np.random.rand(num_times).reshape((1, num_times)),
             )
             voltage = self.declare_variable(
                 'voltage',
                 shape=(1, num_times),
-                # val=np.random.rand(num_times).reshape((1, num_times)),
                 val=3.3,
             )
             coulombic_efficiency = self.declare_variable(
@@ -125,14 +126,18 @@ if __name__ == '__main__':
                 op=SOC_Integrator(
                     num_times=num_times,
                     step_size=step_size,
-                    min_soc=0.05,
-                    max_soc=0.95,
                 ),
             )
             self.register_output('soc', soc)
 
     from csdl_om import Simulator
     sim = Simulator(Example())
+    sim['power'] = 10 * (np.random.rand(num_times).reshape(
+        (1, num_times)) - 0.5)
+    sim['voltage'] = 3.3 * np.random.rand(num_times).reshape((1, num_times))
+    sim['coulombic_efficiency'] = np.random.rand(num_times).reshape(
+        (1, num_times))
+    sim['capacity'] = 2.6 * np.random.rand(num_times).reshape((1, num_times))
     sim.check_partials(compact_print=True)
 
     # sim.run()
