@@ -167,3 +167,12 @@ class Swarm(Model):
         obj = total_propellant_used + 1e-2 * regularization_term
         self.register_output('obj', obj)
         self.add_objective('obj', scaler=1.e-3)
+        self.add_objective('obj')
+
+        # # temporarily create objective independent of constraints to
+        # # find feasible solution more quickly than finding optimal
+        # # solution
+        # dummy = self.create_input('dummy', val=0)
+        # self.add_design_variable('dummy')
+        # self.register_output('obj', dummy**2)
+        # self.add_objective('obj')
