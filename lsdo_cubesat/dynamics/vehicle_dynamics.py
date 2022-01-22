@@ -8,6 +8,7 @@ from lsdo_cubesat.orbit.relative_orbit import RelativeOrbit
 
 
 class VehicleDynamics(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('num_cp', types=int)
@@ -39,7 +40,7 @@ class VehicleDynamics(Model):
             name='orbit',
         )
 
-        self.connect('thrust_3xn', 'force_3xn')
+        self.connect('thrust', 'force_3xn')
 
         orbit_state_km = self.declare_variable(
             'orbit_state_km',

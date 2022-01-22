@@ -1,3 +1,4 @@
+from re import S
 import numpy as np
 
 from csdl import Model
@@ -29,6 +30,7 @@ class Propulsion(Model):
         Matrix that translates control points (num_cp) to actual points
         (num_times)
     """
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('num_cp', types=int)
@@ -59,23 +61,28 @@ class Propulsion(Model):
         if omnidirectional is True:
             thrust_cp = self.create_input(
                 'thrust_cp',
-                val=0.0001,
+                # val=0.0001,
+                val=0.0001 * np.random.rand(3 * num_cp).reshape(
+                    (3, num_cp)) - 0.5,
+                # val=0.,
                 shape=(3, num_cp),
             )
-            self.add_design_variable('thrust_cp',
-                                     # lower=-max_thrust,
-                                     # upper=max_thrust,
-                                     )
+            self.add_design_variable(
+                'thrust_cp',
+                lower=-max_thrust,
+                upper=max_thrust,
+            )
             v = get_bspline_mtx(num_cp, num_times).toarray()
             bspline_mtx = self.declare_variable(
                 'bspline_mtx',
                 val=v,
                 shape=v.shape,
             )
-            thrust_3xn = csdl.einsum(thrust_cp,
-                                     bspline_mtx,
-                                     subscripts='ij,kj->ik')
-            thrust_scalar = csdl.sum(thrust_3xn, axes=(0, ))
+            thrust = csdl.einsum(bspline_mtx,
+                                 thrust_cp,
+                                 subscripts='kj,ij->ik')
+            thrust_scalar = csdl.sum(thrust, axes=(0, ))
+            # thrust_scalar = csdl.pnorm(thrust, axis=0)
 
         else:
             thrust_unit_vec = np.outer(
@@ -113,9 +120,9 @@ class Propulsion(Model):
             thrust_scalar_3xn = csdl.expand(thrust_scalar,
                                             shape=(3, num_times),
                                             indices='i->ji')
-            thrust_3xn = thrust_unit_vec_3xn * thrust_scalar_3xn
+            thrust = thrust_unit_vec_3xn * thrust_scalar_3xn
 
-        self.register_output('thrust_3xn', thrust_3xn)
+        self.register_output('thrust', thrust)
 
         mass_flow_rate = csdl.reshape(
             -1. / (cubesat['acceleration_due_to_gravity'] *
@@ -150,9 +157,37 @@ class Propulsion(Model):
         pressure = 100 * 6895
         temperature = 273.15 + 56
         # (273.15+25)*1.380649*6.02214076/(152.05/1000)/(100*6895)
-        total_propellant_volume = temperature * boltzmann_avogadro / r236fa_molecular_mass_kg / pressure * total_propellant_used
+        total_propellant_volume = csdl.reshape(
+            temperature * boltzmann_avogadro / r236fa_molecular_mass_kg /
+            pressure * total_propellant_used,
+            (1, ),
+        )
 
         self.register_output(
             'total_propellant_volume',
             total_propellant_volume,
         )
+        self.add_constraint('total_propellant_volume')
+
+
+if __name__ == "__main__":
+    from csdl_om import Simulator
+    from lsdo_cubesat.parameters.cubesat import CubesatParams
+
+    initial_orbit_state = np.array([1e-3] * 3 + [1e-3] * 3)
+    sim = Simulator(
+        Propulsion(num_times=100,
+                   num_cp=20,
+                   step_size=0.1,
+                   cubesat=CubesatParams(
+                       name='optics',
+                       dry_mass=1.3,
+                       initial_orbit_state=initial_orbit_state *
+                       np.random.rand(6) * 1e-3,
+                       specific_impulse=47.,
+                       perigee_altitude=500.,
+                       apogee_altitude=500.,
+                   )))
+    # sim.check_partials(compact_print=True, method='cs')
+    sim.run()
+    sim.prob.check_totals(compact_print=True)

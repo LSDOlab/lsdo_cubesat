@@ -1,77 +1,55 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import pickle
 
 from lsdo_cubesat.parameters.swarm import SwarmParams
-from lsdo_cubesat.parameters.cubesat import CubesatParams
-from lsdo_cubesat.examples.visors.swarm_group import Swarm
-
-from csdl_om import Simulator
-
-from lsdo_cubesat.examples.visors.initial_plots import plot_initial
-from lsdo_cubesat.examples.visors.save_data import save_data
+from lsdo_cubesat.examples.visors.plot_sim_state import plot_sim_state
+from lsdo_cubesat.examples.visors.get_all_varnames import get_all_varnames
 from lsdo_cubesat.examples.visors.generate_reference_orbit import generate_reference_orbit
+from lsdo_cubesat.examples.visors.warm_start import warm_start
+from lsdo_cubesat.examples.visors.make_swarm import make_swarm
 
-
-def make_swarm(swarm):
-
-    # initial state relative to reference orbit
-    initial_orbit_state = np.array([1e-3] * 3 + [1e-3] * 3)
-
-    np.random.seed(0)
-
-    cubesats = dict()
-
-    cubesats['optics'] = CubesatParams(
-        name='optics',
-        dry_mass=1.3,
-        initial_orbit_state=initial_orbit_state * np.random.rand(6) * 1e-3,
-        approx_altitude_km=500.,
-        specific_impulse=47.,
-        perigee_altitude=500.,
-        apogee_altitude=500.,
-    )
-
-    cubesats['detector'] = CubesatParams(
-        name='detector',
-        dry_mass=1.3,
-        initial_orbit_state=initial_orbit_state * np.random.rand(6) * 1e-3,
-        approx_altitude_km=500.,
-        specific_impulse=47.,
-        perigee_altitude=500.002,
-        apogee_altitude=499.98,
-    )
-
-    for v in cubesats.values():
-        swarm.add(v)
-    m = Swarm(swarm=swarm)
-    start_compile = time.time()
-    sim = Simulator(m)
-    end_compile = time.time()
-    total_compile_time = end_compile - start_compile
-    print('========== TOTAL COMPILE TIME ==========')
-    print(total_compile_time, 's')
-    print('=========================================')
-    return sim
-
+np.random.seed(0)
 
 duration = 95.
 # if True:
 if False:
     num_times = 1501
     num_cp = 30
+    num_times = 301
+    num_cp = 30
 # elif False:
 elif True:
     num_times = 40
-    num_cp = 5
+    num_cp = 16
 else:
-    num_times = 4
-    num_cp = 3
-
+    num_times = 40
+    num_cp = 5
 step_size = duration * 60 / (num_times - 1)
-plot_reference_orbit = True
-plot_initial_outputs = True
-optimize = False
+
+check_derivatives = True
+# check_derivatives = False
+use_fd = True
+# use_fd = False
+fd_step = 1e-4
+plot_reference_orbit = False
+plot_initial_outputs = False
+# plot_initial_outputs = True
+# optimize_model = True
+optimize_model = False
+# ws = True
+ws = False
+# visualize_impl = True
+visualize_impl = False
+visualize_recursive = True
+# visualize_recursive = False
+save_all_iterations = True
+# save_all_iterations = False
+
+if check_derivatives is True and step_size > 1e-4:
+    step_size *= 1e-10
+print('STEP SIZE', step_size)
 ref_orbit, ax = generate_reference_orbit(
     num_times,
     step_size,
@@ -83,16 +61,71 @@ sim = make_swarm(
         duration=duration,
         num_cp=num_cp,
         step_size=step_size,
-        cross_threshold=0.882,
+        cross_threshold=0.7,
         # cross_threshold=0.857,
         # cross_threshold=0.2,
         # cross_threshold=-0.9,
         # cross_threshold=0.9,
     ))
 sim['reference_orbit_state_km'] = ref_orbit
-if optimize is False:
+
+if ws is True:
+    warm_start(sim)
+
+if visualize_impl is True:
+    sim.run()
+    sim.visualize_implementation(recursive=visualize_recursive)
+    exit()
+
+if check_derivatives is True:
+    start = time.time()
+    sim.run()
+    end = time.time()
+
+    print('time to run once', end - start)
+    if use_fd is True:
+        sim.prob.check_totals(compact_print=True, method='fd', step=fd_step)
+    else:
+        sim.prob.check_totals(compact_print=True, method='cs')
+    exit()
+
+if optimize_model is False:
     sim.run()
     # sim.visualize_implementation()
+    print('optics_cubesat.pitch', sim['optics_cubesat.pitch'])
+    print('optics_cubesat.rw_torque', sim['optics_cubesat.rw_torque'])
+    print('optics_cubesat.rw_torque_min', sim['optics_cubesat.rw_torque_min'])
+    print('optics_cubesat.rw_torque_max', sim['optics_cubesat.rw_torque_max'])
+    print('optics_cubesat.rw_speed', sim['optics_cubesat.rw_speed'])
+    print('optics_cubesat.rw_speed_min', sim['optics_cubesat.rw_speed_min'])
+    print('optics_cubesat.rw_speed_max', sim['optics_cubesat.rw_speed_max'])
+    print('optics_cubesat.soc', sim['optics_cubesat.soc'])
+    print('optics_cubesat.mmin_soc', sim['optics_cubesat.mmin_soc'])
+    print('optics_cubesat.min_soc', sim['optics_cubesat.min_soc'])
+    print('optics_cubesat.max_soc', sim['optics_cubesat.max_soc'])
+    print('optics_cubesat.current', sim['optics_cubesat.current'])
+    print('optics_cubesat.min_current', sim['optics_cubesat.min_current'])
+    print('optics_cubesat.max_current', sim['optics_cubesat.max_current'])
+    print('optics_cubesat.altitude_km', sim['optics_cubesat.altitude_km'])
+    # print('optics_cubesat.min_altitude_m',
+    #       sim['optics_cubesat.min_altitude_m'])
+    print('optics_cubesat.min_altitude_km',
+          sim['optics_cubesat.min_altitude_km'])
+    print('separation_error_during_observation',
+          sim['separation_error_during_observation'])
+    print('min_separation_error', sim['min_separation_error'])
+    print('max_separation_error', sim['max_separation_error'])
+    print('view_plane_error_during_observation',
+          sim['view_plane_error_during_observation'])
+    print('min_view_plane_error', sim['min_view_plane_error'])
+    print('max_view_plane_error', sim['max_view_plane_error'])
+    print('optics_cubesat.current', sim['optics_cubesat.current'])
+    print('optics_cubesat.max_current', sim['optics_cubesat.max_current'])
+    print('optics_cubesat.min_current', sim['optics_cubesat.min_current'])
+    print('detector_cubesat.current', sim['detector_cubesat.current'])
+    print('detector_cubesat.max_current', sim['detector_cubesat.max_current'])
+    print('detector_cubesat.min_current', sim['detector_cubesat.min_current'])
+
     if plot_reference_orbit is True:
         # plot sun direction
         sd = sim['sun_direction']
@@ -105,58 +138,75 @@ if optimize is False:
         plt.show()
 
     if plot_initial_outputs is True:
-        plot_initial(sim)
+        plot_sim_state(sim)
 else:
-    from optimize import snopta, SNOPT_options
-    from optimization import get_constraint_bounds, get_dv_bounds, get_problem_dimensions, get_names
+    from optimize import snoptc, SNOPT_options
+    from optimization import get_obj_constraint_bounds, get_dv_bounds, get_problem_dimensions, inf
 
-    def sntoya_objF(status, x, needF, F, needG, G):
+    varnames = get_all_varnames(sim)
+    if save_all_iterations is True:
+        from lsdo_cubesat.dash import Dash
+        dashboard = Dash(varnames=varnames, run_file_name='run.py')
+        sim.add_recorder(dashboard.get_recorder())
+
+    def snopt_callback(mode, nnjac, x, fObj, gObj, fCon, gCon, nState):
         sim.update_design_variables(x)
         sim.run()
-        F[0] = sim.objective()
-        F[1:] = sim.constraints()
+        totals = sim.compute_total_derivatives()
 
-        return status, F
+        # nonlinear objective term
+        fObj = sim.objective()
 
-    def sntoya_objFG(status, x, needF, F, needG, G):
-        sim.update_design_variables(x)
-        sim.run()
-        F[0] = sim.objective()
-        F[1:] = sim.constraints()
-        # G[:] = sim.compute_total_derivatives().flatten()[n:]
-        G[:] = sim.compute_total_derivatives().flatten()
-        return status, F, G
+        # nonlinear constraint terms
+        fCon[:] = sim.constraints().flatten()
 
-    n, nF = get_problem_dimensions(sim)
-    xnames, Fnames = get_names(n, nF)
-    xlow, xupp = get_dv_bounds(sim)
-    Flow, Fupp = get_constraint_bounds(sim)
-    x0 = sim.design_variables()
+        # nonlinear objective gradient
+        gObj[:] = totals[0, :].flatten()
 
-    A = np.zeros((n, nF))
-    G = 2 * np.ones((nF, n))
-    # G[0, :] = 0
-    A = None
-    G = None
+        # nonlinear constraint Jacobian terms
+        gCon[:] = totals[1:, :].T.flatten()
+
+        return mode, fObj, gObj, fCon, gCon
+
+    n, m = get_problem_dimensions(sim)
+    print('Number of design variables:', n)
+    print('Number of constraints:', m)
+    xlower, xupper = get_dv_bounds(sim)
+    Flow, Fupp = get_obj_constraint_bounds(sim)
+    bl = np.concatenate((xlower, Flow[1:], Flow[0].reshape((1, ))))
+    bu = np.concatenate((xupper, Fupp[1:], Fupp[0].reshape((1, ))))
+    x0 = np.concatenate((sim.design_variables(), np.zeros(m)))
 
     options = SNOPT_options()
     options.setOption('Verbose', False)
-    options.setOption('Solution print', True)
+    options.setOption('Solution print', False)
     options.setOption('Print filename', 'sntoya.out')
     options.setOption('Summary frequency', 1)
+    options.setOption('Infinite bound', inf)
+    options.setOption('Verify level', 0)
+    options.setOption('Derivative level', 0)
+    options.setOption('Print filename', 'visors.out')
 
-    result = snopta(sntoya_objFG,
-                    n,
-                    nF,
-                    x0=sim.design_variables(),
-                    name='sntoyaFG',
-                    xlow=xlow,
-                    xupp=xupp,
-                    Flow=Flow,
-                    Fupp=Fupp,
-                    ObjRow=1,
-                    A=A,
-                    G=G,
-                    xnames=xnames,
-                    Fnames=Fnames)
-    print(result)
+    result = snoptc(
+        snopt_callback,
+        nnObj=n,
+        nnCon=m - 1,
+        nnJac=n,
+        x0=x0,
+        J=np.ones((m, n)),
+        name='visors',
+        iObj=0,
+        bl=bl,
+        bu=bu,
+        options=options,
+    )
+
+    if save_all_iterations is False:
+        data = dict()
+        for name in varnames:
+            data[name] = sim[name]
+
+        with open('filename.pickle', 'wb') as handle:
+            pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    plot_sim_state(sim)

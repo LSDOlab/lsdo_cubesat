@@ -6,6 +6,7 @@ R = RADII['Earth']
 
 
 class SunLOS(CustomExplicitOperation):
+
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     from csdl_om import Simulator
 
     class M(Model):
+
         def define(self):
             num_times = 5
             position_km = self.declare_variable(

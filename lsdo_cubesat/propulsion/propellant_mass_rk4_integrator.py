@@ -7,6 +7,7 @@ from lsdo_cubesat.operations.rk4_op import RK4
 
 
 class PropellantMassRK4Integrator(RK4):
+
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
@@ -49,32 +50,27 @@ class PropellantMassRK4Integrator(RK4):
 
 if __name__ == '__main__':
 
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
+    from csdl import Model, custom
+    from csdl_om import Simulator
 
-    group = Group()
+    group = Model()
 
-    comp = IndepVarComp()
-    n = 2
-    h = 6000.
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1)
 
-    dm_dt = np.random.rand(1, n)
+    dm_dt = np.random.rand(1, num_times)
     Mass0 = np.random.rand(1)
-    comp.add_output('num_times', val=n)
-    comp.add_output('mass_flow_rate', val=dm_dt)
-    comp.add_output('initial_propellant_mass', val=Mass0)
+    mass_flow_rate = group.declare_variable('mass_flow_rate', val=dm_dt)
+    initial_propellant_mass = group.declare_variable('initial_propellant_mass',
+                                                     val=Mass0)
 
-    group.add('Inputcomp', comp, promotes=['*'])
-
-    group.add(
-        'Statecomp_Implicit',
-        PropellantMassRK4Integrator(num_times=n, step_size=h),
+    propellant_mass = custom(
+        mass_flow_rate,
+        initial_propellant_mass,
+        op=PropellantMassRK4Integrator(num_times=num_times,
+                                       step_size=step_size),
     )
+    group.register_output('propellant_mass', propellant_mass)
 
-    prob = Problem()
-    prob.model = group
-    prob.setup()
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
+    sim = Simulator(group)
+    sim.check_partials(compact_print=True)

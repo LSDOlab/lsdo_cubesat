@@ -8,7 +8,16 @@ from csdl import Model
 import csdl
 
 
+def dot_3xn(a, b):
+    return csdl.einsum(
+        a,
+        b,
+        subscripts='ij,ij->j',
+    )
+
+
 class TelescopeConfiguration(Model):
+
     def initialize(self):
         self.parameters.declare('swarm')
         self.parameters.declare('telescope_length_m', default=40., types=float)
@@ -118,7 +127,7 @@ class TelescopeConfiguration(Model):
             'detector_observation_phase_indicator',
             detector_observation_phase_indicator,
         )
-        observation_phase_indicator = optics_observation_phase_indicator * detector_observation_phase_indicator
+        observation_phase_indicator = optics_observation_phase_indicator * detector_observation_phase_indicator  # * csdl.reshape( optics_sun_LOS * detector_sun_LOS,(num_times,) )
         self.register_output('observation_phase_indicator',
                              observation_phase_indicator)
 
@@ -134,7 +143,7 @@ class TelescopeConfiguration(Model):
 
         # TODO: for a later paper, include constraints on relative speed
         # max_relative_speed_um_s = csdl.max(observation_phase_indicator *
-        #                                    relative_speed_um_s)
+        #                                    relative_speed_um_s,rho=10.)
         # self.register_output('max_relative_speed_um_s',
         #                      max_relative_speed_um_s)
         # self.add_constraint('max_relative_speed_um_s',
@@ -165,23 +174,31 @@ class TelescopeConfiguration(Model):
         )
         self.register_output('separation_m', separation_m)
         self.register_output('telescope_direction', telescope_direction)
-        separation_error = observation_phase_indicator * (separation_m -
-                                                          telescope_length_m)
+        separation_error = separation_m - telescope_length_m
+        # separation_error_during_observation_mm = 1000 * observation_phase_indicator * separation_error
         separation_error_during_observation = observation_phase_indicator * separation_error
         self.register_output('separation_error_during_observation',
                              separation_error_during_observation)
 
-        min_separation_error = csdl.min(separation_error_during_observation)
-        max_separation_error = csdl.max(separation_error_during_observation)
+        # NOTE: DO NOT CHANGE rho!!
+        min_separation_error = csdl.min(
+            separation_error_during_observation,
+            rho=10. / 1e0,
+        )
+        # NOTE: DO NOT CHANGE rho!!
+        max_separation_error = csdl.max(
+            separation_error_during_observation * 1e3,
+            rho=10. / 1e-1,
+        )
         self.register_output('min_separation_error', min_separation_error)
         self.register_output('max_separation_error', max_separation_error)
         self.add_constraint(
             'min_separation_error',
-            lower=-telescope_length_tol_mm,
+            lower=-telescope_length_tol_mm * 1000,
         )
         self.add_constraint(
             'max_separation_error',
-            upper=telescope_length_tol_mm,
+            upper=telescope_length_tol_mm * 1000,
         )
 
         # Transverse displacement
@@ -190,49 +207,47 @@ class TelescopeConfiguration(Model):
         # to reference orbit to satisfy constraints on order of mm when
         # radius is on order of thousands of km
         view_plane_error = csdl.pnorm(
-            telescope_vector - csdl.expand(csdl.einsum(
-                telescope_vector,
-                sun_direction,
-                subscripts='ij,ij->j',
-            ), (3, num_times),
-                                           indices='i->ji'),
+            telescope_vector -
+            csdl.expand(dot_3xn(telescope_vector, sun_direction),
+                        (3, num_times),
+                        indices='i->ji'),
             axis=0,
         )
         view_plane_error_during_observation = observation_phase_indicator * view_plane_error
         self.register_output('view_plane_error_during_observation',
                              view_plane_error_during_observation)
 
-        min_view_plane_error = csdl.min(view_plane_error_during_observation)
-        max_view_plane_error = csdl.max(view_plane_error_during_observation)
+        min_view_plane_error = csdl.min(view_plane_error_during_observation,
+                                        rho=10.)
+        max_view_plane_error = csdl.max(view_plane_error_during_observation,
+                                        rho=10.)
 
         self.register_output('min_view_plane_error', min_view_plane_error)
         self.register_output('max_view_plane_error', max_view_plane_error)
-        self.add_constraint('min_view_plane_error',
-                            lower=-telescope_view_plane_tol_mm / 1000.)
-        self.add_constraint('max_view_plane_error',
-                            upper=-telescope_view_plane_tol_mm / 1000.)
+        # self.add_constraint('min_view_plane_error',
+        #                     lower=-telescope_view_plane_tol_mm / 1000.)
+        # self.add_constraint('max_view_plane_error',
+        #                     upper=-telescope_view_plane_tol_mm / 1000.)
 
         # Orientation of telescope during observation
-        telescope_cos_view_angle_error = csdl.dot(sun_direction,
-                                                  telescope_direction,
-                                                  axis=0)
-        telescope_cos_view_angle_error_during_observation = 1 + (
-            telescope_cos_view_angle_error - 1) * observation_phase_indicator
-        telescope_view_angle_error = deg2arcsec * csdl.arccos(
-            csdl.reshape(telescope_cos_view_angle_error_during_observation,
-                         (1, num_times)))
+        all_cos_view_angle = csdl.dot(sun_direction,
+                                      telescope_direction,
+                                      axis=0)
+        telescope_cos_view_angle = (all_cos_view_angle -
+                                    1) * observation_phase_indicator + 1
         self.register_output(
-            'telescope_view_angle_error',
-            telescope_view_angle_error,
+            'telescope_cos_view_angle',
+            telescope_cos_view_angle,
         )
-        max_telescope_view_angle_error = csdl.max(
-            telescope_view_angle_error,
-            axis=1,
+        min_telescope_cos_view_angle = csdl.min(
+            telescope_cos_view_angle,
+            rho=10.,
         )
-        self.register_output('max_telescope_view_angle_error',
-                             max_telescope_view_angle_error)
-        self.add_constraint('max_telescope_view_angle_error',
-                            upper=telescope_view_halfangle_tol_arcsec)
+        self.register_output('min_telescope_cos_view_angle',
+                             min_telescope_cos_view_angle)
+        # self.add_constraint('min_telescope_cos_view_angle',
+        # lower=np.cos(telescope_view_halfangle_tol_arcsec /
+        #  deg2arcsec * np.pi / 180.))
 
         # Orientation of each s/c during observation
         optics_cos_view_angle_error = -csdl.reshape(
@@ -253,39 +268,39 @@ class TelescopeConfiguration(Model):
             'detector_cos_view_angle_error_during_observation',
             detector_cos_view_angle_error_during_observation)
 
-        # KLUDGE: min/max not working as expected for arrays;
-        # retrun variable with shape == ()
-        optics_view_angle_error = deg2arcsec * csdl.arccos(
-            csdl.reshape(optics_cos_view_angle_error_during_observation,
-                         (1, num_times)))
-        self.register_output('optics_view_angle_error',
-                             optics_view_angle_error)
-        max_optics_view_angle_error = csdl.max(
-            optics_view_angle_error,
-            axis=1,
-        )
-        detector_view_angle_error = deg2arcsec * csdl.arccos(
-            csdl.reshape(detector_cos_view_angle_error_during_observation,
-                         (1, num_times)))
-        self.register_output('detector_view_angle_error',
-                             detector_view_angle_error)
-        max_detector_view_angle_error = csdl.max(
-            detector_view_angle_error,
-            axis=1,
-        )
+        # # KLUDGE: min/max not working as expected for vectors;
+        # # return variable with shape == ()
+        # optics_view_angle_error = deg2arcsec * csdl.arccos(
+        #     csdl.reshape(optics_cos_view_angle_error_during_observation,
+        #                  (1, num_times)))
+        # self.register_output('optics_view_angle_error',
+        #                      optics_view_angle_error)
+        # max_optics_view_angle_error = csdl.max(
+        #     optics_view_angle_error,
+        #     axis=1,rho=10.,
+        # )
+        # detector_view_angle_error = deg2arcsec * csdl.arccos(
+        #     csdl.reshape(detector_cos_view_angle_error_during_observation,
+        #                  (1, num_times)))
+        # self.register_output('detector_view_angle_error',
+        #                      detector_view_angle_error)
+        # max_detector_view_angle_error = csdl.max(
+        #     detector_view_angle_error,
+        #     axis=1,rho=10.,
+        # )
 
-        self.register_output(
-            'max_optics_view_angle_error',
-            max_optics_view_angle_error,
-        )
-        self.register_output(
-            'max_detector_view_angle_error',
-            max_detector_view_angle_error,
-        )
-        self.add_constraint('max_optics_view_angle_error',
-                            upper=telescope_view_halfangle_tol_arcsec)
-        self.add_constraint('max_detector_view_angle_error',
-                            upper=telescope_view_halfangle_tol_arcsec)
+        # self.register_output(
+        #     'max_optics_view_angle_error',
+        #     max_optics_view_angle_error,
+        # )
+        # self.register_output(
+        #     'max_detector_view_angle_error',
+        #     max_detector_view_angle_error,
+        # )
+        # self.add_constraint('max_optics_view_angle_error',
+        #                     upper=telescope_view_halfangle_tol_arcsec)
+        # self.add_constraint('max_detector_view_angle_error',
+        #                     upper=telescope_view_halfangle_tol_arcsec)
 
         # # =============================================================
         # # =============================================================
@@ -336,7 +351,7 @@ class TelescopeConfiguration(Model):
         # #     q = self.register_output('{}_mm'.format(constraint_name), 1.e6 * p)
         # #     r = self.register_output('masked_{}_mm'.format(constraint_name),
         # #                              mask_vec * q)
-        # #     s = csdl.min(r, rho=100.)
+        # #     s = csdl.min(r, rho=10.)
         # #     self.register_output('ks_masked_{}_mm'.format(constraint_name), s)
 
         # #     t = self.register_output('masked_{}_mm_sq'.format(constraint_name),
@@ -359,7 +374,6 @@ if __name__ == '__main__':
         name='optics',
         dry_mass=1.3,
         initial_orbit_state=initial_orbit_state * np.random.rand(6),
-        approx_altitude_km=500.,
         specific_impulse=47.,
         perigee_altitude=500.,
         apogee_altitude=500.,
@@ -369,7 +383,6 @@ if __name__ == '__main__':
         name='detector',
         dry_mass=1.3,
         initial_orbit_state=initial_orbit_state * np.random.rand(6),
-        approx_altitude_km=500.,
         specific_impulse=47.,
         perigee_altitude=500.002,
         apogee_altitude=499.98,

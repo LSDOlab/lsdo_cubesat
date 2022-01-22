@@ -5,6 +5,7 @@ from lsdo_cubesat.constants import charge_of_electron, boltzman
 
 
 class IVT(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('diode_voltage', default=-0.6, types=float)
@@ -36,14 +37,17 @@ class IVT(Model):
         short_circuit_current = max_short_circuit_current * sun_LOS * percent_exposed_area
 
         VT = diode_factor * boltzman * T / charge_of_electron
+        self.register_output('VT', VT)
 
         load_voltage = self.declare_variable('load_voltage',
                                              val=0,
                                              shape=(1, num_times))
 
-        load_current = self.create_input('load_current',
-                                         val=saturation_current,
-                                         shape=(1, num_times))
+        load_current = self.create_input(
+            'load_current',
+            # val=saturation_current,
+            val=max_short_circuit_current,
+            shape=(1, num_times))
         self.add_design_variable('load_current',
                                  lower=saturation_current,
                                  upper=max_short_circuit_current)
@@ -70,32 +74,12 @@ class IVT(Model):
         self.register_output('load_voltage', load_voltage)
 
 
-if __name__ == "__main__":
-
-    # class Example(Model):
-    #     def initialize(self):
-    #         self.parameters.declare('num_times', types=int)
-
-    #     def define(self):
-    #         num_times = self.parameters['num_times']
-    #         ivt = self.create_implicit_operation(IVT(num_times=num_times))
-    #         ivt.declare_state('load_voltage', residual='r_V')
-
-    #         load_current = self.declare_variable('load_current',
-    #                                              shape=(num_times, ),
-    #                                              val=0)
-    #         sun_LOS = self.declare_variable('sun_LOS', shape=(num_times, ), val=0)
-    #         illuminated_area = self.declare_variable('illuminated_area',
-    #                                                  shape=(num_times, ))
-    #         load_voltage = ivt(
-    #             load_current,
-    #             sun_LOS,
-    #             illuminated_area,
-    #         )
-    #         solar_power = load_current * load_voltage
-    #         self.register_output('solar_power', solar_power)
-
+if __name__ == '__main__':
     from csdl_om import Simulator
+
+    num_times = 20
+    step_size = 0.1
+
     sim = Simulator(IVT(num_times=10))
+    sim.check_partials(compact_print=True, method='cs')
     sim.visualize_implementation()
-    # sim.check_partials(compact_print=True)

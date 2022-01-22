@@ -1,10 +1,12 @@
 from lsdo_cubesat.solar.ivt import IVT
-from lsdo_cubesat.eps.cadre_battery import BatteryPack
+# from lsdo_cubesat.eps.cadre_battery import BatteryPack
+from lsdo_cubesat.eps.battery_pack import BatteryPack
 from csdl import Model
 import csdl
 
 
 class ElectricalPowerSystem(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
@@ -59,3 +61,16 @@ class ElectricalPowerSystem(Model):
             ),
             name='battery_pack',
         )
+
+
+if __name__ == '__main__':
+    from csdl_om import Simulator
+
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1)
+
+    sim = Simulator(
+        ElectricalPowerSystem(num_times=num_times, step_size=step_size))
+    # sim.check_partials(compact_print=True)
+    sim.run()
+    sim.prob.check_totals(compact_print=True, method='fd')

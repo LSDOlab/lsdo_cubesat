@@ -84,39 +84,46 @@ if __name__ == '__main__':
     from csdl import Model
     import csdl
 
-    num_times = 200
-    step_size = 0.1
+    # num_times = 200
+    # step_size = 0.1
+    num_times = 40 * 10
+    step_size = 95 * 60 / (num_times - 1)
     np.random.seed(0)
 
     class Example(Model):
 
         def define(self):
-            power = self.declare_variable(
+            power = self.create_input(
                 'power',
                 shape=(1, num_times),
             )
-            voltage = self.declare_variable(
+            voltage = self.create_input(
                 'voltage',
                 shape=(1, num_times),
                 val=3.3,
             )
-            coulombic_efficiency = self.declare_variable(
+            coulombic_efficiency = self.create_input(
                 'coulombic_efficiency',
                 shape=(1, num_times),
                 val=1,
             )
             # Standard Capacity in Ah
             # http://www.datasheetcafe.com/icr18650-datasheet-battery-samsung/
-            capacity = self.declare_variable(
+            capacity = self.create_input(
                 'capacity',
                 shape=(1, num_times),
                 val=2.6,
             )
-            initial_soc = self.declare_variable(
+            initial_soc = self.create_input(
                 'initial_soc',
                 shape=(1, ),
                 val=0.5,
             )
+            self.add_design_variable('power')
+            self.add_design_variable('voltage')
+            self.add_design_variable('coulombic_efficiency')
+            self.add_design_variable('capacity')
+            self.add_design_variable('initial_soc')
             soc = csdl.custom(
                 power,
                 voltage,
@@ -129,6 +136,7 @@ if __name__ == '__main__':
                 ),
             )
             self.register_output('soc', soc)
+            self.add_constraint('soc')
 
     from csdl_om import Simulator
     sim = Simulator(Example())
@@ -138,7 +146,9 @@ if __name__ == '__main__':
     sim['coulombic_efficiency'] = np.random.rand(num_times).reshape(
         (1, num_times))
     sim['capacity'] = 2.6 * np.random.rand(num_times).reshape((1, num_times))
-    sim.check_partials(compact_print=True)
+    # sim.check_partials(compact_print=True, method='fd')
+    sim.run()
+    sim.prob.check_totals(compact_print=True, method='fd')
 
     # sim.run()
     # import matplotlib.pyplot as plt

@@ -60,22 +60,22 @@ class Attitude(Model):
         yaw_cp = self.create_input(
             'yaw_cp',
             shape=(num_cp, ),
-            val=0,
-            # val=np.pi / 4,
+            # val=0,
+            val=np.pi / 4,
             # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         pitch_cp = self.create_input(
             'pitch_cp',
             shape=(num_cp, ),
-            val=0,
-            # val=np.pi / 4,
+            # val=0,
+            val=np.pi / 4,
             # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         roll_cp = self.create_input(
             'roll_cp',
             shape=(num_cp, ),
-            val=0,
-            # val=np.pi / 4,
+            # val=0,
+            val=np.pi / 4,
             # val=np.pi * (np.random.rand(num_cp) - 0.5),
         )
         self.add_design_variable('yaw_cp')
@@ -147,7 +147,11 @@ class Attitude(Model):
 
         # Earth Centered Inertial to Body
         ECI_from_RTN = csdl.reorder_axes(RTN_from_ECI, 'ijk->jik')
-        B_from_RTN = rot_seq(B_from_ECI, ECI_from_RTN)
+        self.register_output('ECI_from_RTN', ECI_from_RTN)
+        B_from_RTN = csdl.einsum(B_from_ECI,
+                                 ECI_from_RTN,
+                                 subscripts='ijl,jkl->ikl')
+        # B_from_RTN = rot_seq(B_from_ECI, ECI_from_RTN)
         self.register_output('B_from_RTN', B_from_RTN)
 
         # Rate of change of Reference frame transformation
@@ -254,28 +258,28 @@ class Attitude(Model):
         rw_torque[2, :] = rw_mmoi[2] * rw_accel[2, :]
 
         # RW torque saturation
-        rw_torque_min = csdl.min(rw_torque, axis=1, rho=10. / 1e7)
-        rw_torque_max = csdl.max(rw_torque, axis=1, rho=10. / 1e7)
-        self.register_output(
-            'rw_torque_min',
-            rw_torque_min,
-        )
-        self.register_output(
-            'rw_torque_max',
-            rw_torque_max,
-        )
-        self.add_constraint(
-            'rw_torque_min',
-            lower=-max_rw_torque,
-        )
-        self.add_constraint(
-            'rw_torque_max',
-            upper=max_rw_torque,
-        )
+        rw_torque_min = csdl.min(rw_torque, axis=1, rho=10. / 1e12)
+        rw_torque_max = csdl.max(rw_torque, axis=1, rho=10. / 1e13)
+        # self.register_output(
+        #     'rw_torque_min',
+        #     rw_torque_min,
+        # )
+        # self.register_output(
+        #     'rw_torque_max',
+        #     rw_torque_max,
+        # )
+        # self.add_constraint(
+        #     'rw_torque_min',
+        #     lower=-max_rw_torque,
+        # )
+        # self.add_constraint(
+        #     'rw_torque_max',
+        #     upper=max_rw_torque,
+        # )
 
         # RW rate saturation
-        rw_speed_min = csdl.min(rw_speed, axis=1, rho=10. / 1e13)
-        rw_speed_max = csdl.max(rw_speed, axis=1, rho=10. / 1e14)
+        rw_speed_min = csdl.min(rw_speed, axis=1, rho=50. / 1e0)
+        rw_speed_max = csdl.max(rw_speed, axis=1, rho=10. / 1e0)
         self.register_output('rw_speed_min', rw_speed_min)
         self.register_output('rw_speed_max', rw_speed_max)
         self.add_constraint('rw_speed_min', lower=-max_rw_speed)
@@ -284,14 +288,26 @@ class Attitude(Model):
 
 if __name__ == "__main__":
     from csdl_om import Simulator
+    np.random.seed(0)
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1)
     sim = Simulator(
         Attitude(
-            num_times=80,
+            num_times=num_times,
             num_cp=5,
-            step_size=0.1,
+            step_size=step_size,
             sc_mmoi=np.array([18, 18, 6]) * 1e-3,
             rw_mmoi=28 * np.ones(3) * 1e-6,
             gravity_gradient=True,
         ))
     # sim.visualize_implementation()
-    sim.check_partials(compact_print=True, method='cs')
+    # sim.check_partials(compact_print=True, method='fd')
+    sim.run()
+    # sim.prob.check_totals(compact_print=True, method='fd', step=1e-4)
+    sim.prob.check_totals(compact_print=True, method='cs')
+    # print('rw_torque', sim['rw_torque'])
+    # print('rw_torque_min', sim['rw_torque_min'])
+    # print('rw_torque_max', sim['rw_torque_max'])
+    # print('rw_speed', sim['rw_speed'])
+    # print('rw_speed_min', sim['rw_speed_min'])
+    # print('rw_speed_max', sim['rw_speed_max'])

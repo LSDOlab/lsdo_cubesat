@@ -1,3 +1,5 @@
+from curses.ascii import SI
+from re import S
 from lsdo_cubesat.operations.rk4_op import RK4
 import numpy as np
 
@@ -70,11 +72,64 @@ class RWSpeed(RK4):
     # ODE wrt state variables
     def df_dy(self, external, state):
         body_rates = external[3:6]
-        return -np.matmul(self.rw_mmoi_inv,
-                          np.matmul(skew_array(body_rates), self.rw_mmoi))
+        # return -np.matmul(self.rw_mmoi_inv, np.matmul(skew_array(body_rates), self.rw_mmoi))
+        return -skew_array(body_rates)
 
     # ODE wrt external inputs
     def df_dx(self, external, state):
         Jw = np.matmul(self.rw_mmoi, state)
         self.dfdx[:, 3:] = np.matmul(self.rw_mmoi_inv, skew_array(Jw))
         return self.dfdx
+
+
+if __name__ == "__main__":
+    from csdl_om import Simulator
+    from csdl import Model
+    import csdl
+
+    np.random.seed(0)
+
+    class Example(Model):
+
+        def define(self):
+            num_times = 40
+            step_size = 95 * 60 / (num_times - 1) * 1e-10
+            rw_mmoi = 28 * np.ones(3) * 1e-6
+            body_torque = self.create_input(
+                'body_torque',
+                shape=(3, num_times),
+                val=(np.random.rand(3 * num_times).reshape(3, num_times) - 0.5)
+                * 1e-4,
+                # val=0,
+            )
+            body_rates = self.create_input(
+                'body_rates',
+                shape=(3, num_times),
+                val=(np.random.rand(3 * num_times).reshape(3, num_times) - 0.5)
+                * 1e-4,
+                # val=0,
+            )
+            initial_rw_speed = self.create_input(
+                'initial_rw_speed',
+                shape=(3, ),
+                val=0,
+            )
+            rw_speed = csdl.custom(
+                body_torque,
+                body_rates,
+                initial_rw_speed,
+                op=RWSpeed(
+                    num_times=num_times,
+                    step_size=step_size,
+                    rw_mmoi=rw_mmoi,
+                ),
+            )
+            self.register_output('rw_speed', rw_speed)
+            self.add_design_variable('body_torque')
+            self.add_design_variable('body_rates')
+            self.add_design_variable('initial_rw_speed')
+            self.add_constraint('rw_speed')
+
+    sim = Simulator(Example())
+    sim.run()
+    sim.prob.check_totals(compact_print=True)

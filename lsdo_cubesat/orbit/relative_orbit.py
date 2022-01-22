@@ -9,6 +9,7 @@ radius_earth = RADII['Earth']
 
 
 class RelativeOrbit(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
@@ -84,12 +85,48 @@ class RelativeOrbit(Model):
             velocity_km_s, num_times=num_times)
 
         altitude_km = radius_km - radius_earth
-        ks_altitude_km = csdl.min(
-            altitude_km,
-            rho=100.,
-        )
+        altitude_m = csdl.pnorm(reference_orbit_state_km * 1000 +
+                                relative_orbit_state_m,
+                                axis=0)
 
+        self.register_output('altitude_km', altitude_km)
+        self.register_output('altitude_m', altitude_m)
         self.register_output('position_km', position_km)
         self.register_output('velocity_km_s', velocity_km_s)
-        self.register_output('ks_altitude_km', ks_altitude_km)
-        self.add_constraint('ks_altitude_km', lower=min_alt)
+        # self.register_output('min_altitude_m',
+        #                      csdl.min(
+        #                          altitude_m,
+        #                          rho=10. / 1e-7,
+        #                      ))
+        # self.add_constraint('min_altitude_m', lower=min_alt * 1000)
+        self.register_output('min_altitude_km',
+                             csdl.min(
+                                 altitude_km,
+                                 rho=10. / 1e3,
+                             ))
+        self.add_constraint('min_altitude_km', lower=min_alt)
+
+
+if __name__ == '__main__':
+
+    from lsdo_cubesat.parameters.cubesat import CubesatParams
+    from csdl_om import Simulator
+    import numpy as np
+
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1)
+
+    initial_orbit_state = np.array([1e-3] * 3 + [1e-3] * 3)
+    sim = Simulator(
+        RelativeOrbit(num_times=num_times,
+                      step_size=step_size,
+                      cubesat=CubesatParams(
+                          name='optics',
+                          dry_mass=1.3,
+                          initial_orbit_state=initial_orbit_state *
+                          np.random.rand(6) * 1e-3,
+                          specific_impulse=47.,
+                          perigee_altitude=500.,
+                          apogee_altitude=500.,
+                      )))
+    sim.check_partials(compact_print=True)

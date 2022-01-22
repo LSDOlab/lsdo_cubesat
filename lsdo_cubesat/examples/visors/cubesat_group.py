@@ -113,12 +113,9 @@ class Cubesat(Model):
         )
 
         total_propellant_volume = self.declare_variable(
-            'total_propellant_volume',
-            shape=(1, 1),
-        )
+            'total_propellant_volume', )
         battery_volume = self.declare_variable('battery_volume')
-        battery_and_propellant_volume = csdl.reshape(total_propellant_volume,
-                                                     (1, )) + battery_volume
+        battery_and_propellant_volume = total_propellant_volume + battery_volume
         self.register_output('battery_and_propellant_volume',
                              battery_and_propellant_volume)
 
@@ -219,7 +216,6 @@ if __name__ == "__main__":
                     dry_mass=1.3,
                     initial_orbit_state=initial_orbit_state_magnitude *
                     np.random.rand(6),
-                    approx_altitude_km=500.,
                     specific_impulse=47.,
                     perigee_altitude=500.002,
                     apogee_altitude=499.98,

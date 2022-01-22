@@ -1,7 +1,5 @@
-from lsdo_cubesat.dash import Dash
-
-
-def split_top_level_low_level_varnames(t, l, s):
+# TODO: move everything here to Simulator
+def _split_top_level_low_level_varnames(t, l, s):
     try:
         ll = s.rindex('.')
         l.append(s)
@@ -9,7 +7,7 @@ def split_top_level_low_level_varnames(t, l, s):
         t.append(s)
 
 
-def remove_automatically_named_variables(t, l):
+def _remove_automatically_named_variables(t, l):
     remove = []
     for s in l:
         try:
@@ -28,7 +26,7 @@ def remove_automatically_named_variables(t, l):
         t.remove(r)
 
 
-def save_data(sim):
+def get_all_varnames(sim):
     # save data
     a = sim.prob.model.list_outputs(
         explicit=True,
@@ -59,9 +57,9 @@ def save_data(sim):
     t = []
     l = []
     _ = [
-        split_top_level_low_level_varnames(t, l, s) for s in all_variable_names
+        _split_top_level_low_level_varnames(t, l, s)
+        for s in all_variable_names
     ]
-    remove_automatically_named_variables(t, l)
+    _remove_automatically_named_variables(t, l)
     varnames = t + l
-    dashboard = Dash(varnames)
-    sim.add_recorder(dashboard.get_recorder())
+    return varnames

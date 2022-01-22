@@ -97,29 +97,28 @@ class SunDirection(CustomExplicitOperation):
 
 if __name__ == '__main__':
 
-    from openmdao.api import Problem, Group
-    from openmdao.api import IndepVarComp
+    from csdl import Model
+    import csdl
+    from csdl_om import Simulator
+    import matplotlib.pyplot as plt
 
-    np.random.seed(0)
+    class M(Model):
 
-    num_times = 30
+        def define(self):
+            num_times = 100000
+            times = self.declare_variable('times', shape=num_times)
+            sun_direction = csdl.custom(
+                times,
+                op=SunDirection(
+                    num_times=num_times,
+                    launch_date=0.,
+                ),
+            )
+            self.register_output('sun_direction', sun_direction)
 
-    group = Group()
-
-    comp = IndepVarComp()
-    comp.add_output('times', val=np.random.random(num_times))
-
-    group.add('Inputcomp', comp, promotes=['*'])
-
-    group.add('Statecomp_Implicit',
-              SunDirection(num_times=num_times, launch_date=0.),
-              promotes=['*'])
-
-    prob = Problem()
-    prob.model = group
-    prob.setup(check=True)
-    prob.run_model()
-    prob.model.list_outputs()
-
-    prob.check_partials(compact_print=True)
-    # prob.check_partials()
+    sim = Simulator(M())
+    sim.run()
+    plt.plot(sim['sun_direction'][0, :])
+    # plt.plot(sim['sun_direction'][1, :])
+    # plt.plot(sim['sun_direction'][2, :])
+    plt.show()

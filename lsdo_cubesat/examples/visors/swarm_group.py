@@ -39,7 +39,7 @@ class Swarm(Model):
         )
         for cubesat in swarm.children:
             cubesat_name = cubesat['name']
-            submodel_name = '{}_cubesat_group'.format(cubesat_name)
+            submodel_name = '{}_cubesat'.format(cubesat_name)
             self.add(
                 Cubesat(
                     num_times=num_times,
@@ -48,7 +48,7 @@ class Swarm(Model):
                     cubesat=cubesat,
                     # mtx=get_bspline_mtx(num_cp, num_times, order=4),
                 ),
-                name='{}_cubesat_group'.format(cubesat_name),
+                name='{}_cubesat'.format(cubesat_name),
                 promotes=['reference_orbit_state_km'],
             )
             self.connect('sun_direction',
@@ -58,44 +58,44 @@ class Swarm(Model):
             TelescopeConfiguration(swarm=swarm),
             name='telescope_config',
         )
-        # # self.connect(
-        # #     'optics_cubesat_group.sun_LOS',
-        # #     'optics_sun_LOS',
-        # # )
-        # # self.connect(
-        # #     'detector_cubesat_group.sun_LOS',
-        # #     'detector_sun_LOS',
-        # # )
+        # self.connect(
+        #     'optics_cubesat.sun_LOS',
+        #     'optics_sun_LOS',
+        # )
+        # self.connect(
+        #     'detector_cubesat.sun_LOS',
+        #     'detector_sun_LOS',
+        # )
         self.connect(
-            'optics_cubesat_group.relative_orbit_state_m',
+            'optics_cubesat.relative_orbit_state_m',
             'optics_relative_orbit_state_m',
         )
         self.connect(
-            'detector_cubesat_group.relative_orbit_state_m',
+            'detector_cubesat.relative_orbit_state_m',
             'detector_relative_orbit_state_m',
         )
         self.connect(
-            'optics_cubesat_group.orbit_state_km',
+            'optics_cubesat.orbit_state_km',
             'optics_orbit_state_km',
         )
         self.connect(
-            'detector_cubesat_group.orbit_state_km',
+            'detector_cubesat.orbit_state_km',
             'detector_orbit_state_km',
         )
         self.connect(
-            'optics_cubesat_group.B_from_ECI',
+            'optics_cubesat.B_from_ECI',
             'optics_B_from_ECI',
         )
         self.connect(
-            'detector_cubesat_group.B_from_ECI',
+            'detector_cubesat.B_from_ECI',
             'detector_B_from_ECI',
         )
         # self.connect(
-        #     'optics_cubesat_group.sun_pointing_constraint',
+        #     'optics_cubesat.sun_pointing_constraint',
         #     'optics_sun_pointing_constraint',
         # )
         # self.connect(
-        #     'detector_cubesat_group.sun_pointing_constraint',
+        #     'detector_cubesat.sun_pointing_constraint',
         #     'detector_sun_pointing_constraint',
         # )
 
@@ -108,11 +108,11 @@ class Swarm(Model):
         self.register_output('total_propellant_used', total_propellant_used)
 
         self.connect(
-            'optics_cubesat_group.total_propellant_used',
+            'optics_cubesat.total_propellant_used',
             'optics_total_propellant_used',
         )
         self.connect(
-            'detector_cubesat_group.total_propellant_used',
+            'detector_cubesat.total_propellant_used',
             'detector_total_propellant_used',
         )
         # if comm is True:
@@ -164,15 +164,15 @@ class Swarm(Model):
                                        axis=1)
         # # propellant on the order of kg
         # # relative distance to reference orbit on the order of m
-        obj = total_propellant_used + 1e-2 * regularization_term
-        self.register_output('obj', obj)
-        self.add_objective('obj', scaler=1.e-3)
-        self.add_objective('obj')
-
-        # # temporarily create objective independent of constraints to
-        # # find feasible solution more quickly than finding optimal
-        # # solution
-        # dummy = self.create_input('dummy', val=0)
-        # self.add_design_variable('dummy')
-        # self.register_output('obj', dummy**2)
+        # obj = total_propellant_used + 1e-2 * regularization_term
+        # self.register_output('obj', obj)
+        # self.add_objective('obj', scaler=1.e-3)
         # self.add_objective('obj')
+
+        # temporarily create objective independent of constraints to
+        # find feasible solution more quickly than finding optimal
+        # solution
+        dummy = self.create_input('dummy', val=0)
+        self.add_design_variable('dummy')
+        self.register_output('obj', dummy**2)
+        self.add_objective('obj')

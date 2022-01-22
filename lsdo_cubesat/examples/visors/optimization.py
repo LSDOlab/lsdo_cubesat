@@ -22,15 +22,19 @@ def get_dv_bounds(sim):
     return (l, u)
 
 
-# TODO: extract equality constraint bounds
-def get_constraint_bounds(sim):
+def get_obj_constraint_bounds(sim):
     c_meta = sim.get_constraints_metadata()
     l = [-inf]
     u = [inf]
     for key in sim.constraint_keys:
         shape = sim[key].shape
-        ll = c_meta[key]['lower']
-        uu = c_meta[key]['upper']
+        e = c_meta[key]['equals']
+        if e is not None:
+            ll = e
+            uu = e
+        else:
+            ll = c_meta[key]['lower']
+            uu = c_meta[key]['upper']
         l = np.concatenate((l, (ll * np.ones(shape)).flatten()))
         u = np.concatenate((u, (uu * np.ones(shape)).flatten()))
     return (l, u)

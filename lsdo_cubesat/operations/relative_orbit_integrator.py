@@ -22,10 +22,21 @@ C4 = 1.875 * mu * J4 * Re**4
 # rho = 3.89e-12 # kg/m**3 atmoshperic density at altitude = 400 km with mean solar activity
 # C_D = 2.2 # Drag coefficient for cube
 # area = 0.1 * 0.1 # m**2 cross sectional area
-drag = 1.e-6
+# drag = 1.e-6
+
+
+def perturbations(r, T2, T3, T4):
+    r7 = r**7
+    return C2 / r**5 * T2 + C3 / r7 * T3 + C4 / r7 * T4
+
+
+def dperturbationsdr(r, T2, T3, T4):
+    r8 = r**8
+    return -5 * C2 / r**6 * T2 - 7 * C3 / r8 * T3 - 7 * C4 / r8 * T4
 
 
 class RelativeOrbitIntegrator(RK4):
+
     def initialize(self):
         super().initialize()
         self.parameters.declare('num_times', types=int)
@@ -45,7 +56,7 @@ class RelativeOrbitIntegrator(RK4):
 
         self.add_input(
             'initial_orbit_state',
-            shape=6,  # fd_step=1e-2,
+            shape=6,
             desc='Initial position and velocity vectors from earth to '
             'satellite in Earth-centered inertial frame')
 
@@ -55,47 +66,36 @@ class RelativeOrbitIntegrator(RK4):
             desc='Position and velocity vectors from earth to satellite '
             'in Earth-centered inertial frame over time')
 
-        # self.dfdx = np.zeros((6, 5))
-        # self.dfdy = np.zeros((6, 6))
-
     def f_dot(self, external, state):
-        n = self.parameters['num_times']
-        # Px = external[0]
-        # Py = external[1]
-        # Pz = external[2]
-        #
-        # a_Tx = Tx/m
-        # a_Ty = Ty/m
-        # a_Tz = Tz/m
 
-        x = state[0]
-        y = state[1]
+        # TODO: not state, but z component of posiiton in reference orbit?
         z = state[2] if abs(state[2]) > 1e-15 else 1e-5
-
         z2 = z * z
         z3 = z2 * z
-        z4 = z3 * z
+        z4 = z2 * z2
 
+        f = external[:3]
+        m = external[3]
         r = external[4]
 
         r2 = r * r
         r3 = r2 * r
         r4 = r3 * r
-        r5 = r4 * r
-        r7 = r5 * r * r
 
         T2 = 1 - 5 * z2 / r2
         T3 = 3 * z - 7 * z3 / r2
         T4 = 1 - 14 * z2 / r2 + 21 * z4 / r4
-        T3z = 3 * z - 0.6 * r2 / z
+        T2z = 2 * z
+        T3z = 3 * z - 3 * r2 / (5 * z)
         T4z = 4 - 28.0 / 3.0 * z2 / r2
 
         f_dot = np.zeros((6, ))
         f_dot[0:3] = state[3:]
-        f_dot[3:] = state[0:3] * (
-            C1 / r3 + C2 / r5 * T2 + C3 / r7 * T3 + C4 / r7 *
-            T4) + external[0:3] / external[3] - drag * state[3:] / external[3]
-        f_dot[5] += z * (2.0 * C2 / r5 + C3 / r7 * T3z + C4 / r7 * T4z)
+        f_dot[3:] = f / m
+        # f_dot[3:] -= 1e-6 * state[3:] / m  # drag
+        f_dot[3:] = f_dot[3:] + state[0:3] * (C1 / r3 +
+                                              perturbations(r, T2, T3, T4))
+        f_dot[5] = f_dot[5] + z * perturbations(r, T2z, T3z, T4z)
 
         return f_dot
 
@@ -115,9 +115,6 @@ class RelativeOrbitIntegrator(RK4):
         r5 = r4 * r
         r6 = r5 * r
         r7 = r6 * r
-        r8 = r7 * r
-
-        dr = np.zeros(3)
 
         T2 = 1 - 5 * z2 / r2
         T3 = 3 * z - 7 * z3 / r2
@@ -125,52 +122,34 @@ class RelativeOrbitIntegrator(RK4):
         T3z = 3 * z - 0.6 * r2 / z
         T4z = 4 - 28.0 / 3.0 * z2 / r2
 
-        dT2 = (10 * z2) / (r3) * dr
+        dT2 = np.zeros(3)
         dT2[2] -= 10. * z / r2
 
-        dT3 = 14 * z3 / r3 * dr
+        dT3 = np.zeros(3)
         dT3[2] -= 21. * z2 / r2 - 3
 
-        dT4 = (28 * z2 / r3 - 84. * z4 / r5) * dr
+        dT4 = np.zeros(3)
         dT4[2] -= 28 * z / r2 - 84 * z3 / r4
 
-        dT3z = -1.2 * r / z * dr
+        dT3z = np.zeros(3)
         dT3z[2] += 0.6 * r2 / z2 + 3
 
-        dT4z = 56.0 / 3.0 * z2 / r3 * dr
+        dT4z = np.zeros(3)
         dT4z[2] -= 56.0 / 3.0 * z / r2
 
-        # f_dot = np.zeros((6, ))
-        # f_dot[0:3] = state[3:]
-        # f_dot[3:] = state[0:3] * (
-        #     C1 / r3 + C2 / r5 * T2 + C3 / r7 * T3 +
-        #     C4 / r7 * T4) + external[0:3] / external[3] - drag * state[3:] / external[3]
-        # f_dot[5] += z * (2.0 * C2 / r5 + C3 / r7 * T3z + C4 / r7 * T4z)
-
         eye = np.identity(3)
-
-        # dfdy = self.dfdy
-        # dfdy[:, :] = 0.
         dfdy = np.zeros((6, 6))
 
         dfdy[0:3, 3:] += eye
 
         dfdy[3:, :3] += eye * (C1 / r3 + C2 / r5 * T2 + C3 / r7 * T3 +
                                C4 / r7 * T4)
-        # fact = (-3 * C1 / r4 - 5 * C2 / r6 * T2 - 7 * C3 / r8 * T3 -
-        #         7 * C4 / r8 * T4)
-        # dfdy[3:, 0] += dr[0] * state[:3] * fact
-        # dfdy[3:, 1] += dr[1] * state[:3] * fact
-        # dfdy[3:, 2] += dr[2] * state[:3] * fact
         dfdy[3:, 0] += state[:3] * (C2 / r5 * dT2[0] + C3 / r7 * dT3[0] +
                                     C4 / r7 * dT4[0])
         dfdy[3:, 1] += state[:3] * (C2 / r5 * dT2[1] + C3 / r7 * dT3[1] +
                                     C4 / r7 * dT4[1])
         dfdy[3:, 2] += state[:3] * (C2 / r5 * dT2[2] + C3 / r7 * dT3[2] +
                                     C4 / r7 * dT4[2])
-        dfdy[3:, 3:] += np.eye(3) * -drag / external[3]
-        # dfdy[5, :3] += dr * z * (-5 * C2 / r6 * 2 - 7 * C3 / r8 * T3z -
-        #                          7 * C4 / r8 * T4z)
         dfdy[5, :3] += z * (C3 / r7 * dT3z + C4 / r7 * dT4z)
         dfdy[5, 2] += (C2 / r5 * 2 + C3 / r7 * T3z + C4 / r7 * T4z)
 
@@ -184,91 +163,39 @@ class RelativeOrbitIntegrator(RK4):
         z3 = z2 * z
         z4 = z3 * z
 
+        f = external[:3]
+        m = external[3]
         r = external[4]
 
-        r2 = r * r
-        r3 = r2 * r
-        r4 = r3 * r
-        r5 = r4 * r
-        r6 = r5 * r
-        r7 = r6 * r
-        r8 = r7 * r
+        r3 = r**3
+        r4 = r**4
+        r5 = r**5
 
-        dr = 1.
+        # T2 = 1 - 5 * z2 / r2
+        dT2dr = -2 * (-5 * z2 / r3)
+        # T3 = 3 * z - 7 * z3 / r2
+        dT3dr = -2 * (-7 * z3 / r3)
+        # T4 = 1 - 14 * z2 / r2 + 21 * z4 / r4
+        dT4dr = -2 * (-14 * z2 / r3) - 4 * (21 * z4 / r5)
+        # T2z = 2 * z
+        # T3z = 3 * z - 3 * r2 / (5 * z)
+        dT3zdr = 2 * (-0.6 * r / z)
+        # T4z = 4 - 28.0 / 3.0 * z2 / r2
+        dT4zdr = -2 * (-28.0 / 3.0 * z2 / r3)
 
-        T2 = 1 - 5 * z2 / r2
-        T3 = 3 * z - 7 * z3 / r2
-        T4 = 1 - 14 * z2 / r2 + 21 * z4 / r4
-        T3z = 3 * z - 0.6 * r2 / z
-        T4z = 4 - 28.0 / 3.0 * z2 / r2
-
-        dT2 = (10 * z2) / (r3) * dr
-
-        dT3 = 14 * z3 / r3 * dr
-
-        dT4 = (28 * z2 / r3 - 84. * z4 / r5) * dr
-
-        dT3z = -1.2 * r / z * dr
-
-        dT4z = 56.0 / 3.0 * z2 / r3 * dr
-
-        # f_dot = np.zeros((6, ))
-        # f_dot[0:3] = state[3:]
-        # f_dot[3:] = state[0:3] * (
-        #     C1 / r3 + C2 / r5 * T2 + C3 / r7 * T3 +
-        #     C4 / r7 * T4) + external[0:3] / external[3] - drag * state[3:] / external[3]
-        # f_dot[5] += z * (2.0 * C2 / r5 + C3 / r7 * T3z + C4 / r7 * T4z)
-
-        eye = np.identity(3)
-
-        # dfdx = self.dfdx
-        # dfdx[:, :] = 0.
         dfdx = np.zeros((6, 5))
 
-        fact = (-3 * C1 / r4 - 5 * C2 / r6 * T2 - 7 * C3 / r8 * T3 -
-                7 * C4 / r8 * T4)
-        dfdx[3:, 4] += dr * state[:3] * fact
-        dfdx[5, 4] += z * (-5 * C2 / r6 * 2 - 7 * C3 / r8 * T3z -
-                           7 * C4 / r8 * T4z)
+        # wrt mass
+        dfdx[3:, 3] = -f / m**2
 
-        # x = external[0]
-        # y = external[1]
-        # z = external[2]
+        # wrt force
+        dfdx[3:, :3] = np.eye(3) / m
 
-        # eye = np.identity(3)
+        # wrt reference radius
+        # dfdx[3:, 4] = state[:3] * (-3 * C1 / r4 +
+        #                            dperturbationsdr(r, dT2dr, dT3dr, dT4dr))
+        # dfdx[5, 4] += z * dperturbationsdr(r, 0, dT3zdr, dT4zdr)
 
-        dfdx[3, 0] = 1 / external[3]
-        dfdx[4, 1] = 1 / external[3]
-        dfdx[5, 2] = 1 / external[3]
-
-        dfdx[3, 3] = -external[0] / external[3]**2 + drag * state[
-            3] / external[3]**2
-        dfdx[4, 3] = -external[1] / external[3]**2 + drag * state[
-            4] / external[3]**2
-        dfdx[5, 3] = -external[2] / external[3]**2 + drag * state[
-            5] / external[3]**2
-
-        # dfdx[3, :4] = [
-        #     1 / external[3] / 1.e3, 0, 0,
-        #     -external[0] / external[3]**2 / 1.e3 +
-        #     drag * state[3] / external[3]**2 / 1.e3
-        # ]
-        # dfdx[4, :4] = [
-        #     0, 1 / external[3] / 1.e3, 0,
-        #     -external[1] / external[3]**2 / 1.e3 +
-        #     drag * state[4] / external[3]**2 / 1.e3
-        # ]
-        # dfdx[5, :4] = [
-        #     0, 0, 1 / external[3] / 1.e3,
-        #     -external[2] / external[3]**2 / 1.e3 +
-        #     drag * state[5] / external[3]**2 / 1.e3
-        # ]
-
-        # dfdx[3:,:3] += eye/mass
-
-        # dfdx[0, :] = [0., -external[2], external[1]]
-        # dfdx[1, :] = [external[2], 0., -external[0]]
-        # dfdx[2, :] = [-external[1], external[0], 0.]
         return dfdx
 
 
@@ -280,6 +207,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     class M(Model):
+
         def initialize(self):
             self.parameters.declare('num_times')
             self.parameters.declare('step_size')
@@ -321,17 +249,18 @@ if __name__ == '__main__':
             )
 
     from csdl_om import Simulator
-    num_times = 100
-    step_size = 0.1
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1) * 1e-10
+
     sim = Simulator(M(
         num_times=num_times,
         step_size=step_size,
     ))
     sim.run()
-    orbit_X = sim['relative_orbit_state_m'][0, :]
-    orbit_Y = sim['relative_orbit_state_m'][1, :]
-    plt.plot(orbit_X, orbit_Y)
-    plt.show()
+    # orbit_X = sim['relative_orbit_state_m'][0, :]
+    # orbit_Y = sim['relative_orbit_state_m'][1, :]
+    # plt.plot(orbit_X, orbit_Y)
+    # plt.show()
 
-    sim.prob.model.list_outputs()
-    sim.check_partials(compact_print=True)
+    sim.check_partials(compact_print=True, step=1e-4)
+    # sim.check_partials(step=1e-4)
