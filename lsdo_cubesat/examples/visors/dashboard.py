@@ -1,5 +1,5 @@
 from lsdo_cubesat.examples.visors.get_all_varnames import get_all_varnames
-from lsdo_cubesat.dash import Dash
+from lsdo_cubesat.examples.visors.dash import Dash
 from lsdo_cubesat.parameters.swarm import SwarmParams
 from lsdo_cubesat.examples.visors.make_swarm import make_swarm
 
@@ -16,4 +16,4 @@ varnames = get_all_varnames(sim)
 del sim
 
 dashboard = Dash(varnames=varnames)
-dashboard.run_GUI()
+dashboard.run_GUI(plot_user=False)
