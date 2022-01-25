@@ -27,6 +27,7 @@ class VehicleDynamics(Model):
                 num_cp=num_cp,
                 step_size=step_size,
                 cubesat=cubesat,
+                omnidirectional=True,
             ),
             name='propulsion',
         )
@@ -98,7 +99,7 @@ class VehicleDynamics(Model):
                 num_times=num_times,
                 num_cp=num_cp,
                 step_size=step_size,
-                gravity_gradient=True,
+                gravity_gradient=False,
             ),
             name='attitude',
         )
