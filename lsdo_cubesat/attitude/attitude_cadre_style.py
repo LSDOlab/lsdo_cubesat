@@ -280,10 +280,10 @@ class Attitude(Model):
         # RW rate saturation
         rw_speed_min = csdl.min(rw_speed, axis=1, rho=50. / 1e0)
         rw_speed_max = csdl.max(rw_speed, axis=1, rho=10. / 1e0)
-        self.register_output('rw_speed_min', rw_speed_min)
-        self.register_output('rw_speed_max', rw_speed_max)
-        self.add_constraint('rw_speed_min', lower=-max_rw_speed)
-        self.add_constraint('rw_speed_max', upper=max_rw_speed)
+        # self.register_output('rw_speed_min', rw_speed_min)
+        # self.register_output('rw_speed_max', rw_speed_max)
+        # self.add_constraint('rw_speed_min', lower=-max_rw_speed)
+        # self.add_constraint('rw_speed_max', upper=max_rw_speed)
 
 
 if __name__ == "__main__":
