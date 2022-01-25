@@ -103,14 +103,14 @@ class Cubesat(Model):
             percent_facing_sun * sun_LOS,
         )
 
-        self.add(
-            ElectricalPowerSystem(
-                num_times=num_times,
-                step_size=step_size,
-                comm=comm,
-            ),
-            name='EPS',
-        )
+        # self.add(
+        #     ElectricalPowerSystem(
+        #         num_times=num_times,
+        #         step_size=step_size,
+        #         comm=comm,
+        #     ),
+        #     name='EPS',
+        # )
 
         total_propellant_volume = self.declare_variable(
             'total_propellant_volume', )
@@ -120,8 +120,7 @@ class Cubesat(Model):
                              battery_and_propellant_volume)
 
         # volume of half of 1U
-        self.add_constraint('battery_and_propellant_volume',
-                            upper=10**3 / (10**3) / 2)
+        # self.add_constraint('battery_and_propellant_volume', upper=10**3 / (10**3) / 2)
 
         if comm is True:
             self.add_download_rate_model()
