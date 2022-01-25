@@ -192,14 +192,14 @@ class TelescopeConfiguration(Model):
         )
         self.register_output('min_separation_error', min_separation_error)
         self.register_output('max_separation_error', max_separation_error)
-        self.add_constraint(
-            'min_separation_error',
-            lower=-telescope_length_tol_mm * 1000,
-        )
-        self.add_constraint(
-            'max_separation_error',
-            upper=telescope_length_tol_mm * 1000,
-        )
+        # self.add_constraint(
+        #     'min_separation_error',
+        #     lower=-telescope_length_tol_mm * 1000,
+        # )
+        # self.add_constraint(
+        #     'max_separation_error',
+        #     upper=telescope_length_tol_mm * 1000,
+        # )
 
         # Transverse displacement
 
