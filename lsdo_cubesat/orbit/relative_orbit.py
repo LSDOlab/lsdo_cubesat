@@ -105,6 +105,12 @@ class RelativeOrbit(Model):
                                  rho=10. / 1e3,
                              ))
         self.add_constraint('min_altitude_km', lower=min_alt)
+        self.register_output('max_altitude_km',
+                             csdl.max(
+                                 altitude_km,
+                                 rho=10. / 1e3,
+                             ))
+        self.add_constraint('max_altitude_km', upper=600.)
 
 
 if __name__ == '__main__':
