@@ -12,5 +12,6 @@ setup(
         'csdl',
         'numpy-stl',
         'trimesh',
+        'smt',
     ],
 )
