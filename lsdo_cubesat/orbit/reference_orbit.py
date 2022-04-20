@@ -9,7 +9,16 @@ from lsdo_cubesat.constants import RADII
 radius_earth = RADII['Earth']
 
 
+# Cubesat(
+#         name='sunshade',
+#         dry_mass=1.3,
+#         initial_orbit_state=initial_orbit_state_magnitude * np.random.rand(6),
+#         specific_impulse=47.,
+#         apogee_altitude=500.001,
+#         perigee_altitude=499.99,
+#     ))
 class ReferenceOrbit(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', types=int)
         self.parameters.declare('step_size', types=float)
