@@ -77,7 +77,6 @@ class BatteryPack(Model):
         self.register_output('battery_mass', battery_mass)
         battery_volume = cell_volume * num_cells
         self.register_output('battery_volume', battery_volume)
-        self.add_constraint('battery_volume')
         num_series_exp = csdl.expand(num_series, (1, num_times))
         num_parallel_exp = csdl.expand(num_parallel, (1, num_times))
 
@@ -114,22 +113,3 @@ class BatteryPack(Model):
         # self.register_output('max_current', csdl.max(current, rho=10.))
         # self.add_constraint('min_current', lower=max_discharge_rate)
         # self.add_constraint('max_current', upper=max_charge_rate)
-
-
-if __name__ == '__main__':
-    from csdl_om import Simulator
-
-    num_times = 40
-    step_size = 95 * 60 / (num_times - 1)
-    time_scale = 1
-
-    np.random.seed(0)
-    v = -10 * (np.random.rand(num_times * time_scale).reshape(
-        (1, num_times * time_scale)) - 0.5)
-
-    sim = Simulator(BatteryPack(num_times=num_times, step_size=step_size))
-    sim['battery_power'] = v * 6
-    sim['power'] = v
-    sim.run()
-    sim.prob.check_totals(compact_print=True)
-    sim.visualize_implementation()
