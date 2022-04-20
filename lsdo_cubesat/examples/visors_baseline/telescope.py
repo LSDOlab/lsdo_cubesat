@@ -5,11 +5,11 @@ import numpy as np
 # from lsdo_cubesat.cubesat_group import Cubesat
 from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
 from lsdo_cubesat.parameters.swarm import SwarmParams
-from lsdo_cubesat.examples.visors.cubesat_group import Cubesat
+from lsdo_cubesat.examples.visors_baseline.cubesat_group import Cubesat
 from lsdo_cubesat.operations.sun_direction import SunDirection
 
 
-class Swarm(Model):
+class Telescope(Model):
 
     def initialize(self):
         self.parameters.declare('swarm', types=SwarmParams)
@@ -82,14 +82,14 @@ class Swarm(Model):
             'detector_cubesat.orbit_state_km',
             'detector_orbit_state_km',
         )
-        self.connect(
-            'optics_cubesat.B_from_ECI',
-            'optics_B_from_ECI',
-        )
-        self.connect(
-            'detector_cubesat.B_from_ECI',
-            'detector_B_from_ECI',
-        )
+        # self.connect(
+        #     'optics_cubesat.B_from_ECI',
+        #     'optics_B_from_ECI',
+        # )
+        # self.connect(
+        #     'detector_cubesat.B_from_ECI',
+        #     'detector_B_from_ECI',
+        # )
         # self.connect(
         #     'optics_cubesat.sun_pointing_constraint',
         #     'optics_sun_pointing_constraint',
@@ -154,25 +154,31 @@ class Swarm(Model):
             'optics_relative_orbit_state_m', shape=(6, num_times))
         detector_relative_orbit_state_m = self.declare_variable(
             'detector_relative_orbit_state_m', shape=(6, num_times))
-        x = csdl.pnorm(optics_relative_orbit_state_m[:3, :], axis=0)
+        x = csdl.sum(optics_relative_orbit_state_m[:3, :]**2, axes=(0, ))
+        y = csdl.sum(detector_relative_orbit_state_m[:3, :]**2, axes=(0, ))
 
-        # # TODO: get reasonable coefficients for regularization term
-        regularization_term = csdl.max(csdl.reshape(
-            csdl.pnorm(optics_relative_orbit_state_m[:3, :], axis=0) +
-            csdl.pnorm(detector_relative_orbit_state_m[:3, :], axis=0),
-            (1, num_times)),
-                                       axis=1)
-        # # propellant on the order of kg
-        # # relative distance to reference orbit on the order of m
-        # obj = total_propellant_used + 1e-2 * regularization_term
-        # self.register_output('obj', obj)
-        # self.add_objective('obj', scaler=1.e-3)
-        # self.add_objective('obj')
+        separation_error_during_observation = self.declare_variable(
+            'separation_error_during_observation',
+            shape=num_times,
+        )
+        view_plane_error_during_observation = self.declare_variable(
+            'view_plane_error_during_observation', shape=num_times)
+        # obj_comp = ExecComp(
+        #     # 'obj= 0.01 * total_propellant_used- 1e-5 * total_data_downloaded + 1e-4 * (0'
+        #     'obj= 0.01 * total_propellant_used + 1e-4 * (0'
+        #     '+ masked_normal_distance_optics_detector_mm_sq_sum'
+        #     '+ masked_distance_optics_detector_mm_sq_sum)/{}'
+        #     '+ 1e-3 * ('
+        #     '+ optics_cubesat_group_relative_orbit_state_sq_sum'
+        #     '+ detector_cubesat_group_relative_orbit_state_sq_sum'
+        #     ') / {}'.format(num_times, num_times))
 
-        # temporarily create objective independent of constraints to
-        # find feasible solution more quickly than finding optimal
-        # solution
-        dummy = self.create_input('dummy', val=0)
-        self.add_design_variable('dummy')
-        self.register_output('obj', dummy**2)
-        self.add_objective('obj')
+        # TODO: get reasonable coefficients for regularization term
+        obj = 0.01 * total_propellant_used + 1e2 * (
+            csdl.sum((1e3 * view_plane_error_during_observation)**2 +
+                     (1e3 * separation_error_during_observation)**2) +
+            1e-3 * csdl.sum(x**2 + y**2)) / num_times
+
+        # propellant on the order of kg
+        # relative distance to reference orbit on the order of m
+        self.register_output('obj', obj)

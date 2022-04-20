@@ -1,5 +1,5 @@
 from lsdo_cubesat.parameters.cubesat import CubesatParams
-from lsdo_cubesat.examples.visors.swarm_group import Swarm
+from lsdo_cubesat.examples.visors_baseline.telescope import Telescope
 
 from csdl_om import Simulator
 import numpy as np
@@ -35,7 +35,8 @@ def make_swarm(swarm):
 
     for v in cubesats.values():
         swarm.add(v)
-    m = Swarm(swarm=swarm)
+    m = Telescope(swarm=swarm)
+    m.add_objective('obj')
     start_compile = time.time()
     sim = Simulator(m)
     end_compile = time.time()

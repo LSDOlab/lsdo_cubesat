@@ -103,14 +103,14 @@ class Cubesat(Model):
             percent_facing_sun * sun_LOS,
         )
 
-        # self.add(
-        #     ElectricalPowerSystem(
-        #         num_times=num_times,
-        #         step_size=step_size,
-        #         comm=comm,
-        #     ),
-        #     name='EPS',
-        # )
+        self.add(
+            ElectricalPowerSystem(
+                num_times=num_times,
+                step_size=step_size,
+                comm=comm,
+            ),
+            name='EPS',
+        )
 
         total_propellant_volume = self.declare_variable(
             'total_propellant_volume', )

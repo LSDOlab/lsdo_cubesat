@@ -1,6 +1,6 @@
 from csdl_om import Simulator
 
-from lsdo_cubesat.orbit.reference_orbit_group import ReferenceOrbit
+from lsdo_cubesat.orbit.reference_orbit import ReferenceOrbit
 from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
 from lsdo_cubesat.examples.swarms.swarm1 import swarm
 from csdl import Model
