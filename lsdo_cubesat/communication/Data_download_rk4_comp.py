@@ -4,10 +4,11 @@ RK4 component for Data Download
 
 import numpy as np
 
-from lsdo_cubesat.utils.rk4_comp import RK4Comp
+from lsdo_cubesat.operations.rk4_op import RK4
 
 
-class DataDownloadComp(RK4Comp):
+class DataDownloadComp(RK4):
+
     def define(self):
         opts = self.parameters
         n = opts['num_times']

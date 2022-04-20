@@ -7,7 +7,6 @@ from csdl.utils.get_bspline_mtx import get_bspline_mtx
 from lsdo_cubesat.swarm.ground_station import Ground_station
 from lsdo_cubesat.swarm.GS_net import GS_net
 from lsdo_cubesat.ground_station_group import GSGroup
-from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
 from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
 from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
 from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
