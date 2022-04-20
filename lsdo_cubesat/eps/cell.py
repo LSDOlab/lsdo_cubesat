@@ -1,5 +1,5 @@
 import numpy as np
-from csdl import Model, NewtonSolver, ScipyKrylov
+from csdl import Model, NewtonSolver, ScipyKrylov, NonlinearBlockGS
 import csdl
 from lsdo_cubesat.eps.voltage import Voltage
 
@@ -40,34 +40,35 @@ class Cell(Model):
                 (1, num_times * time_scale)) - 0.5),
             shape=(1, num_times * time_scale),
         )
-        if SAND_MDF == 'MDF':
-            compute_voltage = self.create_implicit_operation(
-                Voltage(
-                    num_times=num_times * time_scale,
-                    step_size=step_size / float(time_scale),
-                ))
-            compute_voltage.declare_state('voltage', residual='r_V', val=3.3)
-            compute_voltage.linear_solver = ScipyKrylov()
-            compute_voltage.nonlinear_solver = NewtonSolver(
-                solve_subsystems=False,
-                # iprint=0,
-            )
-            voltage, soc = compute_voltage(power, initial_soc, expose=['soc'])
+        # if SAND_MDF == 'MDF':
+        compute_voltage = self.create_implicit_operation(
+            Voltage(
+                num_times=num_times * time_scale,
+                step_size=step_size / float(time_scale),
+            ))
+        compute_voltage.declare_state('voltage', residual='r_V', val=3.3)
+        compute_voltage.linear_solver = ScipyKrylov()
+        compute_voltage.nonlinear_solver = NonlinearBlockGS(iprint=0)
+        # compute_voltage.nonlinear_solver = NewtonSolver(
+        #     solve_subsystems=False,
+        #     iprint=0,
+        # )
+        voltage, soc = compute_voltage(power, initial_soc, expose=['soc'])
 
-        elif SAND_MDF == 'SAND':
-            voltage = self.create_input('voltage',
-                                        val=3.3,
-                                        shape=(1, num_times * time_scale))
-            self.add_design_variable('voltage')
-            self.add(
-                Voltage(
-                    num_times=num_times * time_scale,
-                    step_size=step_size / float(time_scale),
-                ))
-            self.add_constraint('r_V', equals=0)
-            soc = self.declare_variable('soc',
-                                        val=2,
-                                        shape=(1, num_times * time_scale))
+        # elif SAND_MDF == 'SAND':
+        #     voltage = self.create_input('voltage',
+        #                                 val=3.3,
+        #                                 shape=(1, num_times * time_scale))
+        #     self.add_design_variable('voltage')
+        #     self.add(
+        #         Voltage(
+        #             num_times=num_times * time_scale,
+        #             step_size=step_size / float(time_scale),
+        #         ))
+        #     # self.add_constraint('r_V', equals=0)
+        #     soc = self.declare_variable('soc',
+        #                                 val=2,
+        #                                 shape=(1, num_times * time_scale))
         soc_sliced = soc[0, ::time_scale]
 
         # enforce soc constraint
@@ -80,14 +81,14 @@ class Cell(Model):
             csdl.min(mmin_soc, axis=1, rho=20. / 1e0),
             # csdl.min(soc, axis=1, rho=10.),
         )
-        self.register_output(
-            'max_soc',
-            csdl.max(soc_sliced, axis=1, rho=20.),
-        )
-        self.add_constraint(
-            'min_soc',
-            lower=np.exp(min_soc),
-        )
+        # self.register_output(
+        #     'max_soc',
+        #     csdl.max(soc_sliced, axis=1, rho=20.),
+        # )
+        # self.add_constraint(
+        #     'min_soc',
+        #     lower=min_soc,
+        # )
         # self.add_constraint(
         #     'max_soc',
         #     upper=max_soc,

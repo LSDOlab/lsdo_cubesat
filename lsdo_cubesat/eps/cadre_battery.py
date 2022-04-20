@@ -1,10 +1,18 @@
 import numpy as np
-from csdl import Model, ScipyKrylov, NonlinearBlockGS
+from csdl import Model, NonlinearBlockGS, NewtonSolver
 import csdl
 from lsdo_cubesat.operations.soc_integrator import SOC_Integrator
+from csdl.solvers.linear.direct import DirectSolver
+from csdl.solvers.linear.linear_block_gs import LinearBlockGS
+from csdl.solvers.linear.linear_block_jac import LinearBlockJac
+from csdl.solvers.linear.linear_runonce import LinearRunOnce
+from csdl.solvers.linear.petsc_ksp import PETScKrylov
+from csdl.solvers.linear.scipy_iter_solver import ScipyKrylov
+# from csdl.solvers.linear.user_defined import LinearUserDefined
 
 
 class Voltage(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', default=1, types=int)
         self.parameters.declare('step_size', types=float)
@@ -21,7 +29,7 @@ class Voltage(Model):
         temp_decay_coeff = self.parameters['temp_decay_coeff']
         reference_temperature = self.parameters['reference_temperature']
 
-        power = self.declare_variable('power', shape=(1, num_times))
+        power = self.declare_variable('power', shape=(1, num_times), val=-1)
         capacity = self.declare_variable(
             'capacity',
             shape=(1, num_times),
@@ -54,9 +62,11 @@ class Voltage(Model):
         #     (2 - csdl.exp(temp_decay_coeff * (T - reference_temperature / T))))
         self.register_output(
             'r_V', voltage - (3 + (csdl.exp(soc) - 1) / (np.exp(1) - 1)))
+        self.add_constraint('r_V', equals=0)
 
 
 class Cell(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', default=1, types=int)
         self.parameters.declare('step_size', types=float)
@@ -74,36 +84,55 @@ class Cell(Model):
         initial_soc = self.create_input(
             'initial_soc',
             shape=(1, ),
+            val=0.95,
         )
         self.add_design_variable(
             'initial_soc',
             lower=min_soc,
             upper=max_soc,
         )
+        ## Use nonlinear solver to solve for voltage
         compute_voltage = self.create_implicit_operation(
             Voltage(
                 num_times=num_times,
                 step_size=step_size,
             ))
+        compute_voltage.declare_state('voltage', residual='r_V', val=3.3)
         compute_voltage.linear_solver = ScipyKrylov()
-        compute_voltage.nonlinear_solver = NonlinearBlockGS(iprint=0)
+        compute_voltage.nonlinear_solver = NewtonSolver(
+            solve_subsystems=True,
+            iprint=0,
+        )
 
         power = self.declare_variable('power', shape=(1, num_times))
-        compute_voltage.declare_state('voltage', residual='r_V', val=3.3)
         voltage, soc = compute_voltage(power, initial_soc, expose=['soc'])
 
+        ## Use optimizer to solve for voltage
+        # self.create_input('voltage', val=3.3, shape=(1, num_times))
+        # self.add_design_variable('voltage')
+        # self.add(Voltage(
+        #     num_times=num_times,
+        #     step_size=step_size,
+        # ))
+        # soc = self.declare_variable('soc', shape=(1, num_times))
+
         # enforce soc constraint
+        mmin_soc = self.register_output(
+            'mmin_soc',
+            csdl.exp(soc),
+        )
         self.register_output(
             'min_soc',
-            csdl.min(soc, axis=1),
+            csdl.min(mmin_soc, axis=1, rho=20. / 1e0),
+            # csdl.min(soc, axis=1, rho=10.),
         )
         self.register_output(
             'max_soc',
-            csdl.max(soc, axis=1),
+            csdl.max(soc, axis=1, rho=20.),
         )
         self.add_constraint(
             'min_soc',
-            lower=min_soc,
+            lower=np.exp(min_soc),
         )
         self.add_constraint(
             'max_soc',
@@ -116,6 +145,7 @@ class Cell(Model):
 
 
 class BatteryPack(Model):
+
     def initialize(self):
         self.parameters.declare('num_times', default=1, types=int)
         self.parameters.declare('step_size', types=float)
@@ -183,6 +213,7 @@ class BatteryPack(Model):
         self.register_output('battery_mass', battery_mass)
         battery_volume = cell_volume * num_cells
         self.register_output('battery_volume', battery_volume)
+        self.add_constraint('battery_volume')
         num_series_exp = csdl.expand(num_series, (1, num_times))
         num_parallel_exp = csdl.expand(num_parallel, (1, num_times))
 
@@ -196,7 +227,7 @@ class BatteryPack(Model):
             Cell(
                 num_times=num_times,
                 step_size=step_size,
-                periodic_soc=True,
+                periodic_soc=False,
             ),
             name='battery_cell',
         )
@@ -204,32 +235,25 @@ class BatteryPack(Model):
 
         # enforce charge/discharge constraint
         current = power / voltage
-        min_current = csdl.min(current)
-        max_current = csdl.max(current)
-        self.register_output(
-            'min_current',
-            min_current,
-        )
-        self.register_output(
-            'max_current',
-            max_current,
-        )
-        self.add_constraint(
-            'min_current',
-            lower=max_discharge_rate,
-        )
-        self.add_constraint(
-            'max_current',
-            upper=max_charge_rate,
-        )
+        self.register_output('current', current)
+        self.register_output('min_current', csdl.min(current, rho=10.))
+        self.register_output('max_current', csdl.max(current, rho=10.))
+        # self.add_constraint('min_current', lower=max_discharge_rate)
+        # self.add_constraint('max_current', upper=max_charge_rate)
 
 
 if __name__ == '__main__':
     from csdl_om import Simulator
 
-    num_times = 2
-    shape = (num_times, 1)
-    step_size = 3.0 / num_times
+    num_times = 40
+    step_size = 95 * 60 / (num_times - 1)
+
+    np.random.seed(0)
+    v = -10 * (np.random.rand(num_times).reshape((1, num_times)) - 0.5)
 
     sim = Simulator(BatteryPack(num_times=num_times, step_size=step_size))
+    sim['battery_power'] = v * 6
+    sim['power'] = v
+    sim.run()
+    sim.prob.check_totals(compact_print=True)
     sim.visualize_implementation()
