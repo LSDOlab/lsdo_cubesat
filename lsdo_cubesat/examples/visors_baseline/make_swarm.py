@@ -1,33 +1,56 @@
-from lsdo_cubesat.parameters.cubesat import CubesatParams
+from lsdo_cubesat.specifications.cubesat_spec import CubesatSpec
 from lsdo_cubesat.examples.visors_baseline.telescope import Telescope
 
-from csdl_om import Simulator
 import numpy as np
-import time
+from csdl import GraphRepresentation
 
 
 def make_swarm(swarm):
-
-    # initial state relative to reference orbit
-    initial_orbit_state = np.array([1e-3] * 3 + [1e-3] * 3)
 
     np.random.seed(0)
 
     cubesats = dict()
 
-    cubesats['optics'] = CubesatParams(
+    cubesats['optics'] = CubesatSpec(
         name='optics',
         dry_mass=1.3,
-        initial_orbit_state=initial_orbit_state * np.random.rand(6) * 1e-3,
+        initial_orbit_state=np.array([
+            20,
+            # 2*0.0495,
+            0,
+            0,
+            0.,
+            0.,
+            0.,
+            # 1.76002146e+03,
+            # 6.19179823e+03,
+            # 6.31576531e+03,
+            # 4.73422022e-05,
+            # 1.26425269e-04,
+            # 5.39731211e-05,
+        ]),
         specific_impulse=47.,
         perigee_altitude=500.,
         apogee_altitude=500.,
     )
 
-    cubesats['detector'] = CubesatParams(
+    cubesats['detector'] = CubesatSpec(
         name='detector',
         dry_mass=1.3,
-        initial_orbit_state=initial_orbit_state * np.random.rand(6) * 1e-3,
+        initial_orbit_state=np.array([
+            -20,
+            0,
+            0,
+            0,
+            0.,
+            0.,
+            # 1.76002146e+03,
+            # 6.19179823e+03,
+            # 6.31576531e+03,
+            # 4.73422022e-05,
+            # 1.26425269e-04,
+            # 5.39731211e-05,
+        ]),
         specific_impulse=47.,
         perigee_altitude=500.002,
         apogee_altitude=499.98,
@@ -36,12 +59,4 @@ def make_swarm(swarm):
     for v in cubesats.values():
         swarm.add(v)
     m = Telescope(swarm=swarm)
-    m.add_objective('obj')
-    start_compile = time.time()
-    sim = Simulator(m)
-    end_compile = time.time()
-    total_compile_time = end_compile - start_compile
-    print('========== TOTAL COMPILE TIME ==========')
-    print(total_compile_time, 's')
-    print('=========================================')
-    return sim
+    return GraphRepresentation(m)

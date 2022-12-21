@@ -1,42 +1,82 @@
-from csdl import Model
+from csdl import Model, Output
 import csdl
 import numpy as np
 
 # from lsdo_cubesat.cubesat_group import Cubesat
 from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
-from lsdo_cubesat.parameters.swarm import SwarmParams
-from lsdo_cubesat.examples.visors_baseline.cubesat_group import Cubesat
+from lsdo_cubesat.specifications.swarm_spec import SwarmSpec
+from lsdo_cubesat.examples.visors_baseline.cubesat import Cubesat
 from lsdo_cubesat.operations.sun_direction import SunDirection
+from lsdo_cubesat.constants import s
 
 
 class Telescope(Model):
 
+    def register_connected(self, prefix: str, name: str,
+                           var: Output) -> Output:
+        self.register_output(prefix + name, var)
+        return var
+
+    def import_vars(self, name, shape=(1, )):
+        optics = self.declare_variable(f'optics_{name}', shape=shape)
+        detector = self.declare_variable(f'detector_{name}', shape=shape)
+
+        self.connect_vars(name)
+
+        return optics, detector
+
+    def connect_vars(self, name):
+        self.connect(
+            f'optics_cubesat.{name}',
+            f'optics_{name}',
+        )
+        self.connect(
+            f'detector_cubesat.{name}',
+            f'detector_{name}',
+        )
+
     def initialize(self):
-        self.parameters.declare('swarm', types=SwarmParams)
-        self.parameters.declare('comm', types=bool, default=False)
+        self.parameters.declare('swarm', types=SwarmSpec)
         self.parameters.declare('duration', types=float)
+        self.parameters.declare('telescope_length_tol_mm',
+                                default=15.,
+                                types=float)
+        self.parameters.declare('telescope_view_plane_tol_mm',
+                                default=18.,
+                                types=float)
 
     def define(self):
         swarm = self.parameters['swarm']
-        comm = self.parameters['comm']
 
         num_times = swarm['num_times']
         num_cp = swarm['num_cp']
         step_size = swarm['step_size']
         duration = swarm['duration']
 
+        telescope_length_tol_mm = self.parameters['telescope_length_tol_mm']
+        telescope_view_plane_tol_mm = self.parameters[
+            'telescope_view_plane_tol_mm']
+
+        # TODO: What are we modeling here?
         earth_orbit_angular_speed_rad_min = 2 * np.pi / 365 * 1 / 24 * 1 / 60
         step_size_min = duration / num_times
         earth_orbit_angular_position = earth_orbit_angular_speed_rad_min * step_size_min * np.arange(
             num_times)
-        v = np.zeros((3, num_times))
-        v[0, :] = np.cos(earth_orbit_angular_position)
-        v[1, :] = np.sin(earth_orbit_angular_position)
+        v = np.zeros((num_times, 3))
+        v[:, 0] = 1
+        # v[:, 0] = np.cos(earth_orbit_angular_position)
+        # v[:, 1] = np.sin(earth_orbit_angular_position)
+
+        # sun_direction (in ECI frame) used in TelescopeConfiguration;
+        # here it is an input because it is precomputed
         sun_direction = self.create_input(
             'sun_direction',
-            shape=(3, num_times),
+            shape=(num_times, 3),
             val=v,
         )
+
+        # add model for each cubesat in telescope (2 total; optics and
+        # detector)
         for cubesat in swarm.children:
             cubesat_name = cubesat['name']
             submodel_name = '{}_cubesat'.format(cubesat_name)
@@ -54,131 +94,73 @@ class Telescope(Model):
             self.connect('sun_direction',
                          '{}.sun_direction'.format(submodel_name))
 
+        # add constraints for defining telescope configuration
         self.add(
             TelescopeConfiguration(swarm=swarm),
             name='telescope_config',
         )
-        # self.connect(
-        #     'optics_cubesat.sun_LOS',
-        #     'optics_sun_LOS',
-        # )
-        # self.connect(
-        #     'detector_cubesat.sun_LOS',
-        #     'detector_sun_LOS',
-        # )
-        self.connect(
-            'optics_cubesat.relative_orbit_state_m',
-            'optics_relative_orbit_state_m',
-        )
-        self.connect(
-            'detector_cubesat.relative_orbit_state_m',
-            'detector_relative_orbit_state_m',
-        )
-        self.connect(
-            'optics_cubesat.orbit_state_km',
-            'optics_orbit_state_km',
-        )
-        self.connect(
-            'detector_cubesat.orbit_state_km',
-            'detector_orbit_state_km',
-        )
-        # self.connect(
-        #     'optics_cubesat.B_from_ECI',
-        #     'optics_B_from_ECI',
-        # )
-        # self.connect(
-        #     'detector_cubesat.B_from_ECI',
-        #     'detector_B_from_ECI',
-        # )
-        # self.connect(
-        #     'optics_cubesat.sun_pointing_constraint',
-        #     'optics_sun_pointing_constraint',
-        # )
-        # self.connect(
-        #     'detector_cubesat.sun_pointing_constraint',
-        #     'detector_sun_pointing_constraint',
-        # )
+        self.connect_vars('sun_LOS')
+        self.connect_vars('relative_orbit_state_m')
+        self.connect_vars('orbit_state_km')
+        # self.connect_vars('B_from_ECI')
 
-        optics_total_propellant_used = self.declare_variable(
-            'optics_total_propellant_used')
-        detector_total_propellant_used = self.declare_variable(
-            'detector_total_propellant_used')
+        # Define Objective
 
-        total_propellant_used = optics_total_propellant_used + detector_total_propellant_used
-        self.register_output('total_propellant_used', total_propellant_used)
+        ## acceleration_due_to_thrust
+        # optics_acceleration_due_to_thrust, detector_acceleration_due_to_thrust = self.import_vars(
+        #     'acceleration_due_to_thrust', shape=(num_times, 3))
+        # a = optics_acceleration_due_to_thrust + detector_acceleration_due_to_thrust
+        # total_acceleration_due_to_thrust = csdl.sum(a*csdl.tanh(5*a))
 
-        self.connect(
-            'optics_cubesat.total_propellant_used',
-            'optics_total_propellant_used',
-        )
-        self.connect(
-            'detector_cubesat.total_propellant_used',
-            'detector_total_propellant_used',
-        )
-        # if comm is True:
-        #     optics_cubesat_group_total_data = self.declare_variable(
-        #         'optics_cubesat_group_total_data')
-        #     detector_cubesat_group_total_data = self.declare_variable(
-        #         'detector_cubesat_group_total_data')
+        ## total_propellant_used
+        # optics_total_propellant_used, detector_total_propellant_used = self.import_vars(
+        #     'total_propellant_used')
+        # total_propellant_used = optics_total_propellant_used + detector_total_propellant_used
+        # self.register_output('total_propellant_used', total_propellant_used)
 
-        # # FOR FUTURE DEVELOPERS:
-        # # THIS USED TO BE HERE FOR THE COMMUNCATION DISCIPLINES
-        # # IT WASN'T CHECKED TO MAKE SURE EVERYTHING WORKS WHEN comm is True
-        # # total_data_downloaded = sunshade_cubesat_group_total_Data + optics_cubesat_group_total_Data + detector_cubesat_group_total_Data
-        # # total_data_downloaded = optics_cubesat_group_total_data + detector_cubesat_group_total_data
-        # # +5.e-14*ks_masked_distance_sunshade_optics_km
-        # # +5.e-14 *ks_masked_distance_optics_detector_km
-        # # self.register_output('total_data_downloaded', total_data_downloaded)
+        ## total_propellant_mass using initial propellant mass
+        # optics_initial_propellant_mass, detector_initial_propellant_mass = self.import_vars(
+        #     'initial_propellant_mass')
+        # total_propellant_mass = optics_initial_propellant_mass + detector_initial_propellant_mass
+        # self.register_output('total_propellant_mass', total_propellant_mass)
 
-        # # for cubesat in swarm.children:
-        # #     name = cubesat['name']
+        ## penalties
+        max_separation_error_during_observation = self.declare_variable(
+            'max_separation_error_during_observation')
+        max_view_plane_error = self.declare_variable('max_view_plane_error')
+        max_telescope_view_angle = self.declare_variable(
+            'max_telescope_view_angle')
 
-        # #     # self.connect(
-        # #     #     '{}_cubesat_group.position_km'.format(name),
-        # #     #     '{}_cubesat_group_position_km'.format(name),
-        # #     # )
+        # obj = 10*total_propellant_mass + (max_separation_error_during_observation - (
+        #     telescope_length_tol_mm / 1000.)**2 + max_view_plane_error - (
+        #         telescope_view_plane_tol_mm / 1000.)**2)
 
-        # #     self.connect(
-        # #         '{}_cubesat_group.total_propellant_used'.format(name),
-        # #         '{}_cubesat_group_total_propellant_used'.format(name),
-        # #     )
-
-        # #     if comm is True:
-        # #         self.connect(
-        # #             '{}_cubesat_group.total_data'.format(name),
-        # #             '{}_cubesat_group_total_data'.format(name),
-        # #         )
-
-        # Objective with regularizaiton term
-        optics_relative_orbit_state_m = self.declare_variable(
-            'optics_relative_orbit_state_m', shape=(6, num_times))
-        detector_relative_orbit_state_m = self.declare_variable(
-            'detector_relative_orbit_state_m', shape=(6, num_times))
-        x = csdl.sum(optics_relative_orbit_state_m[:3, :]**2, axes=(0, ))
-        y = csdl.sum(detector_relative_orbit_state_m[:3, :]**2, axes=(0, ))
-
-        separation_error_during_observation = self.declare_variable(
-            'separation_error_during_observation',
-            shape=num_times,
-        )
-        view_plane_error_during_observation = self.declare_variable(
-            'view_plane_error_during_observation', shape=num_times)
-        # obj_comp = ExecComp(
-        #     # 'obj= 0.01 * total_propellant_used- 1e-5 * total_data_downloaded + 1e-4 * (0'
-        #     'obj= 0.01 * total_propellant_used + 1e-4 * (0'
-        #     '+ masked_normal_distance_optics_detector_mm_sq_sum'
-        #     '+ masked_distance_optics_detector_mm_sq_sum)/{}'
-        #     '+ 1e-3 * ('
-        #     '+ optics_cubesat_group_relative_orbit_state_sq_sum'
-        #     '+ detector_cubesat_group_relative_orbit_state_sq_sum'
-        #     ') / {}'.format(num_times, num_times))
-
-        # TODO: get reasonable coefficients for regularization term
-        obj = 0.01 * total_propellant_used + 1e2 * (
-            csdl.sum((1e3 * view_plane_error_during_observation)**2 +
-                     (1e3 * separation_error_during_observation)**2) +
-            1e-3 * csdl.sum(x**2 + y**2)) / num_times
-
-        # propellant on the order of kg
-        # relative distance to reference orbit on the order of m
+        # use 10 coefficient to scale objective to be ~1
+        # obj = 10*total_propellant_used
+        # obj = ((
+        #     max_separation_error_during_observation -
+        #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
+        #     (telescope_view_plane_tol_mm / 1000.)**2 + 1e8*max_telescope_view_angle))
+        obj = 180 / np.pi * max_telescope_view_angle
+        # obj = 10*total_propellant_used + ((
+        #     max_separation_error_during_observation -
+        #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
+        #     (telescope_view_plane_tol_mm / 1000.)**2))/s
+        # obj = total_propellant_used + 100*((
+        #     max_separation_error_during_observation -
+        #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
+        #     (telescope_view_plane_tol_mm / 1000.)**2))
+        # obj = total_acceleration_due_to_thrust + (
+        #     max_separation_error_during_observation -
+        #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
+        #     (telescope_view_plane_tol_mm / 1000.)**2)
+        # obj = (max_separation_error_during_observation -
+        #        (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
+        #        (telescope_view_plane_tol_mm / 1000.)**2)
+        # obj = 10 * max_separation_error_during_observation
+        # obj= (csdl.sum(separation_error_during_observation) +
+        #        csdl.sum(view_plane_error_during_observation) - num_times *
+        #        ((telescope_length_tol_mm / 1000.)**2 +
+        #         (telescope_view_plane_tol_mm / 1000.)**2))
         self.register_output('obj', obj)
+        self.add_objective('obj')

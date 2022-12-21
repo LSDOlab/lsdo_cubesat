@@ -1,16 +1,20 @@
-from csdl_om import Simulator
-from lsdo_cubesat.orbit.reference_orbit import ReferenceOrbit
+from python_csdl_backend import Simulator
+from lsdo_cubesat.orbit.reference_orbit import ReferenceOrbitTrajectory
 import numpy as np
 import matplotlib.pyplot as plt
+from csdl import GraphRepresentation
 
 
 def generate_reference_orbit(num_times, step_size, plot=False):
-    sim = Simulator(ReferenceOrbit(
-        num_times=num_times,
-        step_size=step_size,
-    ))
+    sim = Simulator(
+        GraphRepresentation(
+            ReferenceOrbitTrajectory(
+                num_times=num_times,
+                step_size=step_size,
+            )))
     sim.run()
     if plot is True:
+        print('initial_velocity_km_s', sim['initial_velocity_km_s'])
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         # plot trajectory
