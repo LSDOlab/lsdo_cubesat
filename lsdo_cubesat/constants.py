@@ -38,3 +38,14 @@ deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
 deg2arcsec = 3600.
 arcsec2deg = 1 / 3600.
+
+
+mm_per_m = 1e3
+# tenths_mm_per_mm = 1e1
+# s = 1/(mm_per_m * tenths_mm_per_mm)**2
+s = mm_per_m**2
+# s = m_to_mm * mm_to_thenths_mm
+# s = 1/10
+# s = 1/0.01
+# s = 1
+
