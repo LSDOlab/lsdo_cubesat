@@ -1,0 +1,6 @@
+.DS_Store
+*.obj
+*.mtl
+*.blend
+.mypy_cache/
+__pycache__/
