@@ -11,7 +11,7 @@ from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.dynamics.vehicle_dynamics import VehicleDynamics
 # from lsdo_cubesat.eps.electrical_power_system import ElectricalPowerSystem
 # from lsdo_cubesat.eps.solar.solar_exposure import SolarExposure
-from lsdo_cubesat.eps.solar.umbra_penumbra import UmbraPenumbra
+from lsdo_cubesat.sun.umbra_penumbra import UmbraPenumbra
 
 from lsdo_cubesat.constants import RADII
 

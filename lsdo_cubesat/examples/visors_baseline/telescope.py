@@ -6,7 +6,7 @@ import numpy as np
 from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
 from lsdo_cubesat.specifications.swarm_spec import SwarmSpec
 from lsdo_cubesat.examples.visors_baseline.cubesat import Cubesat
-from lsdo_cubesat.operations.sun_direction import SunDirection
+from lsdo_cubesat.sun.sun_direction import SunDirection
 from lsdo_cubesat.constants import s
 
 

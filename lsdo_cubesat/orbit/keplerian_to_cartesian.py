@@ -6,7 +6,7 @@ import csdl
 
 from csdl.std import sin as s
 from csdl.std import cos as c
-from csdl.core.concatenation import Concatenation
+from csdl.lang.concatenation import Concatenation
 from csdl import Variable
 
 import numpy as np

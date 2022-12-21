@@ -4,7 +4,7 @@ from six import string_types
 
 import numpy as np
 
-from openmdao.core.explicitcomponent import ExplicitComponent
+from openmdao.lang.explicitcomponent import ExplicitComponent
 
 
 class DotProductComp(ExplicitComponent):
@@ -20,6 +20,7 @@ class DotProductComp(ExplicitComponent):
 
     Vectors a and b must be of the same length, specified by the option 'length'.
     """
+
     def initialize(self):
         """
         Declare options.
