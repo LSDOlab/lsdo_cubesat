@@ -1,0 +1,113 @@
+import numpy as np
+from openmdao.api import Problem, IndepVarComp, Group, ExecComp
+
+from lsdo_cubesat.utils.bspline_comp import BsplineComp
+
+from lsdo_cubesat.attitude.rot_mtx_b_i_comp import RotMtxBIComp
+from lsdo_cubesat.communication.Antenna_rot_mtx import AntennaRotationMtx
+from lsdo_cubesat.communication.Antenna_rotation import AntRotationComp
+from lsdo_cubesat.communication.bitrate import BitRate
+from lsdo_cubesat.communication.Comm_distance import StationSatelliteDistanceComp
+from lsdo_cubesat.communication.Comm_LOS import CommLOSComp
+from lsdo_cubesat.communication.Comm_VectorBody import VectorBodyComp
+from lsdo_cubesat.communication.GSposition_ECEF_comp import GS_ECEF_Comp
+from lsdo_cubesat.communication.GSposition_ECI_comp import GS_ECI_Comp
+# from lsdo_cubesat.communication.rot_mtx_ECI_EF_comp import RotMtxECIEFComp
+from lsdo_cubesat.communication.Vec_satellite_GS_ECI import Comm_VectorECI
+from lsdo_cubesat.communication.Comm_vector_antenna import AntennaBodyComp
+from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
+from lsdo_cubesat.communication.Earth_spin_comp import EarthSpinComp
+from lsdo_cubesat.communication.Earthspin_rot_mtx import EarthspinRotationMtx
+
+from csdl.utils.get_bspline_mtx import get_bspline_mtx
+
+# from lsdo_cubesat.cubesat_group import CubesatGroup
+
+
+class GSGroup(Group):
+    def initialize(self):
+        self.options.declare('ground_station')
+        self.options.declare('num_times', types=int)
+        self.options.declare('num_cp', types=int)
+        self.options.declare('step_size', types=float)
+
+        self.options.declare('mtx')
+
+    def setup(self):
+        ground_station = self.options['ground_station']
+        num_times = self.options['num_times']
+        num_cp = self.options['num_cp']
+        step_size = self.options['step_size']
+
+        mtx = self.options['mtx']
+
+        comp = IndepVarComp()
+        comp.add_output('P_comm_cp', val=0.25 * np.ones(num_cp), units='W')
+        comp.add_design_var('P_comm_cp', lower=0., upper=100.)
+        comp.add_output('gain', val=16.0 * np.ones(num_times))
+        for var_name in [
+                'lon',
+                'lat',
+                'alt',
+                'antAngle',
+        ]:
+            comp.add_output(var_name, val=ground_station[var_name])
+
+        self.add('inputs_comp', comp, promotes=['*'])
+
+        comp = EarthSpinComp(num_times=num_times)
+        self.add('q_E', comp, promotes=['*'])
+
+        comp = EarthspinRotationMtx(num_times=num_times)
+        self.add('Rot_ECI_EF', comp, promotes=['*'])
+
+        comp = GS_ECEF_Comp(num_times=num_times)
+        self.add('r_e2g_E', comp, promotes=['*'])
+
+        comp = GS_ECI_Comp(num_times=num_times)
+        self.add('r_e2g_I', comp, promotes=['*'])
+
+        comp = Comm_VectorECI(num_times=num_times)
+        self.add('r_b2g_I', comp, promotes=['*'])
+
+        comp = CommLOSComp(num_times=num_times)
+        self.add('CommLOS', comp, promotes=['*'])
+
+        comp = VectorBodyComp(num_times=num_times)
+        self.add('r_b2g_B', comp, promotes=['*'])
+
+        comp = AntRotationComp(num_times=num_times)
+        self.add('q_A', comp, promotes=['*'])
+
+        comp = AntennaRotationMtx(num_times=num_times)
+        self.add('Rot_AB', comp, promotes=['*'])
+
+        comp = AntennaBodyComp(num_times=num_times)
+        self.add('r_b2g_A', comp, promotes=['*'])
+
+        comp = StationSatelliteDistanceComp(num_times=num_times)
+        self.add('Gsdist', comp, promotes=['*'])
+
+        comp = BsplineComp(
+            num_pt=num_times,
+            num_cp=num_cp,
+            jac=mtx,
+            in_name='P_comm_cp',
+            out_name='P_comm',
+        )
+        self.add('P_comm_comp', comp, promotes=['*'])
+
+        comp = BitRate(num_times=num_times)
+        self.add('Download_rate', comp, promotes=['*'])
+
+        comp = DataDownloadComp(
+            num_times=num_times,
+            step_size=step_size,
+        )
+        self.add('Data_download_rk4_comp', comp, promotes=['*'])
+
+        comp = ExecComp(
+            'total_data_downloaded= Data[-1] - Data[0]',
+            Data=np.empty(num_times),
+        )
+        self.add('total_data_downloaded_comp', comp, promotes=['*'])
