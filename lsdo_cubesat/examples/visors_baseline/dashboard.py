@@ -3,6 +3,10 @@ import seaborn as sns
 import numpy as np
 from typing import Tuple, List, Union
 
+from matplotlib import rc
+
+rc('text', usetex=True)
+
 sns.set()
 """
 This script creates the Dash class which defines
@@ -60,7 +64,7 @@ def plot(
 ):
     ax_subplot = frame[subplot]
     y_axis = data_dict['simulator'][varname]
-    x_axis = np.arange(len(y_axis)) * 95
+
     if data_indices is None:
         sns.lineplot(
             x=x_axis,
@@ -111,11 +115,13 @@ def coplot(
     xlabel: str,
     data_indices: List[Union[List[int], None]] = [],
 ):
+    global A
+    x_axis = np.concatenate(
+        (np.array([0]), np.matmul(A, data_dict['simulator']['h'])))
     ax_subplot = frame[subplot]
     if data_indices == []:
         for varname in varnames:
             y_axis = data_dict['simulator'][varname]
-            x_axis = np.arange(len(y_axis)) * 95
             sns.lineplot(
                 x=x_axis,
                 y=np.array(y_axis).flatten(),
@@ -124,7 +130,6 @@ def coplot(
     else:
         for (indices, varname) in zip(data_indices, varnames):
             y_axis = data_dict['simulator'][varname]
-            x_axis = np.arange(len(y_axis)) * 95
             if indices is None:
                 sns.lineplot(
                     x=x_axis,
@@ -163,8 +168,8 @@ class Dash(ld.BaseDash):
             [
                 'obj',
                 # 'total_propellant_used',
-                'max_separation_error_during_observation',
-                'max_view_plane_error',
+                'min_separation_during_observation',
+                'max_separation_during_observation',
                 'optics_cubesat.acceleration_due_to_thrust',
                 'detector_cubesat.acceleration_due_to_thrust',
                 # 'optics_cubesat.initial_propellant_mass',
@@ -186,7 +191,13 @@ class Dash(ld.BaseDash):
         # showing evolution of time dependent variables across
         # iterations
         video = True
-
+        save_variables(
+            self,
+            [
+                'h',
+            ],
+            history=video,
+        )
         # Telescope Info (Translational)
         save_variables(
             self,
@@ -194,8 +205,7 @@ class Dash(ld.BaseDash):
                 'separation_m',
                 'observation_phase_indicator',
                 'view_plane_error',
-                'separation_error',
-                'telescope_cos_view_angle',
+                # 'telescope_cos_view_angle',
                 'telescope_view_angle',
                 'telescope_view_angle_unmasked',
             ],
@@ -225,8 +235,10 @@ class Dash(ld.BaseDash):
                 # 'detector_cubesat.thrust',
                 'optics_cubesat.acceleration_due_to_thrust',
                 'detector_cubesat.acceleration_due_to_thrust',
-                'optics_cubesat.relative_orbit_state_m',
-                'detector_cubesat.relative_orbit_state_m',
+                'optics_cubesat.orbit_state',
+                'detector_cubesat.orbit_state',
+                # 'optics_cubesat.relative_orbit_state_m',
+                # 'detector_cubesat.relative_orbit_state_m',
                 # 'optics_cubesat.propellant_mass',
                 # 'detector_cubesat.propellant_mass',
             ],
@@ -387,7 +399,7 @@ class Dash(ld.BaseDash):
             (1, 0),
             'max_separation_error_during_observation',
             'Maximum Separation Error During Observation',
-            'Maximum Separation [m^2]',
+            'Maximum Separation [$m^2$]',
         )
         # ax.set_ylim((0, 2))
 
@@ -397,7 +409,7 @@ class Dash(ld.BaseDash):
             (2, 0),
             'max_view_plane_error',
             'Maximum View Plane Error During Observation',
-            'Maximum View Plane Error [m^2]',
+            'Maximum View Plane Error [$m^2$]',
         )
         # ax = plot_historical(
         #     frame,
@@ -413,7 +425,7 @@ class Dash(ld.BaseDash):
             (4, 0),
             'max_telescope_view_angle',
             'Maximum Telescope View Angle During Observation',
-            'View Angle [rad]',
+            'View Angle [arcsec]',
         )
         # ax.set_ylim((0, 2))
 
@@ -475,6 +487,11 @@ class Dash(ld.BaseDash):
 
         frame = frames['Translational Dynamics']
         frame.clear_all_axes()
+
+        global A
+
+        n = len(data_dict_current['simulator']['h'])
+        A = np.tril(np.ones((n, n)), k=-1)
 
         ax = coplot(
             frame,
@@ -584,7 +601,7 @@ class Dash(ld.BaseDash):
                 'separation_error',
             ],
             'Separation Error',
-            'Separation Error [m^2]',
+            'Separation Error [$m^2$]',
             'Time',
         )
         # ax.set_ylim((0, 0.01))
@@ -597,7 +614,7 @@ class Dash(ld.BaseDash):
                 'view_plane_error',
             ],
             'View Plane Error',
-            'View Plane Error [m^2]',
+            'View Plane Error [$m^2$]',
             'Time',
         )
         # ax.set_ylim((0, 0.01))
@@ -609,7 +626,7 @@ class Dash(ld.BaseDash):
                 'telescope_view_angle',
             ],
             'Telescope View Angle',
-            'View Angle [rad]',
+            'View Angle [arcsec]',
             'Time',
         )
         # ax = coplot(

@@ -149,3 +149,7 @@ cython_debug/
 # Output
 **/*.out
 **/*.html
+
+opt_test/
+opt_test*/
+lsdo_cubesat/GOOD-CANDIDATES/

@@ -15,8 +15,7 @@ def make_swarm(swarm):
         name='optics',
         dry_mass=1.3,
         initial_orbit_state=np.array([
-            20,
-            # 2*0.0495,
+            40,
             0,
             0,
             0.,
@@ -38,7 +37,7 @@ def make_swarm(swarm):
         name='detector',
         dry_mass=1.3,
         initial_orbit_state=np.array([
-            -20,
+            0,
             0,
             0,
             0,
@@ -56,7 +55,6 @@ def make_swarm(swarm):
         apogee_altitude=499.98,
     )
 
-    for v in cubesats.values():
         swarm.add(v)
     m = Telescope(swarm=swarm)
     return GraphRepresentation(m)

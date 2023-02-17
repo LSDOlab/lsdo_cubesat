@@ -86,15 +86,24 @@ class RMTB_Operation(CustomExplicitOperation):
             self.surrogate_models[name].train()
 
     def compute(self, inputs, outputs):
+        print('compute')
         shape = self.parameters['shape']
+        print('shape', shape)
         training_inputs = self.parameters['training_inputs']
         keys = list(training_inputs.keys())
+        map(lambda key: print(key, np.array(inputs[key]).shape), keys)
         values = np.array(list(inputs[key] for key in keys))
         for name, model in self.surrogate_models.items():
+            print(name, outputs[name].shape)
+        for name, model in self.surrogate_models.items():
+            print(name, 'values',  values.shape)
+            print(name, 'values.T', values.T.shape)
+            print(name, 'values.T.reshape', values.T.reshape((np.prod(shape),)+(2,), order='F').shape)
             outputs[name] = model.predict_values(
-                values.T.reshape(-1, 2, order='F'))
+                values.T.reshape((np.prod(shape),)+(2,), order='F'))
 
     def compute_derivatives(self, inputs, derivatives):
+        print('compute_derivatives')
         training_inputs = self.parameters['training_inputs']
         keys = list(training_inputs.keys())
         x = np.concatenate(tuple([inputs[key].flatten()

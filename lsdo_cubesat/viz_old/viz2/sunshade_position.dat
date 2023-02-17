@@ -1,3 +1,0 @@
-TITLE = "viz/sunshade_position"
-VARIABLES = "X", "Y", "Z"
-ZONE I=1, J=0, K=1, DATAPACKING=POINT

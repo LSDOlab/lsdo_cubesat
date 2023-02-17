@@ -4,7 +4,8 @@ from csdl import CustomExplicitOperation
 class MaskLT(CustomExplicitOperation):
 
     def initialize(self):
-        self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('num_times', types=int)
+        self.parameters.declare('num_times')
         self.parameters.declare('threshold')
         self.parameters.declare('in_name')
         self.parameters.declare('out_name')
@@ -29,7 +30,8 @@ class MaskLT(CustomExplicitOperation):
 class MaskGT(CustomExplicitOperation):
 
     def initialize(self):
-        self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('num_times', types=int)
+        self.parameters.declare('num_times')
         self.parameters.declare('threshold')
         self.parameters.declare('in_name')
         self.parameters.declare('out_name')
@@ -54,7 +56,8 @@ class MaskGT(CustomExplicitOperation):
 class MaskLE(CustomExplicitOperation):
 
     def initialize(self):
-        self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('num_times', types=int)
+        self.parameters.declare('num_times')
         self.parameters.declare('threshold')
         self.parameters.declare('in_name')
         self.parameters.declare('out_name')
@@ -79,7 +82,8 @@ class MaskLE(CustomExplicitOperation):
 class MaskGE(CustomExplicitOperation):
 
     def initialize(self):
-        self.parameters.declare('num_times', types=int)
+        # self.parameters.declare('num_times', types=int)
+        self.parameters.declare('num_times')
         self.parameters.declare('threshold')
         self.parameters.declare('in_name')
         self.parameters.declare('out_name')

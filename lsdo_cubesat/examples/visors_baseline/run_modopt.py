@@ -75,18 +75,18 @@ if warm_start is True:
     #     'optics_cubesat.initial_propellant_mass']
     # detector_initial_propellant_mass = warm_start_data[
     #     'detector_cubesat.initial_propellant_mass']
-ref_orbit, ax = generate_reference_orbit(
-    num_times,
-    step_size,
-    plot=False,
-)
+# ref_orbit, ax = generate_reference_orbit(
+#     num_times,
+#     step_size,
+#     plot=False,
+# )
 rep = make_swarm(
     SwarmSpec(
         num_times=num_times,
         duration=duration,
         num_cp=num_cp,
         step_size=step_size,
-        cross_threshold=7.0,
+        cross_threshold=6.0,
         # cross_threshold=0.2,
         # cross_threshold=0.857,
         # cross_threshold=0.2,
@@ -99,8 +99,8 @@ rep = make_swarm(
 # print(b)
 # exit()
 
-sim = Simulator(rep)
-sim['reference_orbit_state_km'] = ref_orbit
+sim = Simulator(rep, display_scripts=True)
+# sim['reference_orbit_state_km'] = ref_orbit
 sim.run()
 
 # set inputs
@@ -120,7 +120,6 @@ sim.run()
 sim.add_recorder(Dash().get_recorder())
 sim.run()
 # sim.check_totals(compact_print=True, step=1e-8)
-# exit()
 
 # import matplotlib.pyplot as plt
 # plt.subplot(411)
@@ -176,7 +175,7 @@ optimizer.solve()
 # exit()
 
 # use this to find the NaN values
-print(sim.keys())
+# print(sim.keys())
 # for k, v in sim.items():
 #     if np.any(np.isnan(v)):
 #         print(k, v)
@@ -185,21 +184,83 @@ print('optics_cubesat.acceleration_due_to_thrust',
       sim['optics_cubesat.acceleration_due_to_thrust'])
 print('detector_cubesat.acceleration_due_to_thrust',
       sim['detector_cubesat.acceleration_due_to_thrust'])
-print('optics_velocity', sim['optics_relative_orbit_state_m'][:, 3:])
-print('detector_velocity', sim['detector_relative_orbit_state_m'][:, 3:])
-print('optics_observation_dot', sim['optics_observation_dot'])
-print('detector_observation_dot', sim['detector_observation_dot'])
-print('sun_direction', sim['sun_direction'])
-print('observation_phase_indicator', sim['observation_phase_indicator'])
-print('telescope_view_angle', sim['telescope_view_angle'])
-print('max_telescope_view_angle', sim['max_telescope_view_angle'])
 
-show_optimization_results = True
-for k, v in sim.items():
-    if np.any(np.isnan(v)):
-        show_optimization_results = False
-        print(k, 'contains NaN values')
+print('optics_relative', sim['optics_cubesat.relative_orbit_state'][:, 3:])
+# print('optics_velocity', sim['optics_cubesat.orbit_state'][:, 3:])
+# print('detector_velocity', sim['detector_cubesat.orbit_state'][:, 3:])
+# print('optics_observation_dot', sim['optics_observation_dot'])
+# print('detector_observation_dot', sim['detector_observation_dot'])
+# print('sun_direction', sim['sun_direction'])
+print('observation_phase_indicator', sim['observation_phase_indicator'])
+# print('telescope_view_angle_unmasked', sim['telescope_view_angle_unmasked'])
+print('telescope_view_angle', sim['telescope_view_angle'])
+# print('separation_m', sim['separation_m'])
+# print('telescope_view_angle',
+#   sim['telescope_view_angle'][np.where(sim['telescope_view_angle'] != 0)])
+print('max_telescope_view_angle', sim['max_telescope_view_angle'])
+print('min_separation', sim['min_separation'])
+print('max_separation', sim['max_separation'])
+exit()
+
+# show_optimization_results = True
+# for k, v in sim.items():
+#     if np.any(np.isnan(v)):
+#         show_optimization_results = False
+#         print(k, 'contains NaN values')
 
 # Print results of optimization
 # if show_optimization_results is True:
 #     optimizer.print_results()
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+x = sim['optics_cubesat.orbit_state'][:, 3]
+y = sim['optics_cubesat.orbit_state'][:, 4]
+z = sim['optics_cubesat.orbit_state'][:, 5]
+ax.plot(x, y, z)
+x = sim['detector_cubesat.orbit_state'][:, 3]
+y = sim['detector_cubesat.orbit_state'][:, 4]
+z = sim['detector_cubesat.orbit_state'][:, 5]
+ax.plot(x, y, z)
+plt.show()
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+x = sim['optics_cubesat.orbit_state'][:, 0]
+y = sim['optics_cubesat.orbit_state'][:, 1]
+z = sim['optics_cubesat.orbit_state'][:, 2]
+ax.plot(x, y, z)
+x = sim['detector_cubesat.orbit_state'][:, 0]
+y = sim['detector_cubesat.orbit_state'][:, 1]
+z = sim['detector_cubesat.orbit_state'][:, 2]
+ax.plot(x, y, z)
+x = sim['optics_cubesat.orbit_state'][:,
+                                      0] * sim['observation_phase_indicator']
+y = sim['optics_cubesat.orbit_state'][:,
+                                      1] * sim['observation_phase_indicator']
+z = sim['optics_cubesat.orbit_state'][:,
+                                      2] * sim['observation_phase_indicator']
+ax.plot(x, y, z)
+x = sim['detector_cubesat.orbit_state'][:,
+                                        0] * sim['observation_phase_indicator']
+y = sim['detector_cubesat.orbit_state'][:,
+                                        1] * sim['observation_phase_indicator']
+z = sim['detector_cubesat.orbit_state'][:,
+                                        2] * sim['observation_phase_indicator']
+ax.plot(x, y, z)
+plt.show()
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+x = sim['optics_cubesat.orbit_state'][:, 0] - sim[
+    'detector_cubesat.orbit_state'][:, 0]
+y = sim['optics_cubesat.orbit_state'][:, 1] - sim[
+    'detector_cubesat.orbit_state'][:, 1]
+z = sim['optics_cubesat.orbit_state'][:, 2] - sim[
+    'detector_cubesat.orbit_state'][:, 2]
+ax.plot(x, y, z)
+ax.plot(x * sim['observation_phase_indicator'],
+        y * sim['observation_phase_indicator'],
+        z * sim['observation_phase_indicator'])
+plt.show()

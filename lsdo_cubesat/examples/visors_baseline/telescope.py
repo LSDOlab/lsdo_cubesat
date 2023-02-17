@@ -3,14 +3,14 @@ import csdl
 import numpy as np
 
 # from lsdo_cubesat.cubesat_group import Cubesat
-from lsdo_cubesat.telescope.telescope_configuration import TelescopeConfiguration
+from lsdo_cubesat.configurations.virtual_telescope import VirtualTelescope
 from lsdo_cubesat.specifications.swarm_spec import SwarmSpec
-from lsdo_cubesat.examples.visors_baseline.cubesat import Cubesat
-from lsdo_cubesat.sun.sun_direction import SunDirection
+from lsdo_cubesat.configurations.cubesat import Cubesat
+from lsdo_cubesat.disciplines.sun.sun_direction import SunDirection
 from lsdo_cubesat.constants import s
 
 
-class Telescope(Model):
+class VirtualTelescope(Model):
 
     def register_connected(self, prefix: str, name: str,
                            var: Output) -> Output:
@@ -67,6 +67,8 @@ class Telescope(Model):
         # v[:, 0] = np.cos(earth_orbit_angular_position)
         # v[:, 1] = np.sin(earth_orbit_angular_position)
 
+        h = np.ones(num_times - 1) * step_size
+        self.create_input('h', val=h)
         # sun_direction (in ECI frame) used in TelescopeConfiguration;
         # here it is an input because it is precomputed
         sun_direction = self.create_input(
@@ -89,19 +91,21 @@ class Telescope(Model):
                     # mtx=get_bspline_mtx(num_cp, num_times, order=4),
                 ),
                 name='{}_cubesat'.format(cubesat_name),
-                promotes=['reference_orbit_state_km'],
+                # promotes=['reference_orbit_state_km'],
+                promotes=[],
             )
             self.connect('sun_direction',
                          '{}.sun_direction'.format(submodel_name))
 
         # add constraints for defining telescope configuration
         self.add(
-            TelescopeConfiguration(swarm=swarm),
+            VirtualTelescope(swarm=swarm),
             name='telescope_config',
         )
         self.connect_vars('sun_LOS')
-        self.connect_vars('relative_orbit_state_m')
-        self.connect_vars('orbit_state_km')
+        # self.connect_vars('relative_orbit_state_m')
+        # TODO: connect
+        # self.connect_vars('orbit_state')
         # self.connect_vars('B_from_ECI')
 
         # Define Objective
@@ -111,6 +115,8 @@ class Telescope(Model):
         #     'acceleration_due_to_thrust', shape=(num_times, 3))
         # a = optics_acceleration_due_to_thrust + detector_acceleration_due_to_thrust
         # total_acceleration_due_to_thrust = csdl.sum(a*csdl.tanh(5*a))
+        # self.register_output('total_acceleration_due_to_thrust', total_acceleration_due_to_thrust)
+        # obj = 10*total_acceleration_due_to_thrust
 
         ## total_propellant_used
         # optics_total_propellant_used, detector_total_propellant_used = self.import_vars(
@@ -141,7 +147,7 @@ class Telescope(Model):
         #     max_separation_error_during_observation -
         #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -
         #     (telescope_view_plane_tol_mm / 1000.)**2 + 1e8*max_telescope_view_angle))
-        obj = 180 / np.pi * max_telescope_view_angle
+        obj = 1.001 * max_telescope_view_angle
         # obj = 10*total_propellant_used + ((
         #     max_separation_error_during_observation -
         #     (telescope_length_tol_mm / 1000.)**2 + max_view_plane_error -

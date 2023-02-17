@@ -27,11 +27,11 @@ else:
     num_cp = 5
 step_size = duration * 60 / (num_times - 1)
 
-ref_orbit, ax = generate_reference_orbit(
-    num_times,
-    step_size,
-    plot=False,
-)
+# ref_orbit, ax = generate_reference_orbit(
+#     num_times,
+#     step_size,
+#     plot=False,
+# )
 rep = make_swarm(
     SwarmSpec(
         num_times=num_times,
@@ -46,8 +46,8 @@ rep = make_swarm(
     ))
 
 sim = Simulator(rep)
-sim['reference_orbit_state_km'] = ref_orbit
-print(ref_orbit.shape)
+# sim['reference_orbit_state_km'] = ref_orbit
+# print(ref_orbit.shape)
 
 sim.run()
 
