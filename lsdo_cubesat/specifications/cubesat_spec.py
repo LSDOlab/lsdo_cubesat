@@ -7,6 +7,7 @@ class CubesatSpec(OptionsDictionary):
 
     def initialize(self):
         self.declare('name', types=str)
+        self.declare('use_cp', types=bool, default=True)
         self.declare('dry_mass', types=float)
         self.declare('initial_orbit_state', types=np.ndarray)
         self.declare('specific_impulse', default=47., types=float)

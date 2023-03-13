@@ -52,7 +52,7 @@ class Separation(Model):
         # this is highly unlikely to be zero, i.e. nondifferentiable
         separation_m = csdl.pnorm(telescope_vector, axis=1)
         self.register_output('separation_m', separation_m)
-        
+
         # Separation between spacecraft cannot be more than 500 m over
         # entire mission to ensure communication between spacecraft;
         # this also helps ensure that the problem is not poorly scaled
@@ -86,11 +86,21 @@ class Separation(Model):
 
         self.register_output('standby_phase_indicator',
                              standby_phase_indicator)
+        
+        # shift constraint values so that they are relative to zero;
+        # this helps with scaling while `adder` is not implemented in
+        # back end
         min_separation_during_observation = csdl.min(
-            40. * standby_phase_indicator + separation_during_observation)
+            40. * standby_phase_indicator + separation_during_observation -
+            40.,
+            rho=500,
+        )
 
         max_separation_during_observation = csdl.max(
-            separation_during_observation)
+            40. * standby_phase_indicator + separation_during_observation -
+            40.,
+            rho=500,
+        )
 
         self.register_output('min_separation_during_observation',
                              min_separation_during_observation)
@@ -99,12 +109,12 @@ class Separation(Model):
 
         self.add_constraint(
             'min_separation_during_observation',
-            lower=40. - telescope_length_tol_mm / 1000.,
+            lower=-telescope_length_tol_mm / 1000.,
             scaler=min_separation_scaler,
         )
         self.add_constraint(
             'max_separation_during_observation',
-            upper=40. + telescope_length_tol_mm / 1000.,
+            upper=telescope_length_tol_mm / 1000.,
             scaler=max_separation_scaler,
         )
 

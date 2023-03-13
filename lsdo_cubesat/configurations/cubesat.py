@@ -8,8 +8,7 @@ from lsdo_cubesat.specifications.cubesat_spec import CubesatSpec
 # from lsdo_cubesat.communication.comm_group import CommGroup
 # from lsdo_cubesat.communication.Data_download_rk4_comp import DataDownloadComp
 from lsdo_cubesat.configurations.vehicle_dynamics import VehicleDynamics
-# from lsdo_cubesat.disciplines.eps.electrical_power_system import ElectricalPowerSystem
-# from lsdo_cubesat.disciplines.eps.solar.solar_exposure import SolarExposure
+from lsdo_cubesat.disciplines.eps.eps import ElectricalPowerSystem
 from lsdo_cubesat.disciplines.sun.umbra_penumbra import UmbraPenumbra
 
 from lsdo_cubesat.constants import RADII
@@ -113,14 +112,13 @@ class Cubesat(Model):
         # # )
 
         # TODO: restore
-        # # self.add(
-        # #     ElectricalPowerSystem(
-        # #         num_times=num_times,
-        # #         step_size=step_size,
-        # #         comm=comm,
-        # #     ),
-        # #     name='EPS',
-        # # )
+        # self.add(
+        #     ElectricalPowerSystem(
+        #         num_times=num_times,
+        #         # comm=comm,
+        #     ),
+        #     name='EPS',
+        # )
 
         # # total_propellant_volume = self.declare_variable(
         # #     'total_propellant_volume', )

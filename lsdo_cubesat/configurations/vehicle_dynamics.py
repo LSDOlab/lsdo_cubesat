@@ -45,13 +45,15 @@ class VehicleDynamics(Model):
         thrust = self.declare_variable('thrust', shape=(num_times, 3))
         initial_propellant_mass = self.declare_variable(
             'initial_propellant_mass')
-        dry_mass = self.create_input('dry_mass', val=12.)
-        self.add_design_variable('dry_mass', lower=0)
-        total_mass = dry_mass + initial_propellant_mass
-        total_mass = self.register_output('total_mass', total_mass)
-        self.add_constraint('total_mass', equals=12.)
 
-        acceleration_due_to_thrust = thrust / csdl.expand(total_mass, shape=(num_times, 3))
+        propellant_mass = self.declare_variable('propellant_mass', shape=(num_times, 1))
+        dry_mass = self.create_input('dry_mass', val=cubesat['dry_mass'])
+        # self.add_design_variable('dry_mass', lower=0)
+        total_mass = csdl.expand(dry_mass, shape=(num_times, )) + csdl.reshape(propellant_mass, (num_times,))
+        total_mass = self.register_output('total_mass', total_mass)
+        # self.add_constraint('total_mass', equals=12.)
+
+        acceleration_due_to_thrust = thrust / csdl.expand(total_mass, shape=(num_times, 3), indices='i->ik')
         self.register_output('acceleration_due_to_thrust',
                              acceleration_due_to_thrust)
 
@@ -89,9 +91,9 @@ class VehicleDynamics(Model):
             'velocity',
             velocity,
         )
-        # self.add(
-        #     OrbitReferenceFrame(num_times=num_times),
-        # )
+        self.add(
+            OrbitReferenceFrame(num_times=num_times),
+        )
 
         # self.add(
         #     Attitude(

@@ -107,9 +107,9 @@ class TelescopePointing(Model):
         )
 
         telescope_view_angle_unmasked = csdl.arccos(
-            cos_view_angle * cos_view_angle_gt_neg1 * cos_view_angle_lt1)# +
-            # (cos_view_angle_ge1 - float_info.min) -
-            # (cos_view_angle_le_neg1 - float_info.min))
+            cos_view_angle * cos_view_angle_gt_neg1 * cos_view_angle_lt1)  # +
+        # (cos_view_angle_ge1 - float_info.min) -
+        # (cos_view_angle_le_neg1 - float_info.min))
         observation_phase_indicator = self.declare_variable(
             'observation_phase_indicator', shape=(num_times, ))
         telescope_view_angle = observation_phase_indicator * telescope_view_angle_unmasked
@@ -122,17 +122,16 @@ class TelescopePointing(Model):
             'telescope_view_angle',
             telescope_view_angle,
         )
-        max_telescope_view_angle = csdl.max(telescope_view_angle)
+        max_telescope_view_angle = csdl.max(telescope_view_angle, rho=5000.)
         self.register_output(
             'max_telescope_view_angle',
             max_telescope_view_angle,
         )
-        # self.add_constraint(
-        #     'max_telescope_view_angle',
-        #     upper=telescope_view_halfangle_tol_arcsec /
-        #     (180. / np.pi * deg2arcsec),
-        #     scaler=telescope_view_angle_scaler,
-        # )
+        self.add_constraint(
+            'max_telescope_view_angle',
+            upper=telescope_view_halfangle_tol_arcsec / 3600 * np.pi / 180.,
+            scaler=telescope_view_angle_scaler,
+        )
 
 
 if __name__ == "__main__":

@@ -87,8 +87,11 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from csdl import GraphRepresentation
     from python_csdl_backend import Simulator
+    from matplotlib import rc
 
-    num_orbits = 3
+    rc('text', usetex=True)
+
+    num_orbits = 30
     duration = 90
     step_size = 19.
     num_times = int(duration * 60 * num_orbits / step_size)
@@ -103,7 +106,7 @@ if __name__ == "__main__":
         def define(self):
             num_times = self.parameters['num_times']
             step_size = self.parameters['step_size']
-            self.create_input('h', val=step_size, shape=(num_times-1, ))
+            self.create_input('h', val=step_size, shape=(num_times - 1, ))
             self.add(ReferenceOrbitTrajectory(
                 num_times=num_times,
                 r_0=r_0,
@@ -115,8 +118,6 @@ if __name__ == "__main__":
             step_size=step_size,
         ), )
     sim = Simulator(rep, mode='rev')
-    print(sim['h'])
-    exit()
     sim.run()
     # sim.compute_total_derivatives()
     # exit()
@@ -133,4 +134,5 @@ if __name__ == "__main__":
     ax.set_xlabel('X [km]')
     ax.set_ylabel('Y [km]')
     ax.set_zlabel('Z [km]')
+    plt.title('Position of Spacecraft in Sun-synchronous Low Earth Orbit')
     plt.show()

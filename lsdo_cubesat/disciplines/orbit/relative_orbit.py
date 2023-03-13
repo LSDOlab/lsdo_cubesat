@@ -27,6 +27,7 @@ def aa(ry, uy, rz, uz, p, s):
              (p**4 - 14 * p**2 * rz**2 + 21 * rz**4) - mu * p**8)) / (p**11 *
                                                                       s**11)
 
+
 # p = rmag
 # s = r + u
 def bb(rx, ry, rz, ux, uy, uz, p, s):
@@ -38,6 +39,26 @@ def bb(rx, ry, rz, ux, uy, uz, p, s):
                             (28 * (rz + uz)**2 /
                              (3 * (rx + ux)**2 + 3 * (ry + uy)**2 + 3 *
                               (rz + uz)**2) - 4) / s**7)
+
+
+# approximate; do not use
+# def aa(ry, uy, rz, uz, p, s):
+#     return (-ry * (B * p**4 * (p**2 - 5 * rz**2) + C * p**2 * rz *
+#                    (3 * p**2 - 7 * rz**2) + D *
+#                    (p**4 - 14 * p**2 * rz**2 + 21 * rz**4) - mu * p**8) +
+#             (ry + uy) * (B * p**4 * (p**2 - 5 * (rz + uz)**2) + C * p**2 *
+#                          (3 * p**2 - 7 * (rz + uz)**2) * (rz + uz) + D *
+#                          (p**4 - 14 * p**2 * (rz + uz)**2 + 21 *
+#                           (rz + uz)**4) - mu * p**8)) / p**11
+
+# def bb(rx, ry, rz, ux, uy, uz, p, s):
+#     return (9 * C * (-rz**2 +
+#                      (rz + uz)**2) * (rx**2 + ry**2 + rz**2) - 2 * rz *
+#             (3 * B * p**2 * (rx**2 + ry**2 + rz**2) - 2 * D *
+#              (-3 * rx**2 - 3 * ry**2 + 4 * rz**2)) + 2 * (rz + uz) *
+#             (3 * B * p**2 * (rx**2 + ry**2 + rz**2) - 2 * D *
+#              (-3 * rx**2 - 3 * ry**2 - 3 * rz**2 + 7 *
+#               (rz + uz)**2))) / (3 * p**7 * (rx**2 + ry**2 + rz**2))
 
 
 class RelativeOrbitDynamics(Model):
@@ -139,9 +160,34 @@ class RelativeOrbitTrajectory(Model):
                 name='relative_orbit_integrator',
             )
         elif approach == 'collocation':
+            fc = np.zeros(6, )
+            fc[:3] = np.ones(3, )
+
+            class ODEProblemTestC(ODEProblem):
+
+                def setup(self):
+                    self.add_parameter('reference_orbit_state',
+                                       dynamic=True,
+                                       shape=(self.num_times, 6))
+                    self.add_parameter(
+                        'acceleration_due_to_thrust',
+                        dynamic=True,
+                        shape=(self.num_times, 3),
+                    )
+                    self.add_state(
+                        'relative_orbit_state',
+                        'udot',
+                        shape=(6, ),
+                        initial_condition_name='relative_initial_state',
+                        output='relative_orbit_state',
+                        interp_guess=[relative_initial_state,
+                                      fc])
+                    self.add_times(step_vector='h')
+                    self.set_ode_system(RelativeOrbitDynamics)
+
             self.add(
-                ODEProblemTest('GaussLegendre4', 'collocation',
-                               num_times).create_solver_model(),
+                ODEProblemTestC('GaussLegendre4', 'collocation',
+                                num_times).create_solver_model(),
                 name='relative_orbit_integrator',
             )
         elif approach == 'solver-based':
@@ -200,6 +246,13 @@ if __name__ == "__main__":
                 name='detector_cubesat',
                 promotes=['h', 'reference_orbit_state'],
             )
+            self.create_input('acceleration_due_to_thrust',
+                              shape=(num_times, 3),
+                              val=0)
+            self.connect('acceleration_due_to_thrust',
+                         'optics_cubesat.acceleration_due_to_thrust')
+            self.connect('acceleration_due_to_thrust',
+                         'detector_cubesat.acceleration_due_to_thrust')
 
     class ReferenceOrbit(Model):
 
@@ -219,7 +272,7 @@ if __name__ == "__main__":
                 r_0=r_0,
             ), )
 
-    num_orbits = 0.1
+    num_orbits = 3
     duration = 90
     step_size = 19.
     num_times = int(duration * 60 * num_orbits / step_size)
@@ -245,13 +298,16 @@ if __name__ == "__main__":
     sim2 = Simulator(rep)
     sim2['reference_orbit_state'] = sim1['orbit_state']
     sim2.run()
-    sim2.check_partials(
-        compact_print=True,
-        method='cs',
-    )
-    exit()
+    # sim2.check_partials(
+    #     compact_print=True,
+    #     method='cs',
+    # )
+    # exit()
 
     import matplotlib.pyplot as plt
+    from matplotlib import rc
+
+    rc('text', usetex=True)
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
@@ -281,7 +337,7 @@ if __name__ == "__main__":
     ax.set_xlabel('X [km]')
     ax.set_ylabel('Y [km]')
     ax.set_zlabel('Z [km]')
-    plt.title('relative orbits, both spacecraft')
+    plt.title('Position of two spacecraft relative to reference orbit')
     plt.show()
     print(np.array2string(u1, separator=',', threshold=10 * num_times))
     print(np.array2string(u2, separator=',', threshold=10 * num_times))

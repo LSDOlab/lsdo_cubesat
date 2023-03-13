@@ -17,7 +17,8 @@ class VirtualTelescopeSpec(OptionsDictionary):
                      default=90.,
                      types=float)
         # TODO: for a later paper, find appropriate speed constraint
-        self.declare('relative_speed_tol_um_s', default=100., types=float)
+        self.declare('relative_speed_tol_um_s', default=200., types=float)
+        # self.declare('relative_speed_in_plane_tol_um_s', default=200., types=float)
         self.declare('telescope_view_angle_scaler',
                      default=1.,
                      types=(float, np.ndarray))

@@ -36,16 +36,21 @@ class Alignment(Model):
             'telescope_vector_component_in_sun_direction',
             shape=(num_times, ),
         )
-        telescope_direction_in_view_plane = telescope_vector - csdl.expand(
-            telescope_vector_component_in_sun_direction,
-            shape=(num_times, 3),
-            indices='i->ij',
-        )
+
+        separation_m = self.declare_variable('separation_m',
+                                             shape=(num_times, ))
+        telescope_direction_in_view_plane = telescope_vector * (
+            1. - csdl.expand(
+                telescope_vector_component_in_sun_direction,
+                shape=(num_times, 3),
+                indices='i->ij',
+            ) /
+            csdl.expand(separation_m, shape=(num_times, 3), indices='i->ij'))
         self.register_output('telescope_direction_in_view_plane',
                              telescope_direction_in_view_plane)
-        view_plane_error = csdl.sum(
-            (telescope_direction_in_view_plane)**2,
-            axes=(1, ),
+        view_plane_error = csdl.pnorm(
+            telescope_direction_in_view_plane,
+            axis=1,
         )
         self.register_output('view_plane_error', view_plane_error)
 

@@ -104,10 +104,12 @@ class ObservationPhase(Model):
         # must be in line of sight, optics s/c must meet observatoin
         # phase requirement, and detector s/c mus tmeet observation
         # requirement
-        observation_phase_indicator = optics_observation_phase_indicator * detector_observation_phase_indicator * telescope_sun_LOS_indicator
-        self.register_output('observation_phase_indicator',
-                             observation_phase_indicator)
+        # observation_phase_indicator = optics_observation_phase_indicator * detector_observation_phase_indicator * telescope_sun_LOS_indicator
+        # self.register_output('observation_phase_indicator',
+        #                      observation_phase_indicator)
 
+        observation_phase_indicator = self.create_input(
+            'observation_phase_indicator', shape=(num_times, ))
         # for testing derivatives
         # self.add_constraint('optics_observation_dot',equals=0)
         # self.add_constraint('detector_observation_dot',equals=0)

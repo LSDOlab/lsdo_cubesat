@@ -168,22 +168,22 @@ class VirtualTelescope(Model):
         # obj = 10*total_acceleration_due_to_thrust
 
         # ## total_thrust
-        # optics_total_thrust, detector_total_thrust = self.import_vars(
-        #     'total_thrust', shape=(num_times, ))
-        # total_thrust = optics_total_thrust + detector_total_thrust
-        # self.register_output('total_thrust', total_thrust)
+        optics_total_thrust, detector_total_thrust = self.import_vars(
+            'total_thrust', shape=(num_times, ))
+        total_thrust = csdl.sum(optics_total_thrust + detector_total_thrust)
+        self.register_output('total_thrust', total_thrust)
 
-        # ## initial_propellant
+        ## initial_propellant
         # optics_initial_propellant_mass, detector_initial_propellant_mass = self.import_vars(
         #     'initial_propellant_mass', shape=(1, ))
         # total_propellant = optics_initial_propellant_mass + detector_initial_propellant_mass
         # self.register_output('total_propellant', total_propellant)
 
         ## total_propellant_used
-        optics_total_propellant_used, detector_total_propellant_used = self.import_vars(
-            'total_propellant_used')
-        total_propellant_used = optics_total_propellant_used + detector_total_propellant_used
-        self.register_output('total_propellant_used', total_propellant_used)
+        # optics_total_propellant_used, detector_total_propellant_used = self.import_vars(
+        #     'total_propellant_used')
+        # total_propellant_used = optics_total_propellant_used + detector_total_propellant_used
+        # self.register_output('total_propellant_used', total_propellant_used)
 
         ## total_propellant_mass using initial propellant mass
         # optics_initial_propellant_mass, detector_initial_propellant_mass = self.import_vars(
@@ -195,9 +195,10 @@ class VirtualTelescope(Model):
             'max_telescope_view_angle')
 
         # obj = 1.001 * max_telescope_view_angle
-        # obj = max_telescope_view_angle + csdl.sum(total_thrust)
-        obj = 1000*max_telescope_view_angle + total_propellant_used
-        # obj = max_telescope_view_angle + total_propellant
+        obj = 1.00001 * total_thrust
+        # obj = max_telescope_view_angle + total_thrust
+        # obj = 1000*max_telescope_view_angle + total_propellant_used
+        # obj = 1000*max_telescope_view_angle + total_propellant
         # obj = total_propellant
 
         # obj = csdl.sum(

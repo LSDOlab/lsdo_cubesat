@@ -78,6 +78,7 @@ class Propulsion(Model):
         pthrust_scaler = cubesat['pthrust_scaler']
         nthrust_cp_val = cubesat['nthrust_cp']
         nthrust_scaler = cubesat['nthrust_scaler']
+        use_cp = cubesat['use_cp']
 
         # kg
         initial_propellant_mass = self.create_input(
@@ -85,52 +86,78 @@ class Propulsion(Model):
             val=cubesat['initial_propellant_mass'],
         )
 
-        self.add_design_variable(
-            'initial_propellant_mass',
-            lower=0.,
-            scaler=cubesat['initial_propellant_mass_scaler'],
-        )
+        # self.add_design_variable(
+        #     'initial_propellant_mass',
+        #     lower=0.,
+        #     scaler=cubesat['initial_propellant_mass_scaler'],
+        # )
 
         # Split thrust between positive and negative parts to compute
         # absolute value of thrust to compute total thrust to compute
         # mass flow rate
-        pthrust_cp = self.create_input(
-            'pthrust_cp',
-            val=pthrust_cp_val,
-            shape=(num_cp, 3),
-        )
-        self.add_design_variable(
-            'pthrust_cp',
-            lower=0,
-            # upper=max_thrust,
-            scaler=pthrust_scaler,
-        )
-        nthrust_cp = self.create_input(
-            'nthrust_cp',
-            val=nthrust_cp_val,
-            shape=(num_cp, 3),
-        )
-        self.add_design_variable(
-            'nthrust_cp',
-            # lower=-max_thrust,
-            upper=0,
-            scaler=nthrust_scaler,
-        )
-        v = get_bspline_mtx(num_cp, num_times).toarray()
-        bspline_mtx = self.declare_variable(
-            'bspline_mtx',
-            val=v,
-            shape=v.shape,
-        )
-        thrust = csdl.einsum(bspline_mtx,
-                             pthrust_cp + nthrust_cp,
-                             subscripts='kj,ji->ki')
-        total_thrust = csdl.sum(
-            csdl.einsum(bspline_mtx,
-                        pthrust_cp - nthrust_cp,
-                        subscripts='kj,ji->ki'),
-            axes=(1, ),
-        )
+        if use_cp == True:
+            pthrust_cp = self.create_input(
+                'pthrust_cp',
+                val=pthrust_cp_val,
+                shape=(num_cp, 3),
+            )
+            self.add_design_variable(
+                'pthrust_cp',
+                lower=0,
+                # upper=max_thrust,
+                scaler=pthrust_scaler,
+            )
+            nthrust_cp = self.create_input(
+                'nthrust_cp',
+                val=nthrust_cp_val,
+                shape=(num_cp, 3),
+            )
+            self.add_design_variable(
+                'nthrust_cp',
+                # lower=-max_thrust,
+                upper=0,
+                scaler=nthrust_scaler,
+            )
+            v = get_bspline_mtx(num_cp, num_times).toarray()
+            bspline_mtx = self.declare_variable(
+                'bspline_mtx',
+                val=v,
+                shape=v.shape,
+            )
+            pthrust = csdl.einsum(bspline_mtx,
+                                  pthrust_cp,
+                                  subscripts='kj,ji->ki')
+            nthrust = csdl.einsum(bspline_mtx,
+                                  nthrust_cp,
+                                  subscripts='kj,ji->ki')
+            self.register_output('pthrust', pthrust)
+            self.register_output('nthrust', nthrust)
+        else:
+            pthrust = self.create_input(
+                'pthrust',
+                val=pthrust_cp_val,
+                shape=(num_times, 3),
+            )
+            self.add_design_variable(
+                'pthrust',
+                lower=0,
+                # upper=max_thrust,
+                scaler=pthrust_scaler,
+            )
+            nthrust = self.create_input(
+                'nthrust',
+                val=nthrust_cp_val,
+                shape=(num_times, 3),
+            )
+            self.add_design_variable(
+                'nthrust',
+                # lower=-max_thrust,
+                upper=0,
+                scaler=nthrust_scaler,
+            )
+        thrust = pthrust + nthrust
+        total_thrust = csdl.sum(pthrust - nthrust, axes=(1, ))
+
         self.register_output('thrust', thrust)
         self.register_output('total_thrust', total_thrust)
 
